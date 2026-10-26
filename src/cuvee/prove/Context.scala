@@ -164,9 +164,7 @@ case class Context(
   // that value in the classes, which the simplex does not tell them, so that terms over them are decided, also
   // nonlinear ones; only after a fact that is a constraint, and only those not fixed already
   def fix(phi: Expr): Context =
-    // fixed already: the class has a literal, which is a member, not the root, since variables are roots before
-    // literals (see Classes.rank)
-    val xs = phi.free.toList.filter(x => x.typ == Sort.int && !classes.classOf(x).exists(_.isInstanceOf[Lit]))
+    val xs = phi.free.toList.filter(x => x.typ == Sort.int && !classes.find(x).isInstanceOf[Lit])
     if xs.isEmpty || linear.constraints.isEmpty
     then this
     else linear.fixed(xs).foldLeft(this) { case (ctx, (x, n)) => ctx.assume(Eq(x, Lit(n, Sort.int))) }

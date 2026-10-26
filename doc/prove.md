@@ -39,14 +39,11 @@ rules, and the memos. Each assumed fact goes to all theories:
   applications are decomposed into their arguments and merged by congruence, everything else (variables, literals,
   binders, combinators) is a node of its own. Two literals or two constructors in one class, or a disequation whose
   sides are in one class, are inconsistent.
-  - **Order.** The root of a class is its least member by `Context.order`: a variable before a literal before any
+  - **Order.** The root of a class is its least member by `Context.order`: a literal before a variable before any
     other term, variables by the depth of the scope that binds them (free variables first) and their position in it,
     then by index and name. Terms are thus written over the variables of the outer scopes and those of a binder over
     the earlier ones, e.g. the count of an inner loop by the bound of its test, the position `i == k + 1` of a loop by
-    the counter `k` of its iterations. A variable whose value is a literal stays a variable: the result of a case
-    `k == c` of an update keeps `k` and is merged with the other cases of the same result (`Simplify.eps`,
-    examples/c/teq/stores_cases_point.c); arithmetic still substitutes the value (Solutions), the matcher reaches the
-    literal through the class, and `Context.fix` knows a variable fixed by a literal among its members.
+    the counter `k` of its iterations.
   - **Solutions.** A linear equation is solved for its greatest variable if the solution is arithmetic over variables
     (`Classes.solve`, `Poly.solution`), e.g. `x` by `40 - n` for `n + x == 40`; the variable is merged with its
     solution. Solutions are substituted inside arithmetic only (`Classes.substitute`, `Simplify.poly`), so a variable

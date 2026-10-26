@@ -35,7 +35,7 @@ hard to diagnose.
 application, the kind of a combinator) but does not match, only with `-debug match`; and a line for an argument of a
 higher-order variable whose variables are not bound yet. The first subterm that fails is not reported yet.
 
-## 3. Variables kept instead of literals (done, 0.52.9; measured in the cloud)
+## 3. Variables kept instead of literals (0.52.9, failed and reverted in 0.52.10; see 3b)
 
 **Gap.** Under a guard `k == c` with a literal `c`, the class of the iteration variable `k` has the root `c`
 (`Classes.rank`: a literal before a variable), and `Classes.normalize` writes the result with `c` instead of `k`. Two
@@ -67,6 +67,43 @@ experiment measures it: the test suite and the cloud run, before any change of t
 **Tests.** examples/c/teq/stores_cases_point.c is correct without the lemma (local, Oct 26; unknown with 0.52.8 within
 10 s); copysome2-1, the users of `trace_merge_cases_ne`. The lemma stays until the cloud run of Arrays and Loops shows
 the cost of the change (out/bench/cuvee-arrays.xml, tool-main against tool-rank).
+
+## 3b. Normal forms in the context, not in the terms (redesign of step 3)
+
+**Result of step 3 (0.52.9).** Variables as roots before literals lost 30 tasks of Loops in the cloud (11 of them
+"rewriting does not terminate"), Arrays even. The cause, traced on loop-zilu/benchmark43_conjunctive: `x$16`, the
+value of `x` at the exit, is solved as `n + tmp$7`, the exit gives `x$16 == 100`, so `tmp$7` is solved as
+`-n + 100`; with `x$16` as the root of the class of `100`, `Classes.normalize` replaces the literal `100` in that
+solution by `x$16`, whose solution contains `tmp$7` again, without end (432551 levels, then a stack overflow, which
+Simplify reports as "rewriting does not terminate"); `acyclic` does not see it, since a literal has no free variables.
+A literal was canonical only because it was always its own root.
+
+**Design.**
+- The context (classes, simplex, facts) keeps literals as roots (the order before 0.52.9) and normalizes facts
+  completely when they enter it (`Context.assume`, `Context.renormalize`): solutions, roots, literals. Decisions
+  (`eq_`, `implied`, side conditions) are made there, as now.
+- Terms are not rewritten with the values of the context: `Simplify.var_` replaces a variable by the canonical
+  variable of its class (its least variable member), never by a literal; `Simplify.poly` builds the polynomial without
+  substituting solutions (`Classes.substitute`), but still collects summands and folds constants.
+- The order of variables prefers those without an index (the names of the program) over those with one (fresh names,
+  the variables of binders), after the depth of the scope, so that inner variables are still written by outer ones.
+- Equations and inequalities of arithmetic are presented in polynomial normal form (`Simplify.le`, `lt`, `poly.sides`)
+  over the canonical variables, without solutions; arithmetic as an argument of another function (the index of a read
+  or store, the position of `earlier`, arguments of uninterpreted functions) stays as written, its variables canonical.
+- The matcher computes the canonical form of an arithmetic argument from the context where a pattern needs it (a
+  pattern `a[k]` against `a[i - 1]` with `i == k + 1`), memoized by term; since variables are canonical already, only
+  the arithmetic around them is normalized, not the chains of the classes at every variable.
+
+**Expected.** The result of a case `k == c` keeps `k` and is merged with the other cases of the same result
+(copysome2-1 without `stores_cases_point`); no literal becomes a variable or a variable a literal inside a term; goals
+keep the names of the program. Risks: the cost of the matcher's normalization; places that need literals in terms
+(`Eval`, rules with literal patterns) get them only through the matcher; the expected outputs of many examples
+change (regenerated only once the measurement says the design pays off).
+
+**Steps.** (1) Main back to literal roots: `Classes.rank` and `Context.fix` of 0.52.9 reverted, steps 1 and 2 kept
+(done, 0.52.10). (2) Prototype in a worktree: `var_`, `poly`, the order of variables, the matcher. (3) Measure: the
+examples of the lemmas of Oct 26, copysome2-1 without `stores_cases_point`, benchmark43 (10 s each), then the cloud
+run of Arrays and Loops against 0.52.10.
 
 ## 4. Remainders and division
 
@@ -129,5 +166,5 @@ debug line; until then the two lemmas stay.
 
 ## Order
 
-1, 2, 3 done (0.52.9); next: the cloud result of 3 (then `stores_cases_point` out), 4, the database work, 5 once
-diagnosed.
+1, 2 done (0.52.9), 3 failed and reverted (0.52.10); next: 3b (the prototype and its measurement), 4, the database
+work, 5 once diagnosed.

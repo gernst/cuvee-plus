@@ -48,11 +48,10 @@
 
 (goal
   (forall
-    ((i$23 Int) (K$17 (Trace Int)) (Tmp?$14 (List Int)) (tmp$26 Int))
+    ((K$17 (Trace Int)) (Tmp?$14 (List Int)) (tmp$26 Int))
     (=>
       (and
-        (= K$17 (counter 0 1 i$23))
-        (= i$23 1000)
+        (= K$17 (counter 0 1 1000))
         (invs
           ((k$16 (butlast K$17))
             (tmp$12 Tmp?$14))
