@@ -114,6 +114,24 @@ case class Classes(
       case None =>
         this
 
+  // the policy of canonical forms, the only operations by which the simplifier, the context and the matcher write
+  // terms and facts over the classes (see ideas/engine-consolidation.md, 1):
+  // term: how a variable is written in a term, the root of its class (a literal before a variable, see rank);
+  // value: a leaf of a polynomial with the solutions of its variables (see substitute);
+  // fixed: whether a variable has a literal value, which then is its root;
+  // fact: the canonical form of a fact (see normalize)
+  def term(x: Var): Expr =
+    normalize(x)
+
+  def value(leaf: Expr): Expr =
+    substitute(leaf)
+
+  def fixed(x: Var): Boolean =
+    find(x).isInstanceOf[Lit]
+
+  def fact(phi: Expr): Expr =
+    normalize(phi)
+
   // the canonical form of a term, bottom-up: arithmetic by its polynomial normal form, as the simplifier writes it, with
   // the solved variables among its atoms replaced by their solutions (see Simplify.poly), and a registered term by the
   // root of its class, such that terms that the classes identify become equal, also below binders, which the classes

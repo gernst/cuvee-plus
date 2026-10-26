@@ -5,7 +5,12 @@ normal forms (ideas/engine-gaps.md, steps 3 and 3b): most problems of that work 
 that do the same thing in different places. The proposals below unify them; each names the places that overlap now.
 TODO.md ("Code structure") lists some of them already; they are repeated here where they belong to a unification.
 
-## 1. Where values enter terms (normal forms)
+## 1. Where values enter terms (normal forms) (done in part, 0.52.12)
+
+Done: the operations `Classes.term` (how a variable is written), `value` (a leaf of arithmetic with its solution),
+`fixed` (a variable with a literal value) and `fact` (the canonical form of a fact) are the only ones by which
+`Simplify`, `Context` and `Rewrite` use the policy; `rank`, `normalize`, `substitute` and `acyclic` stay inside
+`Classes`.
 
 Now: the canonical form of a term is decided in five places, by different policies.
 - `Classes.normalize`: facts, by the roots of their classes and the solutions inside arithmetic;
@@ -37,9 +42,13 @@ Proposal: the matcher works on `Poly` (its summands are the monomials with their
 become `Poly.toExpr`; the comparisons of `Simplify` and the constraints of `Linear` share one conversion of an atom of
 comparison to a polynomial (`p <= 0`, `p < 0`, `p == 0`). `Arith.normalize` is unused (TODO.md).
 
-## 3. One decision procedure
+## 3. One decision procedure (done in part, 0.52.12)
 
-Now: whether two terms are equal or a formula holds is asked in at least eight ways.
+Done: `Simplify.decide`, the decision by the theories as one `Option[Boolean]`, used by the main loop. Correction of
+the review: the side conditions are decided differently on purpose, by simplification with the rules
+(`Rewrite.holds`) and by lookup among the facts (`Rewrite.known`); a cache is still open.
+
+Now: whether two terms are equal or a formula holds is asked in several ways.
 - `Simplify.eq_` (syntactic, `ctx.↑` definitions, classes, `Canon.equal`, `point`, literals, extensionality);
 - `Simplify.implied`/`denied` (simplify, then `True`) and `Context.implied`/`denied` (deny and check the theories);
 - `Classes.equal`, `Classes.within`, `Canon.equal`;
@@ -108,7 +117,11 @@ directed test later, ideas/engine-gaps.md), lift (out of terms and atoms) and sp
 decomposition of sequents used by `Split`, `Normalize` and the context; `ideas/dnf-guards.md` would change only this
 module.
 
-## 9. Small duplications and names
+## 9. Small duplications and names (done, 0.52.12, except `Context.not`)
+
+Done: one `Normalize.replace` with a parameter `binders`; `Rewrite.counter(ctx, dep)` returning the bound of the
+counter of the iterations, used by `Rewrite` and `Simplify.iterations` (the test occurred twice, not five times;
+`Simplify.deps` tests for any counter); the lifting of conditionals is `Simplify.choices`.
 
 - `Normalize.replace` and `Forward.replace` replace a subterm, the first not below binders, the second everywhere;
   one function with that choice as a parameter.

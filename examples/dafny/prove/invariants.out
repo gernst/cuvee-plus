@@ -23,7 +23,7 @@ axiom
 axiom
   forall X: Trace<int> ::
     invs(for ⌊X⌋, J check x, j :: x < j)
-      ==> pt(trace(0, for J do x, j :: if x < j then 1 else 0))
+      ==> pt(trace(0, for J do x, j :: case x < j => 1 case j <= x => 0))
 
 axiom invs(for J check j :: 0 < j) ==> Y == maps(for J yield j :: j)
 

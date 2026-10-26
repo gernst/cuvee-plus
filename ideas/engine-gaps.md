@@ -110,6 +110,11 @@ run of Arrays and Loops against 0.52.10.
 - Done (0.52.11): the cases of the paths of a loop body are grouped by their results in `TEQ.update`, before any
   simplification; examples/c/teq/stores_cases_point.c (two branches storing `a[i]`) is proved without the lemma.
   copysome2-1 is not: its branches store `a2[i]` and `a1[i]`, equal only by the earlier loop.
+- A single guarded case stays a choice in `TEQ.update` (0.52.12): dropping its guard, as `Simplify.eps` does under the
+  iteration constraint, changed the output of examples/dafny/teq/fallback.dfy (`-teq -fallback`, no simplifier): the
+  conjunct `a[I(j)] != 0` of the iteration constraint and the exit value `i == I(n)` were missing, although the
+  constraint is built from the paths, not from the updates; which part of TEQ or `-fallback` uses the guard of the
+  update is open.
 - Rejected: merging in `Simplify.eps` by assuming the guards. Both guards are false together (disjoint), the
   disjunction is too weak (the results differ under the other guard).
 - Later: the directed test, `e₁` simplified under the guard of the other case equals `e₂` (then `e₁` covers both), and

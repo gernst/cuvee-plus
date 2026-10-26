@@ -1,16 +1,16 @@
-function S_0₂₅₀(x₀: int): int
+function S_0₂₅₈(x₀: int): int
 
-function S_1₂₅₀(x₀: int): int
+function S_1₂₅₈(x₀: int): int
 
 goal {:abstract}
   forall n: int, a₁₅: int ::
     0 <= n
-      && S_0₂₅₀(0) == 0
-      && (forall j₂₅₁: int ::
-            0 <= j₂₅₁ < n ==> S_0₂₅₀(j₂₅₁ + 1) == S_1₂₅₀(j₂₅₁))
-      && S_1₂₅₀(0) == 1
-      && (forall j₂₅₁: int ::
-            0 <= j₂₅₁ < n ==> S_1₂₅₀(j₂₅₁ + 1) == S_0₂₅₀(j₂₅₁) + S_1₂₅₀(j₂₅₁))
-      && a₁₅ == S_0₂₅₀(n)
+      && S_0₂₅₈(0) == 0
+      && (forall j₂₅₉: int ::
+            0 <= j₂₅₉ < n ==> S_0₂₅₈(j₂₅₉ + 1) == S_1₂₅₈(j₂₅₉))
+      && S_1₂₅₈(0) == 1
+      && (forall j₂₅₉: int ::
+            0 <= j₂₅₉ < n ==> S_1₂₅₈(j₂₅₉ + 1) == S_0₂₅₈(j₂₅₉) + S_1₂₅₈(j₂₅₉))
+      && a₁₅ == S_0₂₅₈(n)
       ==> 0 <= a₁₅
 

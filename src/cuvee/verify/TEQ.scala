@@ -456,8 +456,9 @@ object TEQ extends Transform:
 
   // the cases of the paths grouped by their results, which are the same where a path does not update the variable,
   // e.g. x of a body if (c) y = y + 1; else z = z + 1; whose paths both keep x; the guards of a group are joined by a
-  // disjunction, in the order of the first path; a single case is its result, as in Simplify.eps (where no guard holds,
-  // the value is not specified)
+  // disjunction, in the order of the first path; a single unconditional case is its result, a single guarded one stays
+  // a choice, since its guard is that of the paths that continue the loop, e.g. a[i] != 0 of a loop with break, which
+  // the iteration constraint and the exits are built from
   def update(updates: List[Upd]): Expr =
     val groups =
       updates.foldLeft(List.empty[(Expr, List[Expr])]): (groups, upd) =>
@@ -466,8 +467,8 @@ object TEQ extends Transform:
           case i  => groups.updated(i, (upd.rhs, groups(i)._2 :+ upd.cond))
 
     groups match
-      case List((rhs, _)) => rhs
-      case _              => Eps(groups.map((rhs, conds) => Upd(Or(conds), rhs)))
+      case List((rhs, List(True))) => rhs
+      case _                       => Eps(groups.map((rhs, conds) => Upd(Or(conds), rhs)))
 
   // the paths through a loop body that lead to the next iteration, i.e., that end normally or by continue
   def iterates(q: Path): Boolean =

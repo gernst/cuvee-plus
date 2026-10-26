@@ -143,12 +143,14 @@ object Normalize:
       case As(arg, _)         => ite(arg)
       case _                  => None
 
-  // the occurrences of `from` in `expr` that are not below a binder, a derivative, or old replaced by `to`
-  def replace(expr: Expr, from: Expr, to: Expr): Expr =
+  // the occurrences of `from` in `expr` replaced by `to`, not below a binder, a derivative, or old unless `binders`
+  // (the instance of a forward lemma names the term as it occurs, also below binders, see Forward.fire)
+  def replace(expr: Expr, from: Expr, to: Expr, binders: Boolean = false): Expr =
     expr match
-      case `from`                               => to
-      case _: App | _: Distinct | _: Is | _: As => expr.map(replace(_, from, to))
-      case _                                    => expr
+      case `from`                                           => to
+      case _: App | _: Distinct | _: Is | _: As             => expr.map(replace(_, from, to, binders))
+      case _ if binders                                     => expr.map(replace(_, from, to, binders))
+      case _                                                => expr
 
   // the bound variables `xs` renamed apart from the variables in scope
   def avoid(bound: Set[Var], xs: List[Var], body: Expr): (List[Var], Expr) =

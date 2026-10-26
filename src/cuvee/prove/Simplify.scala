@@ -57,19 +57,18 @@ object Simplify:
   // every side condition holds and the rules would apply without end, e.g. to the reads of the history of a trace in
   // the dead branch of a decided test (swap.dfy); formulas are decided by their polarity first (see implied)
   def simplify(config: Config, state: State, ctx: Context, expr: Expr): Expr =
-    if implied(config, state, ctx, expr)
-    then True
-    else if denied(config, state, ctx, expr)
-    then False
-    else
-      val once_ = once(config, state, ctx, expr)
-      if once_ != expr
-      then Debug.step("simplify", show(config.output.printer, expr), show(config.output.printer, once_))
+    decide(config, state, ctx, expr) match
+      case Some(true)  => True
+      case Some(false) => False
+      case None =>
+        val once_ = once(config, state, ctx, expr)
+        if once_ != expr
+        then Debug.step("simplify", show(config.output.printer, expr), show(config.output.printer, once_))
 
-      val expr_ = rewrite(config, state, ctx, once_)
-      if expr_ == expr
-      then forward(config, state, ctx, expr)
-      else simplify(config, state, ctx, expr_)
+        val expr_ = rewrite(config, state, ctx, once_)
+        if expr_ == expr
+        then forward(config, state, ctx, expr)
+        else simplify(config, state, ctx, expr_)
 
   // a comparison or an equation at a position with a polarity, decided by the forward lemmas that fire on its own terms
   // (see Forward): at a positive position, it holds if its denial contradicts their instances, e.g. the bare goal
@@ -85,6 +84,14 @@ object Simplify:
           case _                                                                             => phi
       case _ =>
         phi
+
+  // the decision of a formula by the theories of the context: true if implied, false if denied, and nothing for
+  // terms that are no formulas (see implied, denied); the side conditions of rules are decided by simplification with
+  // the rules (Rewrite.holds) and looked up among the facts (Rewrite.known)
+  def decide(config: Config, state: State, ctx: Context, phi: Expr): Option[Boolean] =
+    if implied(config, state, ctx, phi) then Some(true)
+    else if denied(config, state, ctx, phi) then Some(false)
+    else None
 
   // whether `phi` is known to hold in `ctx`, also by its negation in normal form, e.g. a < b if !(b <= a) is known
   // (see Context.implied), and in an inconsistent context at positive positions,
@@ -477,7 +484,7 @@ object Simplify:
       val re = Subst.from(bound_, deps_.map(values))
       re(body)
 
-  // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.iterations),
+  // if the first dependency counts the iterations of a loop, ⌊counter(0, 1, n)⌋ bound to k (see Rewrite.counter),
   // then 0 <= k < n, since the loop exits when k == n, and the variable z bound to each other dependency ⌊Z⌋
   // is its value in iteration k, i.e., z == earlier(k, ⌊Z⌋), which is simplified within the range,
   // e.g. z == k for ⌊Z⌋ with Z == counter(0, 1, n), which then bounds z as well
@@ -494,7 +501,8 @@ object Simplify:
       case None =>
         val values =
           (deps, bound) match
-            case (Butlast(ctx.↑(Counter(Ints.zero, Ints.one, n))) :: deps_, k :: bound_) =>
+            case (dep :: deps_, k :: bound_) if Rewrite.counter(ctx, dep).isDefined =>
+              val n = Rewrite.counter(ctx, dep).get
               val ctx_ = ctx.neutral.bind(bound).copy(rules = ctx.rules.filter(Rule.plain))
               val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, n))
               val range = simplify(config, state, ctx_, bounds)
@@ -551,13 +559,13 @@ object Simplify:
   // an integer- or real-valued term as a polynomial (not normalized), its leaves simplified (see Arith.toPoly), the
   // solved variables among them replaced by their solutions (see Classes.substitute)
   def poly(config: Config, state: State, ctx: Context, ring: Ring, expr: Expr): Poly =
-    Arith.toPoly(ring, expr, leaf => ctx.classes.substitute(simplify(config, state, ctx, leaf)))
+    Arith.toPoly(ring, expr, leaf => ctx.classes.value(simplify(config, state, ctx, leaf)))
 
   // a variable is replaced by the root of its class (see Classes.normalize): its literal, or the variable of the
   // outermost scope (see Classes.Order); its solution only inside arithmetic (see poly), while the matcher still tries
   // every member of the class
   def var_(config: Config, state: State, ctx: Context, x: Var): Expr =
-    ctx.classes.normalize(x)
+    ctx.classes.term(x)
 
   def eq_(config: Config, state: State, ctx: Context, left: Expr, right: Expr): Expr =
     (left, right) match
@@ -1088,22 +1096,22 @@ object Simplify:
   // which the patterns of the lemmas name, e.g. ret < x[i] ? x[i] : ret of C is case ret < v => v case v <= ret => ret
   def trace(config: Config, state: State, ctx: Context, inits: List[Expr], deps: List[Expr], accs: List[Var], bound: List[Var], results: List[Expr]): Expr =
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, results.free -- accs)
-    Trace(inits, deps_, accs, bound_, results.map(result => cases(config, state, ctx, re(result))))
+    Trace(inits, deps_, accs, bound_, results.map(result => choices(config, state, ctx, re(result))))
 
   // R[ite(c, a, b)] is case c => R[a] case !c => R[b] for the outermost leftmost conditional that is not below a binder
   // (Normalize.ite), and so on in the cases, also in those of a result that is a choice already
-  def cases(config: Config, state: State, ctx: Context, result: Expr): Expr =
+  def choices(config: Config, state: State, ctx: Context, result: Expr): Expr =
     result match
       case Eps(updates) =>
-        eps(config, state, ctx, result.typ, updates.map(upd => Upd(upd.cond, cases(config, state, ctx, upd.rhs))))
+        eps(config, state, ctx, result.typ, updates.map(upd => Upd(upd.cond, choices(config, state, ctx, upd.rhs))))
 
       case _ =>
         Normalize.ite(result) match
           case Some(it @ Ite(test, left, right)) =>
             val updates =
               List(
-                Upd(test, cases(config, state, ctx, Normalize.replace(result, it, left))),
-                Upd(not(config, state, ctx.neutral, test), cases(config, state, ctx, Normalize.replace(result, it, right)))
+                Upd(test, choices(config, state, ctx, Normalize.replace(result, it, left))),
+                Upd(not(config, state, ctx.neutral, test), choices(config, state, ctx, Normalize.replace(result, it, right)))
               )
             eps(config, state, ctx, result.typ, updates)
 

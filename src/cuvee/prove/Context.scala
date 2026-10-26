@@ -150,7 +150,7 @@ case class Context(
         this
 
       case _ =>
-        val phi_ = classes.normalize(phi)
+        val phi_ = classes.fact(phi)
         val classes_ = classes.assume(phi)
         val facts_ = if phi_ == True then facts else facts.assume(phi_)
         copy(facts = Context.renormalize(classes, classes_, facts_), classes = classes_, linear = linear.assume(phi), rules = Context.rules(phi) ++ rules).fix(phi)
@@ -164,7 +164,7 @@ case class Context(
   // that value in the classes, which the simplex does not tell them, so that terms over them are decided, also
   // nonlinear ones; only after a fact that is a constraint, and only those not fixed already
   def fix(phi: Expr): Context =
-    val xs = phi.free.toList.filter(x => x.typ == Sort.int && !classes.find(x).isInstanceOf[Lit])
+    val xs = phi.free.toList.filter(x => x.typ == Sort.int && !classes.fixed(x))
     if xs.isEmpty || linear.constraints.isEmpty
     then this
     else linear.fixed(xs).foldLeft(this) { case (ctx, (x, n)) => ctx.assume(Eq(x, Lit(n, Sort.int))) }
@@ -230,7 +230,7 @@ object Context:
   def renormalize(classes: Classes, classes_ : Classes, facts: Facts): Facts =
     if classes_.merges == classes.merges
     then facts
-    else facts.mapMentioning(classes_.retired.take(classes_.retired.length - classes.retired.length).toSet, classes_.normalize)
+    else facts.mapMentioning(classes_.retired.take(classes_.retired.length - classes.retired.length).toSet, classes_.fact)
 
   // an equation of a term with variables and a ground term is a rewrite rule without instantiable variables,
   // whose free variables are constants; it terminates, since each step removes occurrences of variables

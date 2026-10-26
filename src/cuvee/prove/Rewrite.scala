@@ -694,7 +694,7 @@ object Rewrite:
     if direct.nonEmpty || deps_.length >= deps.length || deps_.isEmpty || zs.isEmpty
     then direct
     else
-      val front = (deps_ zip ys_).find((dep_, _) => iterations(ctx, dep_)).getOrElse((deps_ zip ys_).head)
+      val front = (deps_ zip ys_).find((dep_, _) => counter(ctx, dep_).isDefined).getOrElse((deps_ zip ys_).head)
       results(zs.map((_, y) => y -> front._2).toMap)
 
   // the pattern `tr` of a read of a component against the trace `s` that the read reads (see matches_)
@@ -840,7 +840,7 @@ object Rewrite:
   ): List[Subst[Type, Expr]] =
     // the first counter of the iterations, and if there is none, the first dependency of the expression
     val pairs = deps_ zip ys_
-    val front = pairs.find((dep_, _) => iterations(ctx, dep_)).getOrElse(pairs.head)
+    val front = pairs.find((dep_, _) => counter(ctx, dep_).isDefined).getOrElse(pairs.head)
 
     zs match
       case Nil =>
@@ -912,10 +912,10 @@ object Rewrite:
 
   // whether a dependency is the counter of the iterations of a loop, counter(0, 1, n),
   // also one defined by an assumption (see Context.↑)
-  def iterations(ctx: Context, dep: Expr): Boolean =
+  def counter(ctx: Context, dep: Expr): Option[Expr] =
     dep match
-      case Butlast(ctx.↑(Counter(Ints.zero, Ints.one, _))) => true
-      case _                                             => false
+      case Butlast(ctx.↑(Counter(Ints.zero, Ints.one, n))) => Some(n)
+      case _                                             => None
 
   // the guard of the pattern matches that of the expression, which instantiates the bound variables of the pattern
   // that do not occur in its result, e.g. b in if b then y + 1, and otherwise its conjuncts follow from that of the expression
@@ -1020,7 +1020,7 @@ object Rewrite:
   def known(ctx: Context, facts: List[Expr], phi: Expr): Boolean =
     facts.contains(phi) || {
       val classes = ctx.classes.add(phi)(using ctx.order)
-      lazy val phi_ = classes.normalize(phi)
+      lazy val phi_ = classes.fact(phi)
       facts.exists(fact => classes.equal(fact, phi) || (Canon.binds(phi) && shaped(fact, phi) && Canon.equal(fact, phi_)))
     }
 

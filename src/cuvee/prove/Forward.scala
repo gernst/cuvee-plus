@@ -86,10 +86,6 @@ object Forward:
           expr :: below
     collect(phi).distinct
 
-  // `expr` with the occurrences of `from` replaced by `to`
-  def replace(expr: Expr, from: Expr, to: Expr): Expr =
-    if expr == from then to else expr.map(replace(_, from, to))
-
   // the instances of `fw` at `term` in `ctx`: matched like the left-hand side of a rule (also by definitions and
   // views, see Rewrite.matchesExpr), the condition decided like that of a rule, and the trigger's instance replaced by the
   // term as it occurs, such that the fact is about the term of the goal, current(S).0 <= p, not about its view
@@ -104,7 +100,7 @@ object Forward:
       // become; the trigger's term stays as it occurs, since a marker is replaced only by a closed view
       // an instance that the rules reduce to true is assumed as it is, since it may still be news to the arithmetic,
       // whose constraints do not see the equations of the classes
-      val raw = replace(subst_(fw.concl), subst_(fw.trigger), term)
+      val raw = Normalize.replace(subst_(fw.concl), subst_(fw.trigger), term, binders = true)
       val simplified = Simplify.simplify(config, state, ctx.neutral, raw)
       val phi = if simplified == True then raw else simplified
       Debug.step("forward", fw.name.getOrElse("?") + " at " + Simplify.show(config.output.printer, term), Simplify.show(config.output.printer, phi))
