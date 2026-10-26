@@ -3,6 +3,53 @@
 The open changes to the engine, ordered by expected gain; the engine is documented in
 [doc/prove.md](../doc/prove.md), the open points of its canonical forms in [canonical.md](canonical.md).
 
+## Plan
+
+### A. Unreachable positions are `undefined`
+
+**Symptom.** Since 0.52.2 an expression in an inconsistent context stays as it is (`Simplify.simplify`), which ends
+the rewriting without end in dead branches (swap.dfy), but leaves their terms in the goals: on the cloud (120 s, one
+core, against 0.52.1 with the canonical forms), four counterexamples of array-fpi (eqn3f, eqn4f, nsqmf, sqmf) become
+unknown, with `-fallback` a solver error; SV-LIB CTranslated loses five true tasks (afnp2014, benchmark01, 22, 40, 53
+of loop-zilu, benchmark01 by "rewriting does not terminate"); Loops loses nested3-2_abstracted (false) and
+sum_by_3_abstracted (true).
+
+**Change.** An expression at an unreachable position has no meaning, so any value is right there; the value is
+`undefined`, of the type of the expression, rather than the expression:
+1. A constant `undefined` of the core, polymorphic in its type (`Fun.undefined`, sugar `Undefined(typ)`), independent
+   of the TEQ declarations; `unspecified` of teq.dfy (the value of an update where no guard holds) stays, since its
+   meaning differs: some value of the type, the same one at each occurrence of the trace.
+2. `Simplify.simplify`: in an inconsistent context, a formula is decided by its polarity as now, any other expression
+   is `undefined`; a formula at a neutral position as well (it has no polarity to decide it).
+3. `Simplify.ite`: a branch whose context is inconsistent gives the other branch, `ite(c, a, b)` is `b` if the context
+   with `c` is inconsistent, also when `c` itself is not decided; likewise for the cases of `Eps` and of `match`, a
+   case whose guard contradicts the context is dropped.
+4. `undefined` absorbs nothing else: `f(undefined)` stays, an equation with it is not decided; it occurs only where
+   the position is unreachable, so it must not reach a goal at a reachable position. Check: no goal output of the
+   examples contains it; `-fallback` and the printers lower it to a fresh constant of its type per occurrence (sound:
+   an arbitrary value), and `Eval` treats it as no value (no counterexample through it).
+
+Check on eqn3f, benchmark22 of loop-zilu (SV-LIB) and swap.dfy first, then the 94 examples and the cloud.
+
+### B. Bounded unrolling for counterexamples and bounded proofs
+
+**Symptom.** Cuvée finds a counterexample only by evaluating a remaining goal of pure arithmetic at small values
+(`Eval.counterexample`); a violation after a few iterations of a loop is not found, since the loop is a trace equation
+system. On Loops, Korn solves 151 false tasks that Cuvée does not (Cuvée 24 of 209 false), 114 of them the
+`_unwindbound` variants of nla-digbench-scaling; on Arrays, the unsafe variants of array-fpi (19) and
+reducercommutativity (6 false, 18 true, literal sizes `#define N` of 5 to 60).
+
+**Change.** A transform `-unroll k` on procedures: each loop becomes k nested copies of its body under its test,
+followed by
+- `assume !test` for counterexamples: a model of the violation of an assertion is a counterexample of the program, if
+  the encoding is exact (no abstraction, the arithmetic of C), answered `incorrect`;
+- `assert !test` (the unwinding assertion) for proofs: if it and all other assertions hold, the program is explored
+  completely, answered `correct`.
+Run with growing k (1, 2, 4, 8, ...) within the time limit, by `-vcgen` and z3, before or alongside `-teq` in
+`-svcomp`: a `false` answer needs no TEQ, a `true` answer of the unrolling stops the TEQ run. Expected: up to about 120
+false tasks on Loops, about 25 on Arrays, plus the `_unwindbound` true tasks with small bounds and the literal sizes
+of reducercommutativity.
+
 ## 1. Equalities from the simplex to the classes
 
 **Symptom.** `-slice` on `array-crafted/zero_sum1` (fill `a`, add its values to `sum`, subtract them again,
