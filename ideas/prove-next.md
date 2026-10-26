@@ -9,17 +9,44 @@ The open changes to the engine, ordered by expected gain; the engine is document
 
 The integer counts and the canonical forms (0.52) lost tasks that 0.51.4 solved (cloud, 120 s, one core); the dead
 positions (0.52.3: branches and empty combinators dropped, doc/prove.md) and the recursion of `pow` in `-fallback`
-are recovered. Open:
-- **Timeouts** of array_2-1-simple, array_2-2-simple, linear_sea.ch, nested_4, nested3-1_abstracted, theatreSquare,
-  cohendiv, geo1-ll_unwindbound1: measure where the time goes first; the candidate is the renormalization of all
-  facts after a merge, which would renormalize only the facts that mention a retired root, by use lists from roots
-  to facts as in congruence closure ([canonical.md](canonical.md)).
-- **rewnifrev** (true): the goal is left at the array trace with `n == SIZE` known but not substituted into the
-  count of `counter`; find the rule that no longer fires (`-debug match,conditions` against 0.51.4).
+are recovered. Open, against 0.51.4 (Oct 26, 2026, 0.52.4 at 120 s, checked at 15 min with 0.52.5):
+
+| Task | 0.51.4 | now (15 min) | most frequent rewrites in 15 s (local, 0.52.5) |
+|---|---|---|---|
+| rewnifrev (Arrays, MonoCera) | true 17 s | unknown, timeout | `earlier(k, ⌊I⌋)` 22 of 29: the same read of the counter `i` at many positions |
+| array_2-1-simple (false), array_2-2-simple | 20–23 s | timeout | 6 in all: stuck after the first trace and map of the array |
+| linear_sea.ch | true 25 s | timeout | `uint((tmp div 2) + 1)`, `quot(tmp, 2)`: unsigned arithmetic with division (binary search) |
+| theatreSquare (fallback) | true 48 s | timeout | reads `earlier`/`current` of several traces |
+| geo1-ll_unwindbound1 (fallback) | true 66 s | step bound | `ulonglong(k)`, `ulonglong(c + 1)` 15 each: wrapping of unsigned long long |
+| prodbin-ll_valuebound5, 50, 100 (fallback) | true 41–77 s | timeout | `rem(y, 2)`, `quot(y, 2)`: C's division of the halving loop |
+| cohendiv-ll (fallback) | true 116 s | timeout | `current(trace(b…))` with `pow` |
+| max20-1 (fallback, Arrays) | true 82 s | timeout | reads of the array trace |
+
+Only slower, solved within 15 min: nested_4 (107 s), nested3-1_abstracted (129 s), cohendiv-ll_valuebound10 (75 s),
+prodbin-ll_valuebound20 (101 s).
+
+None of them rewrites without end: 6 to 71 rewrite steps in 15 s. The time goes into the engine around the rewriting;
+stack samples of array_2-1-simple show three places:
+- the matcher on comparisons: `Rewrite.comparison` normalizes a polynomial for each rule it tries on a comparison, and
+  `Poly.normalize` sorts its monomials by the ordering of `Expr`, which compares the terms printed as strings
+  (`Ordering.by(_.toString)`, Expr.scala); old, but the canonical forms normalize far more often;
+- forward lemmas: `Forward.saturate` looks up facts by `Rewrite.known` and `Classes.equal`, hashing deep terms;
+- the checks of `Context.implied`, through `Classes.add`.
+So these regressions are likely one problem of cost: a structural ordering of `Expr` (or cached keys) in
+`Poly.normalize`, and a profile of `Forward.saturate`, come first. The repeated reads (rewnifrev), and the unsigned
+arithmetic with division (linear_sea.ch, geo1, prodbin), whose wrapping functions and `quot`/`rem` the database and the
+canonical forms treat as atoms, come after.
 - The four `_unwindbound1` false tasks (cohencu, ps4, ps5, ps6) are recovered (0.52.4) by the variables of a
   fact that the simplex fixes to a value (`Context.fix`, on the incremental tableau; naturals did it by
   `natural_nonpositive`) and `butlast_counter_consts`. Not done: bound propagation over the rows, which would fix
   variables that the new fact does not mention.
+
+More time (cloud, cuvee-fallback, 0.52.5, 15 min and two cores against 120 s and one core, Oct 26, 2026): Arrays
+160/62 to 162/62, Loops 252/29 to 294/30, no losses; the gains are nla-digbench (cohendiv, divbin, egcd, fermat2,
+lcm2, prod4br, after 100 to 700 s) and a few others (apache-get-tag, bh2017-ex-add, nested_4, nested3-1_abstracted).
+The tasks that time out at 120 s mostly do not finish: with 15 min, 103 of Loops and 13 of Arrays end at the bound of
+the rewrite steps ("rewriting does not terminate"), i.e. their rounds do not settle (item 4), which is the larger
+target than their speed.
 
 ### B. Bounded unrolling for counterexamples and bounded proofs
 
@@ -100,6 +127,21 @@ six lemmas (`stores_cases`, `stores_index_cases`, `select_current_trace_conditio
 Conditionals inside equations (motivex), the branches of a conditional formula under the facts
 (standard_password_ground), rounding and cancellation of factors (count_by_k); each local (TODO.md, "Matching and
 rewriting").
+
+## Design notes
+
+What the work on the regressions of the integer counts showed (Oct 26, 2026):
+- Unreachability is a property of the context that the traversal builds for each position anyway (branches, cases,
+  bodies of combinators); it decides there, not by a rule of its own.
+- A term is simplified or removed, never left as it is: rules match shapes, and a frozen term blocks them elsewhere (the
+  beta-redex of an empty map in eqn3f).
+- Termination comes from the rules (structural patterns, the definitions by match as rules), not from where the
+  engine stops; a conditional rule that terminates only because its condition fails is fragile (swap.dfy).
+- Closed instances are evaluated, not rewritten: naturals unfolded `succ(zero)` for free, integers need `Eval`.
+- The theories exchange what they know: the simplex fixes variables that the classes need (the `_unwindbound1` tasks),
+  as Nelson-Oppen exchanges implied equalities; done for the variables of a new fact, model-based on the incremental
+  tableau, not by bound propagation over the rows.
+- Canonical forms need incremental bookkeeping: only the facts that mention a retired root are renormalized.
 
 ## Not in the engine
 

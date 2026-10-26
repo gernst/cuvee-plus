@@ -12,9 +12,12 @@ benchmarks are not rerun with Cuvée.
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
-- [ ] Integer counts and canonical forms (ideas/prove-next.md, plan A): timeouts on Loops (array_2-*-simple,
-      linear_sea.ch, nested_4, nested3-1_abstracted, theatreSquare, cohendiv, geo1), rewnifrev; the canonical facts
-      cost time.
+- [ ] Regressions since 0.51.4 (ideas/prove-next.md, plan A, with a table per task): rewnifrev, array_2-*-simple,
+      linear_sea.ch, theatreSquare, geo1, prodbin, cohendiv-ll, max20-1. Few rewrite steps, the time goes into the
+      matcher on comparisons (`Poly.normalize` sorting by `Expr.toString`), `Forward.saturate` and `Context.implied`;
+      repeated reads of counters (rewnifrev) and unsigned arithmetic with division (linear_sea.ch, geo1, prodbin) are
+      relevant for the database. More time (15 min) and its 116 tasks at the step bound: ideas/prove-next.md, plan A.
+      Experiments of Oct 26, 2026: the portfolio (ideas/portfolio.md), -slice alone (ideas/slice.md).
 - [ ] ps2-ll_unwindbound1 times out at 60 s.
 - [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma),
       `pcomp`, `sqm-if`, `nsqm-if`, `condm`.

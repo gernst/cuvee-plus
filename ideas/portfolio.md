@@ -19,6 +19,22 @@ No answers conflict. `-fallback` already runs the TEQ proof first, so it subsume
 the latter solves). Where Cuvée is weakest are the false tasks: Korn solves 151 false tasks of Loops that Cuvée does
 not, 114 of them the `_unwindbound` variants of nla-digbench-scaling, by bounded exploration and fuzzing.
 
+## Measured (Oct 26, 2026)
+
+The portfolio on the cloud (120 s of CPU time for all methods together, one core, 7 GB, 0.52.4, native binary):
+
+| Set | cuvee-fallback | portfolio | fuzz | fallback | -chc |
+|---|---|---|---|---|---|
+| Arrays | 160/62 | 158/89 | 0/86 | 153/1 | 5/2 |
+| Loops | 252/29 | 289/146 | 0/135 | 147/0 | 142/11 |
+| SV-LIB CTranslated | 146/31 | 173/52 | – | 55/13 | 118/39 |
+| MonoCera-Forall | 64/0 (TEQ) | 70/0 | – | 70/0 | – |
+
+(true/false; the last three columns are the methods whose answer won.) No wrong answer, checked against the expected
+verdicts of the task definitions; the one mismatch is SV-LIB in-de20, whose expected verdict is wrong (bugs.md). The
+fuzzer finds the false tasks that Cuvée misses (the `_unwindbound` variants, array-fpi), `-chc` the numeric ones; the
+fallback loses a few true tasks of Arrays to the shared CPU time.
+
 ## The methods
 
 What each is good at and where it fails, by the results so far:
