@@ -48,7 +48,7 @@
 
 (goal
   (forall
-    ((x$7 Int) (n$3 Nat) (K$5 (Trace Int)) (X$6 (Trace Int)))
+    ((x$7 Int) (n$3 Int) (K$5 (Trace Int)) (X$6 (Trace Int)))
     (not
       (and
         (= K$5 (counter 0 1 n$3))
@@ -64,6 +64,6 @@
         (invs
           ((k$4 (butlast K$5)) (x$2 (butlast X$6)))
           (< x$2 100000000))
-        (<= 0 (integer n$3))
+        (<= 0 n$3)
         (< 100000000 x$7)))))
 

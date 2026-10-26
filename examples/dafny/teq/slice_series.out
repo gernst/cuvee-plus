@@ -5,9 +5,7 @@ method squares_below(len: int) returns (res: int)
   tot := 0;
   idx := 0;
   while idx < len
-    invariant
-      exists n₉: Nat ::
-        tot == squares(0, n₉) && idx == integer(n₉) <= len && 0 <= integer(n₉)
+    invariant tot == squares(0, idx) && idx <= len && 0 <= idx
   {
     tot := tot + idx * idx;
     idx := idx + 1;

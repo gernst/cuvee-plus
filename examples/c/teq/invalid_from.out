@@ -48,10 +48,10 @@
 
 (goal
   (forall
-    ((n$5 Nat) (K$7 (Trace Int)) (Z$9 (Trace Int)))
+    ((K$7 (Trace Int)) (Z$9 (Trace Int)))
     (not
       (and
-        (= K$7 (counter 0 1 n$5))
+        (= K$7 (counter 0 1 10))
         (=
           Z$9
           (trace
@@ -60,6 +60,5 @@
             (eps
               ((<= 5 k$6) (+ z$3 1))
               ((< k$6 5) z$3))))
-        (= 10 (current Z$9))
-        (= n$5 (natural 10))))))
+        (= 10 (current Z$9))))))
 

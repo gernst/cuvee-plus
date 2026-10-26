@@ -46,24 +46,21 @@
 
 (declare-fun shr (Int Int) Int)
 
-(declare-fun B$23 (Int) Int)
+(declare-fun B$24 (Int) Int)
 
 (goal
   (!
     (forall
-      ((b$16 Int) (n$11 Int))
+      ((b$16 Int))
       (=>
-        (<= 0 n$11)
-        (=>
-          (and
-            (= (B$23 0) 6)
-            (forall
-              ((j$25 Int))
-              (=>
-                (and (<= 0 j$25) (< j$25 n$11))
-                (= (B$23 (+ j$25 1)) 6)))
-            (= b$16 (B$23 n$11))
-            (= n$11 (ite (<= 0 6) 6 0)))
-          (= b$16 6))))
+        (and
+          (= (B$24 0) 6)
+          (forall
+            ((j$25 Int))
+            (=>
+              (and (<= 0 j$25) (< j$25 6))
+              (= (B$24 (+ j$25 1)) 6)))
+          (= b$16 (B$24 6)))
+        (= b$16 6)))
     :abstract))
 

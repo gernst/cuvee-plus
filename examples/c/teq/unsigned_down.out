@@ -48,34 +48,18 @@
 
 (goal
   (forall
-    ((y$15 Int) (n$9 Nat) (K$11 (Trace Int)) (Y$13 (Trace Int)))
+    ((tmp$6 Int) (y$15 Int) (K$11 (Trace Int)) (Y$13 (Trace Int)))
     (=>
       (and
-        (= K$11 (counter 0 1 n$9))
+        (<= 0 tmp$6)
+        (<= tmp$6 4294967295)
+        (= K$11 (counter 0 1 tmp$6))
         (=
           Y$13
           (trace
             (y$8 0)
             ((k$10 (butlast K$11)))
             (mod (+ y$8 1) 4294967296)))
-        (= y$15 (current Y$13))
-        (= n$9 zero))
-      (= y$15 0))))
-
-(goal
-  (forall
-    ((y$15 Int) (n$9 Nat) (K$11 (Trace Int)) (Y$13 (Trace Int)))
-    (=>
-      (and
-        (<= (integer n$9) 4294967295)
-        (= K$11 (counter 0 1 n$9))
-        (=
-          Y$13
-          (trace
-            (y$8 0)
-            ((k$10 (butlast K$11)))
-            (mod (+ y$8 1) 4294967296)))
-        (= y$15 (current Y$13))
-        (<= 1 (integer n$9)))
-      (= y$15 (integer n$9)))))
+        (= y$15 (current Y$13)))
+      (= y$15 tmp$6))))
 

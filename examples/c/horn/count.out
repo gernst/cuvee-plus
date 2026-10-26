@@ -126,13 +126,13 @@
 
 (assert
   (forall
-    ((result Int) (counter Int) (n$4 Int) (tmp$5 Int))
+    ((counter$2 Int) (result Int) (n$4 Int) (tmp$5 Int))
     (=>
       (and
-        (main_pre counter)
+        (main_pre counter$2)
         (<= 0 (+ tmp$5 2147483648))
         (<= tmp$5 2147483647))
-      (main_spec_1 counter result counter tmp$5 n$4))))
+      (main_spec_1 counter$2 result counter$2 tmp$5 n$4))))
 
 (assert
   (forall

@@ -65,10 +65,10 @@
 
 (assert
   (forall
-    ((p (Ptr Int)) (g (Ptr Int)))
+    ((p (Ptr Int)) (g$3 (Ptr Int)))
     (=>
-      (id_pre p g)
-      (id_assign_1 p g p g))))
+      (id_pre p g$3)
+      (id_assign_1 p g$3 p g$3))))
 
 (assert
   (forall
@@ -104,12 +104,12 @@
 
 (assert
   (forall
-    ((p (Ptr Int)) (g (Ptr Int)))
+    ((p (Ptr Int)) (g$4 (Ptr Int)))
     (=>
       (and
-        (isnull_pre p g)
+        (isnull_pre p g$4)
         (= p (as null (Ptr Int))))
-      (isnull_assign_2 p g 1 g))))
+      (isnull_assign_2 p g$4 1 g$4))))
 
 (assert
   (forall
@@ -120,13 +120,13 @@
 
 (assert
   (forall
-    ((p (Ptr Int)) (result Int) (g (Ptr Int)))
+    ((p (Ptr Int)) (g$4 (Ptr Int)) (result Int))
     (=>
       (and
-        (isnull_pre p g)
+        (isnull_pre p g$4)
         (not
           (= p (as null (Ptr Int)))))
-      (isnull_join_1 p g result g))))
+      (isnull_join_1 p g$4 result g$4))))
 
 (assert
   (forall
@@ -198,10 +198,10 @@
 
 (assert
   (forall
-    ((result Int) (g (Ptr Int)) (tmp$6 (Ptr Int)) (tmp$7 Int) (v$9 (Ptr Void)))
+    ((g$5 (Ptr Int)) (result Int) (tmp$6 (Ptr Int)) (tmp$7 Int) (v$9 (Ptr Void)))
     (=>
-      (main_pre g)
-      (main_assign_1 g result g tmp$6 tmp$7 (as null (Ptr Int)) v$9))))
+      (main_pre g$5)
+      (main_assign_1 g$5 result g$5 tmp$6 tmp$7 (as null (Ptr Int)) v$9))))
 
 (assert
   (forall

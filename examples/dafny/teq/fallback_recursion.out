@@ -8,7 +8,7 @@ function occurs_from₇(x₀: int, x₁: int): bool
 
 function count_from₁₀(x₀: int, x₁: int): int
 
-function pow_upto₁₃(x₀: int, x₁: int): int
+function pow_upto₁₄(x₀: int, x₁: int): int
 
 goal {:abstract}
   0 <= xs_length₂
@@ -30,14 +30,12 @@ goal {:abstract}
                       == (if xs₁(j₁₁) == x then 1 else 0)
                         + count_from₁₀(x, j₁₁ + 1)))
     && (forall n: int ::
-          0 <= n
-            ==> pow_upto₁₃(n, 0) == 1
-              && (forall j₁₄: int ::
-                    0 <= j₁₄ < n
-                      ==> pow_upto₁₃(n, j₁₄ + 1) == 2 * pow_upto₁₃(n, j₁₄)))
+          (forall j₁₅: int :: j₁₅ <= 0 ==> pow_upto₁₄(n, j₁₅) == 1)
+            && (forall j₁₅: int ::
+                  0 <= j₁₅ < n
+                    ==> pow_upto₁₄(n, j₁₅ + 1) == 2 * pow_upto₁₄(n, j₁₅)))
     ==> (forall x: int, n: int, r: int ::
-           0 <= n
-             ==> true
+           true
              ==> (0 <= sum_from₄(0) || occurs_from₇(x, 0))
-               && count_from₁₀(x, 0) <= pow_upto₁₃(n, n))
+               && count_from₁₀(x, 0) <= pow_upto₁₄(n, n))
 

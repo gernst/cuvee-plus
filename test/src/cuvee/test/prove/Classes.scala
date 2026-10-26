@@ -44,9 +44,9 @@ object ClassesTests extends TestSuite:
       val cl = facts(Eq(app(f, x), y), Eq(z, y))
       assert(cl.defs(z) == List(app(f, x)))
       assert(cl.defs(y) == List(app(f, x)))
-      assert(cl.literal(z).isEmpty)
+      assert(cl.normalize(z).isInstanceOf[Var])
       val cl_ = cl.assume(Eq(y, lit(3)))
-      assert(cl_.literal(z) == Some(lit(3)))
+      assert(cl_.normalize(z) == lit(3))
 
     // two literals or two constructors in a class are inconsistent
     test("clashes"):
@@ -55,7 +55,7 @@ object ClassesTests extends TestSuite:
       assert(!facts(Eq(x, app(c, y)), Eq(x, app(c, z))).inconsistent)
       assert(!facts(Eq(x, app(f, y)), Eq(x, app(g, y, z))).inconsistent)
 
-    // the canonical variable of a class is the same for all its members
+    // the canonical form of the members of a class is the same, its root
     test("canonical"):
       val cl = facts(Eq(z, y), Eq(x, z))
-      assert(cl.canonical(x) == cl.canonical(y) && cl.canonical(y) == cl.canonical(z))
+      assert(cl.normalize(x) == cl.normalize(y) && cl.normalize(y) == cl.normalize(z))

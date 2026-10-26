@@ -2,17 +2,15 @@ type Trace<a₀>
 
 type List<a₀>
 
-type Nat
+function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 
-function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
-
-function steps(xs: List<int>): Nat
+function steps(xs: List<int>): int
 
 function p(t: Trace<int>): bool
 
 const J: Trace<int>
 
-const n: Nat
+const n: int
 
 lemma {:rw} trace_1(i: int, c: int, K: Trace<int>)
   ensures trace(i, for ⌊K⌋ do x, k :: x + c) == counter(i, c, steps(⌊K⌋))

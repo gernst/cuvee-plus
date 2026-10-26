@@ -6,19 +6,18 @@ method nested(len: int, wid: int) returns (res: int)
   row := 0;
   while row < len
     invariant
-      exists Col₂₄: Trace<int>, K₂₃: Trace<int>, col₉: int, n₂₁: Nat ::
-        K₂₃ == counter(0, 1, n₂₁)
+      exists Col₂₄: Trace<int>, K₂₃: Trace<int>, col₉: int ::
+        K₂₃ == counter(0, 1, row)
           && Col₂₄ == trace(col₉, for ⌊K₂₃⌋ do col₁₀, k₂₂ :: wid)
           && col == current(Col₂₄)
-          && cnt == integer(n₂₁) * wid
-          && row == integer(n₂₁) <= len
-          && 0 <= integer(n₂₁)
+          && cnt == row * wid
+          && row <= len
+          && 0 <= row
   {
     col := 0;
     while col < wid
       invariant
-        exists n₂₁: int ::
-          0 <= n₂₁ && cnt == col + n₂₁ * wid && col <= wid && 0 <= col
+        exists n₂₁: int :: cnt == col + n₂₁ * wid && col <= wid && 0 <= col
     {
       cnt := cnt + 1;
       col := col + 1;

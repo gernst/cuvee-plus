@@ -48,7 +48,7 @@
 
 (goal
   (forall
-    ((x$14 Int) (n$8 Nat) (K$10 (Trace Int)) (X$12 (Trace Int)) (Tmp?$7 (List Int)))
+    ((x$14 Int) (n$8 Int) (K$10 (Trace Int)) (X$12 (Trace Int)) (Tmp?$7 (List Int)))
     (=>
       (and
         (= K$10 (counter 0 1 n$8))
@@ -68,13 +68,13 @@
         (invs
           ((k$9 (butlast K$10)) (tmp$6 Tmp?$7))
           (not (= tmp$6 0)))
-        (<= 0 (integer n$8))
+        (<= 0 n$8)
         (<= 0 x$14))
       (= (mod x$14 2) 0))))
 
 (goal
   (forall
-    ((x$14 Int) (n$8 Nat) (K$10 (Trace Int)) (X$12 (Trace Int)) (Tmp?$7 (List Int)))
+    ((x$14 Int) (n$8 Int) (K$10 (Trace Int)) (X$12 (Trace Int)) (Tmp?$7 (List Int)))
     (=>
       (and
         (= K$10 (counter 0 1 n$8))
@@ -94,7 +94,7 @@
         (invs
           ((k$9 (butlast K$10)) (tmp$6 Tmp?$7))
           (not (= tmp$6 0)))
-        (<= 0 (integer n$8))
+        (<= 0 n$8)
         (< x$14 0))
       (= 0 (mod x$14 2)))))
 

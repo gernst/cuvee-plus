@@ -5,11 +5,11 @@ method search(len: int, key: int) returns (res: int)
   idx := 0;
   while idx < len
     invariant
-      exists Idx₁₂: Trace<int>, n₉: Nat ::
-        Idx₁₂ == counter(0, 1, n₉)
-          && idx == integer(n₉) <= len
-          && invs(for ⌊Idx₁₂⌋ check k₁₀ :: k₁₀ != key)
-          && 0 <= integer(n₉)
+      exists K₁₁: Trace<int> ::
+        K₁₁ == counter(0, 1, idx)
+          && idx <= len
+          && invs(for ⌊K₁₁⌋ check k₁₀ :: k₁₀ != key)
+          && 0 <= idx
   {
     if idx == key {
       break;

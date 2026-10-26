@@ -40,12 +40,12 @@ object OnePoint extends TestSuite:
     test("used"):
       val used = All(List(x), Imp(Eq(x, App(f, List(y))), P(x)))
       simplify(used) ==> used
-      // an arithmetic definition is not substituted, it is inlined into polynomials only (see Chains.solved)
+      // an arithmetic definition is not substituted, it is inlined into polynomials only (see Classes.substitute)
       val arithmetic = All(List(x), Imp(Eq(x, Ints.plus(y, Ints.one)), P(x)))
       simplify(arithmetic) ==> arithmetic
-      // equations between variables are one class, whose canonical variable is the smallest by name, here the bound
-      // x, so the equation is not eliminated (the former simplifier gave P(y), see TODO.md)
-      simplify(All(List(x), Imp(Eq(x, y), P(x)))) ==> All(List(x), Imp(Eq(x, y), P(x)))
+      // equations between variables are one class, whose root is the variable of the outer scope, here the free y
+      // (see Classes.Order), so the bound x is eliminated
+      simplify(All(List(x), Imp(Eq(x, y), P(x)))) ==> P(y)
       val twice = All(List(x), Imp(And(Eq(x, Ints.plus(y, Ints.one)), Eq(x, z)), q))
       assert(simplify(twice) != q)
 
@@ -55,8 +55,8 @@ object OnePoint extends TestSuite:
       simplify(positive) ==> positive
       val neutral = All(List(x), Imp(Eqv(Eq(x, y), q), q))
       assert(simplify(neutral).free.isEmpty || simplify(neutral) != Imp(q, q))
-      // the branch of the test x == y has y replaced by the canonical variable x of the class
-      simplify(All(List(x), Imp(P(Ite(Eq(x, y), y, z)), q))) ==> All(List(x), Imp(P(Ite(Eq(x, y), x, z)), q))
+      // the branch of the test x == y has x replaced by the root y of the class, the variable of the outer scope
+      simplify(All(List(x), Imp(P(Ite(Eq(x, y), x, z)), q))) ==> All(List(x), Imp(P(Ite(Eq(x, y), y, z)), q))
 
     // forall distributes over and, exists over or, after which the one-point rule applies to one part
     test("distribute"):
@@ -80,9 +80,9 @@ object OnePoint extends TestSuite:
 
     // the context does not record the other branch of ite and the dependencies of all
     test("opaque"):
-      // only the canonical variable x of the class replaces y in the branch where x == y holds
-      val branch = All(List(x), Ite(q, Imp(Eq(x, y), P(y)), P(x)))
-      simplify(branch) ==> All(List(x), Ite(q, Imp(Eq(x, y), P(x)), P(x)))
+      // only the root y of the class replaces x in the branch where x == y holds
+      val branch = All(List(x), Ite(q, Imp(Eq(x, y), P(x)), P(x)))
+      simplify(branch) ==> All(List(x), Ite(q, Imp(Eq(x, y), P(y)), P(x)))
       val xs = Var("xs", Sort.seq(Sort.int))
       val f = Fun("f", Nil, Fun.formals(Sort.int), Sort.seq(Sort.int))
       val k = Var("k", Sort.int)

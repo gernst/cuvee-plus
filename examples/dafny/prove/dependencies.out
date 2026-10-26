@@ -2,15 +2,9 @@ type Trace<a₀>
 
 type List<a₀>
 
-type Nat
+function counter(x₀: int, x₁: int, x₂: int): Trace<int>
 
-function counter(x₀: int, x₁: int, x₂: Nat): Trace<int>
-
-function earlier<a₀>(x₀: Nat, x₁: List<a₀>): a₀
-
-function integer(x₀: Nat): int
-
-function natural(x₀: int): Nat
+function earlier<a₀>(x₀: int, x₁: List<a₀>): a₀
 
 function p(s: List<int>): bool
 
@@ -18,7 +12,7 @@ const J: List<int>
 
 const K: List<int>
 
-const n: Nat
+const n: int
 
 const b: bool
 
@@ -28,7 +22,7 @@ axiom p(maps(for J yield j :: j))
 
 axiom p(maps(for ⌊counter(0, 1, n)⌋, J yield k, j :: j))
 
-axiom invs(for J check j :: integer(n) < 2 * j)
+axiom invs(for J check j :: n < 2 * j)
 
 axiom invs(for K check k :: 0 < k) && invs(for J check j :: 0 < j)
 

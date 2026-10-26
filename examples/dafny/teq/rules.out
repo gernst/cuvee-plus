@@ -5,34 +5,28 @@ info :used :=
     (earlier_counter 3)
     (earlier_selects 1)
     (indexof_counter_up 1)
-    (integer_eq 1)
-    (integer_natural 8)
     (invs_counter_upper_nonnegative
       1)
-    (natural_positive 15)
     (occurs_counter_up 1)
     (selects 1)
     (stores 1))
 
 goal
-  forall a: array<int, int>, c₁₉: int, i₂₀: int, n₁₄: Nat, I₁₇: Trace<int>,
+  forall a: array<int, int>, n: int, c₁₉: int, K₁₆: Trace<int>,
          C₁₈: Trace<int> ::
-    0 <= i₂₀
-      && I₁₇ == counter(0, 1, n₁₄)
+    0 <= n
+      && K₁₆ == counter(0, 1, n)
       && C₁₈
-        == trace(0, for ⌊I₁₇⌋
+        == trace(0, for ⌊K₁₆⌋
                  do c₁₂, k₁₅ ::
                    case a[k₁₅] < 0 => c₁₂ + 1 case 0 <= a[k₁₅] => c₁₂)
       && c₁₉ == current(C₁₈)
-      && n₁₄ == natural(i₂₀)
-      ==> c₁₉ <= i₂₀
+      ==> c₁₉ <= n
 
 info :used :=
   ((counter_def 1)
     (current_counter 1)
     (earlier_counter 2)
-    (integer_eq 1)
-    (integer_natural 9)
     (invs_counter_upper_nonnegative
       1))
 

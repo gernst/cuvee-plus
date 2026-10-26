@@ -58,10 +58,10 @@
 
 (assert
   (forall
-    ((result Int) (c Int))
+    ((c$7 Int) (result Int))
     (=>
-      (f_pre c)
-      (f_assign_1 c result (+ c 1)))))
+      (f_pre c$7)
+      (f_assign_1 c$7 result (+ c$7 1)))))
 
 (assert
   (forall
@@ -175,8 +175,8 @@
 
 (assert
   (forall
-    ((result Int)
-      (c Int)
+    ((c$8 Int)
+      (result Int)
       (tmp$9 Int)
       (tmp$10 Int)
       (tmp$11 Int)
@@ -185,8 +185,8 @@
       (tmp$14 Int)
       (r$16 Int))
     (=>
-      (main_pre c)
-      (main_assign_1 c result c tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 0 r$16))))
+      (main_pre c$8)
+      (main_assign_1 c$8 result c$8 tmp$9 tmp$10 tmp$11 tmp$12 tmp$13 tmp$14 0 r$16))))
 
 (assert
   (forall

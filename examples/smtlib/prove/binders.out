@@ -1,11 +1,7 @@
 (declare-fun p (Int) Bool)
 
 (assert
-  (forall
-    ((y Int))
-    (exists
-      ((x$1 Int))
-      (and (= x$1 y) (p x$1)))))
+  (forall ((y Int)) (p y)))
 
 (assert false)
 

@@ -73,7 +73,10 @@ after each round. `Normalize.lift` lifts `ite` out of atoms, `A[ite(c, a, b)]` t
 binders, derivatives, and `old`; `Split` uses it.
 
 - **Traversal.** Each round simplifies the subterms first and dispatches on the built-in functions, then tries one
-  rewrite step at the top (`Rewrite.step`). All methods take `(config, state, ctx, ...)`.
+  rewrite step at the top (`Rewrite.step`). All methods take `(config, state, ctx, ...)`. In an inconsistent
+  context, a formula is decided by its polarity and any other expression stays as it is: the position is
+  unreachable, and every side condition would hold, so the rules could apply without end, e.g. in the dead branch
+  of a decided test.
 - **Helpers.** Every kind of expression has a helper that builds the result from simplified subterms (`and`, `not`,
   `eq_`, `ite`, `trace`, `maps`, `invs`, ...). Each normalizes its own constructor in one step and builds with the
   other helpers; the outer loop iterates. `nary` simplifies each argument of `and` and `or` assuming the others;

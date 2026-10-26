@@ -58,10 +58,10 @@
 
 (assert
   (forall
-    ((result Int) (c Int))
+    ((c$3 Int) (result Int))
     (=>
-      (f_pre c)
-      (f_assign_1 c result (+ c 1)))))
+      (f_pre c$3)
+      (f_assign_1 c$3 result (+ c$3 1)))))
 
 (assert
   (forall
@@ -127,15 +127,17 @@
 
 (assert
   (forall
-    ((c Int))
-    (=> (main_pre c) (f_pre c))))
+    ((c$4 Int))
+    (=> (main_pre c$4) (f_pre c$4))))
 
 (assert
   (forall
-    ((result Int) (c Int) (tmp$6 Bool) (r$7 Int) (tmp$8 Int) (c$9 Int))
+    ((c$4 Int) (result Int) (tmp$6 Bool) (r$7 Int) (tmp$8 Int) (c$9 Int))
     (=>
-      (and (main_pre c) (f_post c tmp$8 c$9))
-      (main_call_3 c result c$9 tmp$8 tmp$6 r$7))))
+      (and
+        (main_pre c$4)
+        (f_post c$4 tmp$8 c$9))
+      (main_call_3 c$4 result c$9 tmp$8 tmp$6 r$7))))
 
 (assert
   (forall

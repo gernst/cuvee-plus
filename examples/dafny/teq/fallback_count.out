@@ -1,15 +1,13 @@
 function C₁₂(x₀: int): int
 
 goal {:abstract}
-  forall a: array<int, int>, c₉: int, i₁₀: int, n₄: int ::
-    0 <= n₄
-      ==> 0 <= i₁₀
-        && C₁₂(0) == 0
-        && (forall j₁₃: int ::
-              0 <= j₁₃ < n₄
-                ==> (a[0 + j₁₃ * 1] < 0 ==> C₁₂(j₁₃ + 1) == C₁₂(j₁₃) + 1)
-                  && (0 <= a[0 + j₁₃ * 1] ==> C₁₂(j₁₃ + 1) == C₁₂(j₁₃)))
-        && c₉ == C₁₂(n₄)
-        && n₄ == (if 0 <= i₁₀ then i₁₀ else 0)
-      ==> c₉ <= i₁₀
+  forall a: array<int, int>, n: int, c₉: int ::
+    0 <= n
+      && C₁₂(0) == 0
+      && (forall j₁₃: int ::
+            0 <= j₁₃ < n
+              ==> (a[0 + j₁₃ * 1] < 0 ==> C₁₂(j₁₃ + 1) == C₁₂(j₁₃) + 1)
+                && (0 <= a[0 + j₁₃ * 1] ==> C₁₂(j₁₃ + 1) == C₁₂(j₁₃)))
+      && c₉ == C₁₂(n)
+      ==> c₉ <= n
 

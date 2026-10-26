@@ -53,11 +53,16 @@ object Simplify:
   // by repeated rounds of simplification until a fixpoint is reached,
   // a formula that is known from the context is replaced by its truth value (only formulas, which not applies to);
   // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
+  // an expression in an inconsistent context is unreachable, any value is right there, and it stays as it is, since
+  // every side condition holds and the rules would apply without end, e.g. to the reads of the history of a trace in
+  // the dead branch of a decided test (swap.dfy); formulas are decided by their polarity first (see implied)
   def simplify(config: Config, state: State, ctx: Context, expr: Expr): Expr =
     if implied(config, state, ctx, expr)
     then True
     else if denied(config, state, ctx, expr)
     then False
+    else if ctx.inconsistent
+    then expr
     else
       val once_ = once(config, state, ctx, expr)
       if once_ != expr
