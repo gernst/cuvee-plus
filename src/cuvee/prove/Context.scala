@@ -84,6 +84,22 @@ case class Context(
       case x: Var => classes.defs(x).filterNot(_.free.contains(x))
       case _      => Nil
 
+  // terms computed for the position of a combinator, memoized under its canonical key: the dependencies and bound
+  // variables under the renaming of the bound variables, and the canonical facts of the position (see Canon), such
+  // that positions that differ only by the names of their bound variables share them; `kind` separates the tables,
+  // e.g. the facts of the context of a combinator and the reads of its iterations (see Simplify.combinator, iterations)
+  def memo(kind: String, deps: List[Expr], bound: List[Var])(compute: => List[Expr]): List[Expr] =
+    val re = Canon.renaming(this.bound, bound)
+    val key = (kind, deps.map(re(_)), bound.map(re(_)), Canon.key(this, re))
+    memos.value.positions.get(key) match
+      case Some(values) =>
+        values.map(Canon.back(re)(_))
+
+      case None =>
+        val values = compute
+        memos := memos.value.copy(positions = memos.value.positions + (key -> values.map(re(_))))
+        values
+
   // whether `rule` is suspended at this position, by identity
   def suspended(rule: Rule): Boolean =
     active.exists(_ eq rule)
@@ -264,8 +280,7 @@ object Context:
   // Simplify.iterations), the simplified views of the markers of traces of several accumulators (see Views), and the
   // canonical forms of the closed conditions with the renaming to them (see Canon)
   case class Memos(
-      combinators: Map[(List[Expr], List[Var], Canon.Key), List[Expr]] = Map(),
-      reads: Map[(List[Expr], List[Var], Canon.Key), List[Expr]] = Map(),
+      positions: Map[(String, List[Expr], List[Var], Canon.Key), List[Expr]] = Map(),
       views: Map[(Expr, Canon.Key), Expr] = Map(),
       canon: Map[(Expr, Subst[Nothing, Var]), Expr] = Map()
   )

@@ -89,7 +89,12 @@ object Forward:
   // the instances of `fw` at `term` in `ctx`: matched like the left-hand side of a rule (also by definitions and
   // views, see Rewrite.matchesExpr), the condition decided like that of a rule, and the trigger's instance replaced by the
   // term as it occurs, such that the fact is about the term of the goal, current(S).0 <= p, not about its view
+  // the instances are memoized by the lemma, the term and the canonical facts of the context (see Context.memo), since
+  // the triggers are tried again at every assumed fact and an instance was simplified again at every firing (TODO.md)
   def fire(config: Config, state: State, ctx: Context, fw: Forward, term: Expr): List[Expr] =
+    ctx.memo("forward " + fw.name.getOrElse(fw.toString), List(term), Nil)(instances(config, state, ctx, fw, term))
+
+  def instances(config: Config, state: State, ctx: Context, fw: Forward, term: Expr): List[Expr] =
     for
       _ <- Rewrite.matchesType(state, fw.params, fw.trigger.typ, term.typ, Subst.empty)
       subst <- Rewrite.matchesExpr(config, state, ctx, fw.params, fw.vars, Set(), fw.trigger, None, Map(), Set(), term, Subst.empty)

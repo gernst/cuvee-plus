@@ -421,22 +421,12 @@ object Simplify:
   // the context of the updates and bodies of combinators, which binds the variables for the dependencies,
   // and which assumes the invariants of the context over the same dependencies and the iterations of loops;
   // ctx.self is the dependency that the combinator defines and its value in the update, if known (see once)
-  // built once per command for the same outer context (see Context.combinators)
+  // built once per command for the same outer context (see Context.memo)
   // the facts of the context are memoized under the canonical names of the position (see Canon), such that positions
   // that differ only by the names of their bound variables share them; the context is built from them at each
   // position, which keeps the suspended rules and components of the position
   def combinator(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): Context =
-    val re = Canon.renaming(ctx.bound, bound)
-    val key = (deps.map(re(_)), bound.map(re(_)), Canon.key(ctx, re))
-    val facts =
-      ctx.memos.value.combinators.get(key) match
-        case Some(facts) =>
-          facts.map(Canon.back(re)(_))
-
-        case None =>
-          val facts = invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound)
-          ctx.memos := ctx.memos.value.copy(combinators = ctx.memos.value.combinators + (key -> facts.map(re(_))))
-          facts
+    val facts = ctx.memo("combinator", deps, bound)(invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound))
     ctx.neutral.bind(bound).assume(facts, Nil)
 
   // the range 0 <= acc < k of the accumulator of a trace whose initial value is known to be in it and whose results are
@@ -492,27 +482,18 @@ object Simplify:
   // condition is matched against the invs facts would build the contexts of those facts in turn, whose reads are
   // normalized again, through every such rule, which exhausts the steps (see Context.active)
   def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
-    val re = Canon.renaming(ctx.bound, bound)
-    val key = (deps.map(re(_)), bound.map(re(_)), Canon.key(ctx, re))
-    ctx.memos.value.reads.get(key) match
-      case Some(values) =>
-        values.map(Canon.back(re)(_))
+    ctx.memo("reads", deps, bound):
+      (deps, bound) match
+        case (dep :: deps_, k :: bound_) if Rewrite.counter(ctx, dep).isDefined =>
+          val n = Rewrite.counter(ctx, dep).get
+          val ctx_ = ctx.neutral.bind(bound).copy(rules = ctx.rules.filter(Rule.plain))
+          val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, n))
+          val range = simplify(config, state, ctx_, bounds)
+          val inside = ctx_.assume(range, Nil)
+          range ++ (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(k, dep))))
 
-      case None =>
-        val values =
-          (deps, bound) match
-            case (dep :: deps_, k :: bound_) if Rewrite.counter(ctx, dep).isDefined =>
-              val n = Rewrite.counter(ctx, dep).get
-              val ctx_ = ctx.neutral.bind(bound).copy(rules = ctx.rules.filter(Rule.plain))
-              val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, n))
-              val range = simplify(config, state, ctx_, bounds)
-              val inside = ctx_.assume(range, Nil)
-              range ++ (deps_ zip bound_).map((dep, z) => Eq(z, simplify(config, state, inside, Earlier(k, dep))))
-
-            case _ =>
-              Nil
-        ctx.memos := ctx.memos.value.copy(reads = ctx.memos.value.reads + (key -> values.map(re(_))))
-        values
+        case _ =>
+          Nil
 
   // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,
   // without polarity, since the context does not record the argument;
@@ -914,9 +895,7 @@ object Simplify:
   // the difference right - left of the sides of a comparison as a normalized polynomial,
   // whose sign is all that matters, hence with integral coefficients without a common divisor
   def difference(config: Config, state: State, ctx: Context, ring: Ring, left: Expr, right: Expr): Poly =
-    val left_ = poly(config, state, ctx, ring, left)
-    val right_ = poly(config, state, ctx, ring, right)
-    (right_ - left_).normalize.primitive
+    Arith.difference(ring, left, right, leaf = leaf => ctx.classes.value(simplify(config, state, ctx, leaf))).primitive
 
   // comparisons 0 < p and 0 <= p on Int or Real, built by `op`, are constants if p is,
   // otherwise they are re-arranged so that both sides have positive coefficients only,

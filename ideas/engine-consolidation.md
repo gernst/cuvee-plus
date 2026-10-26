@@ -29,7 +29,12 @@ canonical variable of a variable, the value of a variable inside arithmetic (lit
 form of a fact. The order of roots, the acyclicity of solutions and the test "has a value" live there and nowhere
 else. Then a change such as "variables before literals in terms" is a change of one operation, not of five places.
 
-## 2. One view of arithmetic
+## 2. One view of arithmetic (done in part, 0.52.13)
+
+Done: `Arith.difference`, the difference of the sides of a comparison as a normalized polynomial with an offset and a
+function for the leaves, the one conversion of comparisons used by `Simplify.difference` (leaves simplified in the
+context, primitive) and `Rewrite.comparison` (without context, `<` on Int as `<=` of the successor). The matcher's
+signed summands stay: they take apart the expression as it is, which a polynomial would reorder.
 
 Now: polynomials are built and taken apart in four places.
 - `Arith`/`Poly`: the normal form;
@@ -59,7 +64,15 @@ the canonical forms of binders, the facts, the simplex) and a cache per context;
 decisions of the helpers (`select`, `distinct`, guards) call it. Today the same pair is often decided several times
 on one path, without a cache (TODO.md: guard decisions are repeated without a cache).
 
-## 4. One mechanism for facts derived on assumption
+## 4. One mechanism for facts derived on assumption (done in part, 0.52.13)
+
+Done: the instances of a forward lemma at a term are memoized by the lemma, the term and the canonical facts of the
+context (`Forward.fire`, `Context.memo`), so an instance is simplified once per context, not at every firing; the
+counts of `-rules` include the rules used inside a memoized instance once. Kept by decision: the forward lemmas fire
+at the positions where the simplifier assumes facts (premises, siblings of `and`/`or`, the facts of `Slice`), not in
+every `Context.assume` (contexts of combinators, cases, branches), which would add instances; moving them into the
+context would need the simplifier there (step 6) and changes nothing else, since the rules from ground equations and
+the values fixed by the simplex are derived in `Context.assume` already.
 
 Now: assuming a fact derives further facts in three ways.
 - `Context.rules`: an equation of a term with a ground term becomes a rewrite rule;
@@ -71,7 +84,10 @@ Proposal: one saturation step of `Context.assume`, with the derived facts of all
 one memo of instances by the canonical form of the fact (`Canon.key`), so that an instance is simplified once per
 context, not at every firing.
 
-## 5. Alternatives of a term in matching
+## 5. Alternatives of a term in matching (done, 0.52.13)
+
+Done: `Rewrite.alternatives`, the groups of terms a pattern may match instead of a term (the definitions, the
+structural view, the projected view), computed lazily and tried in order by `matchesExpr`.
 
 Now: when a pattern does not match a term, `Rewrite.matchesExpr` tries, in a fixed chain, the definitions of a
 variable (`Context.defs`), the structural view of a component (`Views.structural`), and the projected view
@@ -82,7 +98,10 @@ Proposal: `ctx.alternatives(term)`, a lazy sequence of the terms that a pattern 
 members, its views, later its canonical arithmetic form), used by the matcher, the triggers and the conditions; the
 debug output of failed matches (`-debug match`) then reports per alternative.
 
-## 6. Matchers as objects
+## 6. Matchers as objects (not done, by decision)
+
+The parameters stay: the gain of a `Simplifier` and a `Matcher` class does not outweigh a diff over all of Simplify
+and Rewrite.
 
 Now: `matchesExpr`, `matchesExpr_`, `matchesExprs`, `matchesSummands`, `matchesFactors`, `matchesCases`,
 `combinator`, `component`, `arguments`, `abstraction`, `instantiate`, `guard`, `conditions` take 12 to 15 parameters
@@ -93,7 +112,11 @@ Proposal: a class `Matcher(config, state, ctx, rule)` with the fixed parameters 
 the term, the bound variables of the expression and the substitution. The same for the simplifier, a class
 `Simplifier(config, state)` instead of threading both through 61 methods (TODO.md).
 
-## 7. Memos
+## 7. Memos (done, 0.52.13)
+
+Done: `Context.memo(kind, deps, bound)(compute)`, one table for the facts of combinator contexts, the reads of their
+iterations and the instances of forward lemmas; the views keep their own key (the facts that mention their
+variables).
 
 Now: the context keeps several memos keyed by `Canon.key` with the renaming of bound variables back and forth
 (`Context.memos`: combinators, reads, views; `Canon.back(re)` at every lookup), each with its own key construction
@@ -102,7 +125,9 @@ Now: the context keeps several memos keyed by `Canon.key` with the renaming of b
 Proposal: one `Memo[V]` in the context, `memo.get(ctx, bound, extra)(compute)`, which builds the canonical key and
 renames the value back; the three users pass only what they compute.
 
-## 8. Choices and cases
+## 8. Choices and cases (not done, by decision)
+
+`Split` and `Normalize` do different things; the places below stay as they are.
 
 Now: guarded cases are built, lifted, merged and split in six places.
 - `TEQ.update`: the cases of the paths of a loop body (grouped by their results since the worktree of Oct 26);
@@ -134,7 +159,9 @@ counter of the iterations, used by `Rewrite` and `Simplify.iterations` (the test
 
 ## Order
 
-1 and 3 first: they are where the experiments of Oct 26 failed, and they make the redesign of ideas/engine-gaps.md
+Done: 1, 2, 3, 4, 5, 7, 9 (in part where noted); not done by decision: 6, 8.
+
+The original order: 1 and 3 first: they are where the experiments of Oct 26 failed, and they make the redesign of ideas/engine-gaps.md
 (3b) a change of one place. Then 4 (the cost of forward lemmas), 5 and 6 (they simplify each other), 8 together with
 the DNF guards, 2, 7 and 9 as cleanup. Each step is a refactoring without a change of results: the examples, the test
 suite and one cloud run of Arrays and Loops must not change.

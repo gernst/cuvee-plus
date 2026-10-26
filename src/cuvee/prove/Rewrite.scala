@@ -175,43 +175,44 @@ object Rewrite:
   ): List[Subst[Type, Expr]] =
     val direct = matchesExpr_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, arg, subst)
 
-    // a variable that the pattern does not match as it is, is matched like the other members of its class, its
-    // definitions (see Context.defs), e.g. a variable K with K == counter(0, 1, n) by the counter; and a marker of a
-    // component of a trace of several accumulators is matched like its simplified view (see Views.projected), which generalizes the
-    // definitions of variables to terms
+    // a term that the pattern does not match as it is, is matched by its alternatives (see alternatives), group by
+    // group; the first group that matches is taken; a pattern variable matches any term, so it has none
     if direct.nonEmpty || pat.isInstanceOf[Var]
     then direct
     else
-      // the definitions are matched with the fallbacks again, since a definition may be a marker whose view matches;
-      // this does not recur through the definitions, since only variables have definitions and the members are none
-      val defs =
-        for
-          e <- ctx.defs(arg)
-          subst_ <- matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
-        yield
-          Debug.step("match", Simplify.show(config.output.printer, arg) + " by its definition", Simplify.show(config.output.printer, e))
-          subst_
-
-      if defs.nonEmpty
-      then defs
-      else
-        // a read of a component of a trace of several accumulators is matched structurally first, against the
-        // projection of the trace to that component (see Views.structural): a pattern with one accumulator takes
-        // the component as its accumulator and the other components as further dependencies, which the selection of
-        // dependencies leaves aside like any dependency the pattern does not mention; only if that fails is the
-        // normal form of the component computed and matched (see Views.projected), which costs a simplification
-        val structural =
+      alternatives(config, state, ctx, pat, arg).iterator
+        .map: (label, terms, fallbacks) =>
           for
-            e <- Views.structural(ctx, pat, arg).toList
-            subst_ <- matchesExpr_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
-          yield subst_
+            e <- terms
+            subst_ <-
+              if fallbacks
+              then matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
+              else matchesExpr_(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
+          yield
+            if label == "definition"
+            then Debug.step("match", Simplify.show(config.output.printer, arg) + " by its definition", Simplify.show(config.output.printer, e))
+            subst_
+        .find(_.nonEmpty)
+        .getOrElse(unmatched)
 
-        if structural.nonEmpty
-        then structural
-        else
-          Views.projected(config, state, ctx, arg) match
-            case Some(e) => matchesExpr(config, state, ctx, params, vars, locals, pat, self, bound, avoid, e, subst)
-            case None    => unmatched
+  // the alternatives of a term that a pattern may match instead of it, in groups tried in order, each with whether
+  // its terms are matched with the alternatives again:
+  // - the definitions of a variable, the other members of its class (see Context.defs), e.g. a variable K with
+  //   K == counter(0, 1, n) by the counter; with alternatives, since a definition may be a marker whose view matches,
+  //   which does not recur through the definitions, since only variables have definitions and the members are none;
+  // - a read of a component of a trace of several accumulators, structurally against the projection of the trace to
+  //   that component (see Views.structural): a pattern with one accumulator takes the component as its accumulator and
+  //   the other components as further dependencies, which the selection of dependencies leaves aside like any
+  //   dependency the pattern does not mention;
+  // - only if that fails, the normal form of the component (see Views.projected), which costs a simplification, with
+  //   alternatives, which generalizes the definitions of variables to terms
+  // the groups are computed lazily, so that a view is projected only if the earlier groups do not match
+  def alternatives(config: Config, state: State, ctx: Context, pat: Expr, arg: Expr): LazyList[(String, List[Expr], Boolean)] =
+    LazyList(
+      () => ("definition", ctx.defs(arg), true),
+      () => ("structural view", Views.structural(ctx, pat, arg).toList, false),
+      () => ("view", Views.projected(config, state, ctx, arg).toList, true)
+    ).map(_())
 
   def matchesExpr_(
       config: Config,
@@ -1035,14 +1036,11 @@ object Rewrite:
   // which is nonnegative, or positive if strict; on Int, left < right is left + 1 <= right, hence never strict;
   // > and >= do not occur, the simplifier turns them into < and <= before rewriting
   def comparison(expr: Expr): List[(Ring, Boolean, Poly)] =
-    def difference(ring: Ring, left: Expr, right: Expr, offset: Int) =
-      (Arith.toPoly(ring, right) - Arith.toPoly(ring, left) - Poly.const(util.Rational(offset))).normalize
-
     expr match
-      case Ints.lt(left, right)  => List((Ints.ring, false, difference(Ints.ring, left, right, 1)))
-      case Ints.le(left, right)  => List((Ints.ring, false, difference(Ints.ring, left, right, 0)))
-      case Reals.lt(left, right) => List((Reals.ring, true, difference(Reals.ring, left, right, 0)))
-      case Reals.le(left, right) => List((Reals.ring, false, difference(Reals.ring, left, right, 0)))
+      case Ints.lt(left, right)  => List((Ints.ring, false, Arith.difference(Ints.ring, left, right, 1)))
+      case Ints.le(left, right)  => List((Ints.ring, false, Arith.difference(Ints.ring, left, right)))
+      case Reals.lt(left, right) => List((Reals.ring, true, Arith.difference(Reals.ring, left, right)))
+      case Reals.le(left, right) => List((Reals.ring, false, Arith.difference(Reals.ring, left, right)))
       case _                    => Nil
 
   // the summands of a polynomial with their signs, whose factors and constant are positive

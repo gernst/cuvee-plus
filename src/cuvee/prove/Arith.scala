@@ -159,6 +159,13 @@ object Arith:
   def normalize(ring: Ring, expr: Expr): Expr =
     toPoly(ring, expr).normalize.toExpr(ring)
 
+  // the difference right - left of the sides of a comparison as a normalized polynomial, minus an offset (1 for a strict
+  // comparison on Int, which is the non-strict one of the successor), with the leaves mapped by `leaf`; the one
+  // conversion of comparisons, used by the simplifier (with the leaves simplified in the context, see
+  // Simplify.difference) and the matcher (without context, see Rewrite.comparison)
+  def difference(ring: Ring, left: Expr, right: Expr, offset: Int = 0, leaf: Expr => Expr = identity): Poly =
+    (toPoly(ring, right, leaf) - toPoly(ring, left, leaf) - Poly.const(Rational(offset))).normalize
+
   // an expression as a polynomial, flattening sums and products, its other subterms by `leaf`, e.g. the simplifier
   // (see Simplify.poly), whose result may be arithmetic again; on Real, division by a nonzero literal (after `leaf`) is
   // multiplication by its inverse
