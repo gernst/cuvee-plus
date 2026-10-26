@@ -5,31 +5,21 @@ The open changes to the engine, ordered by expected gain; the engine is document
 
 ## Plan
 
-### A. Unreachable positions are `undefined`
+### A. Regressions since 0.51.4
 
-**Symptom.** Since 0.52.2 an expression in an inconsistent context stays as it is (`Simplify.simplify`), which ends
-the rewriting without end in dead branches (swap.dfy), but leaves their terms in the goals: on the cloud (120 s, one
-core, against 0.52.1 with the canonical forms), four counterexamples of array-fpi (eqn3f, eqn4f, nsqmf, sqmf) become
-unknown, with `-fallback` a solver error; SV-LIB CTranslated loses five true tasks (afnp2014, benchmark01, 22, 40, 53
-of loop-zilu, benchmark01 by "rewriting does not terminate"); Loops loses nested3-2_abstracted (false) and
-sum_by_3_abstracted (true).
-
-**Change.** An expression at an unreachable position has no meaning, so any value is right there; the value is
-`undefined`, of the type of the expression, rather than the expression:
-1. A constant `undefined` of the core, polymorphic in its type (`Fun.undefined`, sugar `Undefined(typ)`), independent
-   of the TEQ declarations; `unspecified` of teq.dfy (the value of an update where no guard holds) stays, since its
-   meaning differs: some value of the type, the same one at each occurrence of the trace.
-2. `Simplify.simplify`: in an inconsistent context, a formula is decided by its polarity as now, any other expression
-   is `undefined`; a formula at a neutral position as well (it has no polarity to decide it).
-3. `Simplify.ite`: a branch whose context is inconsistent gives the other branch, `ite(c, a, b)` is `b` if the context
-   with `c` is inconsistent, also when `c` itself is not decided; likewise for the cases of `Eps` and of `match`, a
-   case whose guard contradicts the context is dropped.
-4. `undefined` absorbs nothing else: `f(undefined)` stays, an equation with it is not decided; it occurs only where
-   the position is unreachable, so it must not reach a goal at a reachable position. Check: no goal output of the
-   examples contains it; `-fallback` and the printers lower it to a fresh constant of its type per occurrence (sound:
-   an arbitrary value), and `Eval` treats it as no value (no counterexample through it).
-
-Check on eqn3f, benchmark22 of loop-zilu (SV-LIB) and swap.dfy first, then the 94 examples and the cloud.
+The integer counts and the canonical forms (0.52) lost tasks that 0.51.4 solved (cloud, 120 s, one core); the dead
+positions (0.52.3: branches and empty combinators dropped, doc/prove.md) and the recursion of `pow` in `-fallback`
+are recovered. Open:
+- **Timeouts** of array_2-1-simple, array_2-2-simple, linear_sea.ch, nested_4, nested3-1_abstracted, theatreSquare,
+  cohendiv, geo1-ll_unwindbound1: measure where the time goes first; the candidate is the renormalization of all
+  facts after a merge, which would renormalize only the facts that mention a retired root, by use lists from roots
+  to facts as in congruence closure ([canonical.md](canonical.md)).
+- **rewnifrev** (true): the goal is left at the array trace with `n == SIZE` known but not substituted into the
+  count of `counter`; find the rule that no longer fires (`-debug match,conditions` against 0.51.4).
+- The four `_unwindbound1` false tasks (cohencu, ps4, ps5, ps6) are recovered (0.52.3) by the bound variables of a
+  combinator that the simplex fixes to a literal (`Simplify.combinator`, which naturals did by `natural_nonpositive`)
+  and `butlast_counter_consts`; the general form, the fixed variables of the simplex for every context, waits for an
+  incremental simplex, whose candidate checks are cheap.
 
 ### B. Bounded unrolling for counterexamples and bounded proofs
 

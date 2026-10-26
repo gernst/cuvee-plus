@@ -12,14 +12,14 @@ const {:teq} unspecified<a₀>: a₀
 
 datatype {:teq} Trace<a₀> = stop(last: a₀) | step(first: a₀, rest: Trace<a₀>)
 
-function {:teq} current<a₀>(x₀: Trace<a₀>): a₀
+function {:rw} {:teq} current<a₀>(x₀: Trace<a₀>): a₀
 {
   match x₀
   case stop(x) => x
   case step(_, xs) => current(xs)
 }
 
-function {:teq} butlast<a₀>(x₀: Trace<a₀>): List<a₀>
+function {:rw} {:teq} butlast<a₀>(x₀: Trace<a₀>): List<a₀>
 {
   match x₀
   case stop(_) => nil
@@ -33,28 +33,28 @@ function {:teq} counter(x₀: int, x₁: int, x₂: int): Trace<int>
   if x₂ <= 0 then stop(x₀) else step(x₀, counter(x₀ + x₁, x₁, x₂ - 1))
 }
 
-function {:teq} earlier<a₀>(x₀: int, x₁: List<a₀>): a₀
+function {:rw} {:teq} earlier<a₀>(x₀: int, x₁: List<a₀>): a₀
 {
   match x₁
   case nil => unspecified
   case cons(x, xs) => if x₀ < 0 then unspecified else if x₀ == 0 then x else earlier(x₀ - 1, xs)
 }
 
-function {:teq} prefix<a>(k: int, xs: List<a>): List<a>
+function {:rw} {:teq} prefix<a>(k: int, xs: List<a>): List<a>
 {
   match xs
   case nil => nil
   case cons(x, ys) => if k <= 0 then nil else cons(x, prefix(k - 1, ys))
 }
 
-function {:teq} occurs<a>(x: a, xs: List<a>): bool
+function {:rw} {:teq} occurs<a>(x: a, xs: List<a>): bool
 {
   match xs
   case nil => false
   case cons(y, ys) => y == x || occurs(x, ys)
 }
 
-function {:teq} indexof<a>(x: a, xs: List<a>): int
+function {:rw} {:teq} indexof<a>(x: a, xs: List<a>): int
 {
   match xs
   case nil => 0
@@ -62,7 +62,7 @@ function {:teq} indexof<a>(x: a, xs: List<a>): int
 }
 
 // whether a list has no duplicates
-function {:teq} distincts<a>(xs: List<a>): bool
+function {:rw} {:teq} distincts<a>(xs: List<a>): bool
 {
   match xs
   case nil => true
@@ -189,6 +189,10 @@ lemma {:rw} {:teq} prefix_maps_counter(k: int, i: int, c: int, n: int, ys: List<
 
 lemma {:rw} {:teq} butlast_counter_nil(i: int, c: int, n: int)
   ensures (⌊counter(i, c, n)⌋ == nil) <==> (n <= 0)
+
+// e.g. the iterations of a loop that runs once against a constant trace
+lemma {:rw} {:teq} butlast_counter_consts(i: int, c: int, n: int, v: int)
+  ensures (⌊counter(i, c, n)⌋ == ⌊consts(n, v)⌋) <==> (n <= 0 || i == v && (n <= 1 || c == 0))
 
 lemma {:rw} {:teq} current_consts<a>(n: int, x: a)
   ensures current(consts(n, x))

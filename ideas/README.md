@@ -3,8 +3,8 @@
 Proposals, plans and open points that are not implemented; a proposal is removed once it is implemented and
 documented in `doc/`.
 
-- [prove-next.md](prove-next.md): the plan (unreachable positions as `undefined`, bounded unrolling for
-  counterexamples and bounded proofs) and the open changes to the engine of `-prove`, ordered by expected gain.
+- [prove-next.md](prove-next.md): the plan (the regressions since 0.51.4, bounded unrolling for counterexamples and
+  bounded proofs) and the open changes to the engine of `-prove`, ordered by expected gain.
 - [canonical.md](canonical.md): the open points of the canonical forms of the context and of the integer counts.
 - [database-review.md](database-review.md): the lemma database: what could be unified, candidates among the lemmas
   of examples/dafny/algorithms, the lemmas that work around gaps of the engine.

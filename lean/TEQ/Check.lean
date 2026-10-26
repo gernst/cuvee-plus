@@ -35,6 +35,7 @@ example : Stmt.indexof_counter_up := @indexof_counter_up
 example : Stmt.maps_const := @maps_const
 example : Stmt.prefix_maps_counter := @prefix_maps_counter
 example : Stmt.butlast_counter_nil := @butlast_counter_nil
+example : Stmt.butlast_counter_consts := @butlast_counter_consts
 example : Stmt.current_consts := @current_consts
 example : Stmt.earlier_consts := @earlier_consts
 example : Stmt.consts_choice := @consts_choice

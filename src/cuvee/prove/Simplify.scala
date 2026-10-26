@@ -61,8 +61,6 @@ object Simplify:
     then True
     else if denied(config, state, ctx, expr)
     then False
-    else if ctx.inconsistent
-    then expr
     else
       val once_ = once(config, state, ctx, expr)
       if once_ != expr
@@ -145,7 +143,7 @@ object Simplify:
       // the right-hand side is simplified like the combinator below, and then rewritten at the top (see simplify)
       // the histories of the accumulators denote them in the results (see Views.selfOf); the trace is rewritten at the
       // top with the variable as its self, also with several accumulators, whose histories then denote them in the
-      // matcher as well (a lemma over a whole cycle, see Rewrite.matches_)
+      // matcher as well (a lemma over a whole cycle, see Rewrite.matches_); without iterations, like the combinator below
       case Eq(x: Var, Trace(inits, deps, accs, bound, results)) =>
         val left_ = simplify(config, state, ctx.neutral, x)
         val inits_ = simplify(config, state, ctx.neutral, inits)
@@ -154,17 +152,24 @@ object Simplify:
         val (accs_, bound_) = vars_.splitAt(accs.length)
         val inner = combinator(config, state, ctx.bind(accs_).copy(self = Views.selfOf(x, accs_)), deps_, bound_)
         val ranges = if accs.length == 1 then wrapped(config, state, ctx, inner, inits_.head, accs_.head, re(results.head)) else Nil
-        val results_ = results.map(result => simplify(config, state, inner.assume(ranges, Nil), re(result)))
-        val right_ = trace(config, state, ctx.neutral, inits_, deps_, accs_, bound_, results_)
-        eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
+        val inner_ = inner.assume(ranges, Nil)
+        if inner_.inconsistent && accs.length == 1
+        then eq_(config, state, ctx, left_, Traces.stop(inits_.head))
+        else
+          val results_ = results.map(result => simplify(config, state, inner_, re(result)))
+          val right_ = trace(config, state, ctx.neutral, inits_, deps_, accs_, bound_, results_)
+          eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
 
       case Eq(y: Var, Maps(deps, bound, update)) =>
         val left_ = simplify(config, state, ctx.neutral, y)
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val update_ = simplify(config, state, combinator(config, state, ctx.copy(self = List((y, re(update)))), deps_, bound_), re(update))
-        val right_ = maps(config, state, ctx.neutral, deps_, bound_, update_)
-        eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(y)))
+        val inner = combinator(config, state, ctx.copy(self = List((y, re(update)))), deps_, bound_)
+        if inner.inconsistent
+        then eq_(config, state, ctx, left_, Lists.nil(update.typ))
+        else
+          val right_ = maps(config, state, ctx.neutral, deps_, bound_, simplify(config, state, inner, re(update)))
+          eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(y)))
 
       case Eq(left, right) =>
         val left_ = simplify(config, state, ctx.neutral, left)
@@ -202,13 +207,16 @@ object Simplify:
         val arg_ = simplify(config, state, ctx, arg)
         As(arg_, typ)
 
-      // the branches have no polarity, since the context does not record the other branch (see Context.neutral)
+      // the branches have no polarity, since the context does not record the other branch (see Context.neutral);
+      // a branch whose context is inconsistent is unreachable and dropped, also when the test itself is not decided
       case Ite(test, left, right) =>
         val test_ = simplify(config, state, ctx.neutral, test)
-        val left_ = simplify(config, state, ctx.neutral.assume(List(test_), Nil), left)
+        val then_ = ctx.neutral.assume(List(test_), Nil)
         // the negated test, which may be stronger in the context, e.g. a strict comparison (see not)
-        val right_ = simplify(config, state, ctx.neutral.assume(List(not(config, state, ctx, test_)), Nil), right)
-        ite(config, state, ctx, test_, left_, right_)
+        val else_ = ctx.neutral.assume(List(not(config, state, ctx, test_)), Nil)
+        if then_.inconsistent then simplify(config, state, else_, right)
+        else if else_.inconsistent then simplify(config, state, then_, left)
+        else ite(config, state, ctx, test_, simplify(config, state, then_, left), simplify(config, state, else_, right))
 
       case Select(base, index) =>
         val base_ = simplify(config, state, ctx.neutral, base)
@@ -318,16 +326,18 @@ object Simplify:
 
       case Match(arg, cases) =>
         val arg_ = simplify(config, state, ctx.neutral, arg)
-        match_(config, state, ctx, arg_, cases.map(this.cases(config, state, ctx, _)))
+        match_(config, state, ctx, arg_, cases.flatMap(this.cases(config, state, ctx, _)))
 
       // the cases like those of match, the function is not unfolded
       case Rec(fun, cases) =>
-        rec(config, state, ctx, fun, cases.map(this.cases(config, state, ctx, _)))
+        rec(config, state, ctx, fun, cases.flatMap(this.cases(config, state, ctx, _)))
 
       // the combinators bind the accumulator and the variables for the dependencies like quantifiers,
       // their updates and bodies assume the invariants of the context over the same dependencies (see combinator)
       // a projection of a trace of several accumulators has the history of its component as self (see Views.relation);
-      // the histories ⌊S⌋.j among the dependencies are inert (see Views)
+      // the histories ⌊S⌋.j among the dependencies are inert (see Views);
+      // a combinator whose inner context is inconsistent has no iterations: a trace stops at its initial value,
+      // a map is nil, invariants hold
       case Trace(inits, deps, accs, bound, results) =>
         val inits_ = simplify(config, state, ctx.neutral, inits)
         val deps_ = simplify(config, state, ctx.neutral, deps)
@@ -340,8 +350,12 @@ object Simplify:
             case pairs                   => pairs
         val inner = combinator(config, state, ctx.bind(accs_).copy(self = self_), deps_, bound_)
         val ranges = if accs.length == 1 then wrapped(config, state, ctx, inner, inits_.head, accs_.head, re(results.head)) else Nil
-        val results_ = results.map(result => simplify(config, state, inner.assume(ranges, Nil), re(result)))
-        trace(config, state, ctx, inits_, deps_, accs_, bound_, results_)
+        val inner_ = inner.assume(ranges, Nil)
+        if inner_.inconsistent && accs.length == 1
+        then Traces.stop(inits_.head)
+        else
+          val results_ = results.map(result => simplify(config, state, inner_, re(result)))
+          trace(config, state, ctx, inits_, deps_, accs_, bound_, results_)
 
       // the reads of the components of a trace of several accumulators are markers, replaced by their views once these
       // read no component any more (see Views), e.g. the counter of a loop by its value; otherwise they stay, and the
@@ -361,12 +375,15 @@ object Simplify:
       case Maps(deps, bound, update) =>
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val update_ = simplify(config, state, combinator(config, state, ctx, deps_, bound_), re(update))
-        maps(config, state, ctx, deps_, bound_, update_)
+        val inner = combinator(config, state, ctx, deps_, bound_)
+        if inner.inconsistent
+        then Lists.nil(update.typ)
+        else maps(config, state, ctx, deps_, bound_, simplify(config, state, inner, re(update)))
 
       // the guards of the cases are simplified, cases whose guard is false are dropped,
       // and the results are simplified assuming their guard and, since the guards are disjoint, that the others are false;
-      // not so the guards themselves, which could become weaker and overlap, e.g. both true for complementary guards
+      // not so the guards themselves, which could become weaker and overlap, e.g. both true for complementary guards;
+      // a case whose context is inconsistent is unreachable and dropped
       case Eps(updates) =>
         val updates_ =
           for
@@ -376,10 +393,11 @@ object Simplify:
           yield Upd(cond_, rhs)
 
         val updates__ =
-          for (Upd(cond_, rhs), i) <- updates_.zipWithIndex
-          yield
-            val others = updates_.guards.patch(i, Nil, 1)
-            upd(config, state, ctx, cond_, simplify(config, state, ctx.neutral.assume(List(cond_), others), rhs))
+          for
+            (Upd(cond_, rhs), i) <- updates_.zipWithIndex
+            inner = ctx.neutral.assume(List(cond_), updates_.guards.patch(i, Nil, 1))
+            if !inner.inconsistent
+          yield upd(config, state, ctx, cond_, simplify(config, state, inner, rhs))
 
         eps(config, state, ctx, expr.typ, updates__)
 
@@ -388,8 +406,10 @@ object Simplify:
       case Invs(deps, bound, body) =>
         val deps_ = simplify(config, state, ctx.neutral, deps)
         val (bound_, re) = Subst.rename(bound, ctx.free)
-        val body_ = simplify(config, state, combinator(config, state, ctx, deps_, bound_), re(body))
-        invs(config, state, ctx, deps_, bound_, body_)
+        val inner = combinator(config, state, ctx, deps_, bound_)
+        if inner.inconsistent
+        then True
+        else invs(config, state, ctx, deps_, bound_, simplify(config, state, inner, re(body)))
 
   // the context of the updates and bodies of combinators, which binds the variables for the dependencies,
   // and which assumes the invariants of the context over the same dependencies and the iterations of loops;
@@ -410,7 +430,16 @@ object Simplify:
           val facts = invariants(ctx, deps, bound) ++ iterations(config, state, ctx, deps, bound)
           ctx.memos := ctx.memos.value.copy(combinators = ctx.memos.value.combinators + (key -> facts.map(re(_))))
           facts
-    ctx.neutral.bind(bound).assume(facts, Nil)
+    val inner = ctx.neutral.bind(bound).assume(facts, Nil)
+    // a bound variable that the simplex fixes to a literal bound, e.g. k of 0 <= k < n with n <= 1, is that literal in
+    // the classes, which the simplex does not tell them, so that terms over it are decided, also nonlinear ones
+    val fixed =
+      for
+        x <- bound if x.typ == Sort.int
+        case Ints.le(l: Lit, `x`) <- facts
+        if inner.implied(Ints.le(x, l))
+      yield Eq(x, l)
+    inner.assume(fixed.distinct, Nil)
 
   // the range 0 <= acc < k of the accumulator of a trace whose initial value is known to be in it and whose results are
   // remainders modulo k or the accumulator itself, which holds for all values of the accumulator by induction, e.g. of
@@ -487,13 +516,15 @@ object Simplify:
         values
 
   // the variables of the pattern are renamed apart like bound variables, and the body assumes the condition,
-  // without polarity, since the context does not record the argument
-  def cases(config: Config, state: State, ctx: Context, cs: Case): Case =
+  // without polarity, since the context does not record the argument;
+  // a case whose guard contradicts the context is unreachable and dropped
+  def cases(config: Config, state: State, ctx: Context, cs: Case): Option[Case] =
     val Case(pat, body, cond) = cs
     val (bound_, re) = Subst.rename(pat.free.toList, ctx.free)
     val cond_ = simplify(config, state, ctx.neutral.bind(bound_), re(cond))
-    val body_ = simplify(config, state, ctx.neutral.bind(bound_).assume(List(cond_), Nil), re(body))
-    case_(config, state, ctx, re(pat), body_, cond_)
+    val inner = ctx.neutral.bind(bound_).assume(List(cond_), Nil)
+    if inner.inconsistent then None
+    else Some(case_(config, state, ctx, re(pat), simplify(config, state, inner, re(body)), cond_))
 
   // simplify each of `phis` assuming the others, which hold if `pos` (conjunction)
   // and do not hold otherwise (disjunction);

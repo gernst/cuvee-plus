@@ -181,6 +181,11 @@ def Stmt.butlast_counter_nil : Prop :=
   ∀ (i : Int) (c : Int) (n : Int),
     butlast (counter i c n) = nil ↔ n ≤ 0
 
+def Stmt.butlast_counter_consts : Prop :=
+  ∀ (i : Int) (c : Int) (n : Int) (v : Int),
+    butlast (counter i c n) = butlast (consts n v)
+      ↔ n ≤ 0 ∨ i = v ∧ (n ≤ 1 ∨ c = 0)
+
 def Stmt.current_consts : Prop :=
   ∀ {α : Type} [Inhabited α] (n : Int) (x : α),
     current (consts n x) = x

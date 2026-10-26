@@ -79,9 +79,13 @@ binders, derivatives, and `old`; `Split` uses it.
 
 - **Traversal.** Each round simplifies the subterms first and dispatches on the built-in functions, then tries one
   rewrite step at the top (`Rewrite.step`). All methods take `(config, state, ctx, ...)`. In an inconsistent
-  context, a formula is decided by its polarity and any other expression stays as it is: the position is
-  unreachable, and every side condition would hold, so the rules could apply without end, e.g. in the dead branch
-  of a decided test.
+  context, a formula is decided by its polarity.
+- **Unreachable positions** are dropped, by the context that the traversal builds for them anyway: a branch of
+  `ite`, a case of `eps` or of `match` whose context is inconsistent, also when its test is not decided; a
+  combinator whose body context is inconsistent has no iterations, so a trace is `stop(init)` (the context of a
+  single accumulator includes its ranges, `Simplify.wrapped`), a map is `nil`, and invariants hold, also in the
+  definitions `X == trace(...)` and `Y == maps(...)`. No term is left unsimplified at an unreachable position, since
+  the rules match shapes and such a term would block them elsewhere (a beta-redex for an affine body).
 - **Helpers.** Every kind of expression has a helper that builds the result from simplified subterms (`and`, `not`,
   `eq_`, `ite`, `trace`, `maps`, `invs`, ...). Each normalizes its own constructor in one step and builds with the
   other helpers; the outer loop iterates. `nary` simplifies each argument of `and` and `or` assuming the others;
@@ -111,14 +115,18 @@ by the simplifier in the context.
 - **Rules** `Rule(params, vars, lhs, rhs, cond)` come from formulas `∀ xs. φ ==> l == r` (also `<==>`, `!p`, and a
   boolean atom `p`) of assertions, lemmas, and definitions with `:rw` (`Rules.from`); the variables of `r` and `φ`
   must occur in `l` or be bound by `φ` (`Rule.check`). A definition by a match on a parameter gives one rule per case
-  (overlapping patterns are not handled). Each rule carries the attributes of its command; `:named` names it.
+  (overlapping patterns are not handled); such rules terminate if the recursion is structural, which is why the
+  definitions by a `match` of the database are `{:rw}` and those by a test on an integer (`counter`, `consts`) are
+  not. Each rule carries the attributes of its command; `:named` names it.
 - **Matching** is modulo type instantiation, A/C and 0 of sums (`matchesSummands`), A/C and 1 of products where they
   do not match position by position (`matchesFactors`), comparisons modulo moving summands, symmetry of equations,
   and the binding structure of `Trace`, `Maps`, `Invs` ([teq.md](teq.md)). Higher-order patterns `F(t₁, ..., tₙ)`
   match by abstraction (Miller's fragment, or terms whose variables are instantiated); the simplifier beta-reduces
   the instantiated right-hand side. A guard `D(x, h) && φ` binds `D` to the whole guard of the expression, and the
   conjuncts of `φ` must follow from it (`Rewrite.guard`). Updates and bodies of combinators are matched in their
-  context (`Simplify.combinator`), assuming the invariants over their dependencies.
+  context (`Simplify.combinator`), assuming the invariants over their dependencies; a bound variable that the simplex
+  fixes to a literal bound among these facts, e.g. `k` of `0 <= k < n` with `n <= 1`, is that literal in the classes,
+  so that terms over it are decided, also nonlinear ones.
 - **Side conditions** are taken in order: a closed one is decided, an open one is matched against the facts, which
   binds the variables that occur only in conditions; so conjuncts that bind variables come first in a lemma. A closed
   condition is first looked up among the facts modulo the classes and the canonical forms of binders

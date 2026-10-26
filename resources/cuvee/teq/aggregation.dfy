@@ -5,7 +5,7 @@
 
 // the functions of lists and integers that the aggregates fold
 // the sum of a list
-function {:teq} sum(values: List<int>): int
+function {:rw} {:teq} sum(values: List<int>): int
 {
   match values
   case nil => 0
@@ -13,7 +13,7 @@ function {:teq} sum(values: List<int>): int
 }
 
 // the parity of a list, the number of even minus the number of odd elements
-function {:teq} parity(values: List<int>): int
+function {:rw} {:teq} parity(values: List<int>): int
 {
   match values
   case nil => 0
@@ -32,7 +32,7 @@ function {:teq} min(m: int, n: int): int
 }
 
 // the number of occurrences of a value in a list
-function {:teq} count<a>(e: a, vs: List<a>): int
+function {:rw} {:teq} count<a>(e: a, vs: List<a>): int
 {
   match vs
   case nil => 0

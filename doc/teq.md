@@ -111,6 +111,10 @@ decides these conditions. Lemmas that hold for all integers by the clamping have
 
 **Kinds of declarations.**
 - Lemmas are `{:rw}` (rewrite rules) or `{:fw}` (forward lemmas) and free, assumed by solvers without proof.
+- Definitions by a `match` that recur structurally are `{:rw}`, one rule per case (`current`, `butlast`, `earlier`,
+  `prefix`, `occurs`, `indexof`, `distincts`, `sum`, `parity`, `count`); they apply only to constructors, so traces
+  of programs are not unfolded. Definitions by a test on an integer (`counter`, `consts`, `cutFrom`) are not rules,
+  their rule would unfold without end.
 - A function that is a trace or a map is a fold (`{:fold}`): its definition is a rule that folds the trace into the
   function (`stores`, `sums`, `selects`, `mods`, ...), standing among the lemmas at the position of its rule. A fold
   need not be a trace: `swap(a, p, q)` folds `a[p := a[q]][q := a[p]]`. A lemma `<name>_def` remains where a function
@@ -205,7 +209,7 @@ After section 5.3 of the paper, `-fallback` lowers the remaining goals into firs
 - Other combinators are fresh functions of their free variables, defined in the antecedent; equal terms share their
   function if their traces and lists are lowered alike (`Fallback.key`).
 - Recursive definitions of the database, by a `match` on a list or by a test `n <= 0` on an integer, whose other case
-  recurs on the tail or on `n - 1` only, are unfolded once per position (`Fallback.recursion`): over a list of length
+  recurs on the tail or on `n - 1` (also written `n + -1`) only, are unfolded once per position (`Fallback.recursion`): over a list of length
   `n`, `f_from(n) == base` and `f_from(j) == step(xs(j), f_from(j + 1))`, and `f(xs)` is `f_from(0)`; over an integer
   `n`, `f_upto(j) == base` for `j <= 0` and `f_upto(k + 1) == step(k, f_upto(k))`, and `f(n)` is `f_upto(n)`. A
   definition whose step calls the function otherwise is generalized.

@@ -555,7 +555,10 @@ object Fallback extends Transform:
         val index = fun.formals.indexOf(x)
         val rec = Var("rec", fun.res).fresh
         val k = Var("k", Sort.int).fresh
-        val step = calls(fun, fun.formals.updated(index, Ints.minus(x, Ints.one)), rec, body)
+        // x - 1 also as x + -1, the form of the definitions that the lemma database normalizes, e.g. pow
+        val step =
+          List(Ints.minus(x, Ints.one), Ints.plus(x, Lit(BigInt(-1), Sort.int))).foldLeft(body): (step, pred) =>
+            calls(fun, fun.formals.updated(index, pred), rec, step)
         // a call that is not on x - 1 with the other arguments unchanged would be unfolded again at each lowering
         if applies(fun, step)
         then None

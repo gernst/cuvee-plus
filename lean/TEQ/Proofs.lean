@@ -229,6 +229,15 @@ theorem prefix_maps_counter : Stmt.prefix_maps_counter := by
 theorem butlast_counter_nil : Stmt.butlast_counter_nil := by
   intro i c n; rw [counter_N, N.butlast_counter_nil]; show n.toNat = 0 ↔ _; omega
 
+theorem butlast_counter_consts_N (i c v : Int) (m : Nat) :
+    butlast (N.counter i c m) = butlast (N.consts m v) ↔ m = 0 ∨ i = v ∧ (m ≤ 1 ∨ c = 0) := by
+  induction m generalizing i with
+  | zero => simp [N.counter, N.consts, butlast]
+  | succ m ih => simp only [N.counter, N.consts, butlast, List.cons.injEq, ih]; omega
+
+theorem butlast_counter_consts : Stmt.butlast_counter_consts := by
+  intro i c n v; rw [counter_N, consts_N, butlast_counter_consts_N]; omega
+
 theorem current_consts : Stmt.current_consts := by
   intro α _ n x; rw [consts_N]; exact N.current_consts n.toNat x
 
