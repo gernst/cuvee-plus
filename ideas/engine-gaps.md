@@ -123,7 +123,7 @@ run of Arrays and Loops against 0.52.10.
   as the canonical variable of its class) is kept as a patch, not measured in the cloud; ideas/engine-consolidation.md
   proposes to put the policy of normal forms into one place first.
 
-## 4. Remainders and division ((a) done, Oct 27; (b) open)
+## 4. Remainders and division (done, Oct 27, 0.52.15)
 
 **Gaps.** (a) `Simplify.remainders` substitutes a variable inside `x % n` only if its definition is a remainder (the
 unsigned variables of C), not a polynomial over atoms: `zz == 2 * count(...)` does not reduce `zz % 2`
@@ -135,7 +135,8 @@ and `t mod k` are unrelated atoms of the simplex: `SIZE % 2 == 0`, `SIZE / 2 == 
 definitions that mention the variable (as now). Done in the restricted form: only definitions that are constant modulo
 `n`, since a general substitution may cycle (`x == y + 2`, `y == x - 2`: `x % 2` becomes `y % 2` and back);
 counters_phase_mod.dfy and mono-crafted_12 are proved with the rule, pr2 and mbpr2 stay open. (b) When an atom `t div k` or `t mod k` with a literal `k != 0` enters
-the arithmetic, its definition is assumed once: `t == k * (t div k) + t mod k`, `0 <= t mod k < |k|`.
+the arithmetic, its definition is assumed once: `t == k * (t div k) + t mod k`, `0 <= t mod k < |k|`. Done (0.52.15) in
+`Linear.add`, replacing the separate bounds of quotients and remainders; it proves tcpy and diff-2-n-u.
 
 **Database.** `current_trace_step_or_keep` in aggregation.dfy (the value `x + a * count(true, bs)`, a rewrite rule)
 replaces the forward lemma `current_trace_step_or_keep_mod` of counters.dfy, whose trigger is a raw trace pattern

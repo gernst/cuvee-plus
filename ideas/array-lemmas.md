@@ -70,7 +70,7 @@ variants.
    standard_sentinel-2).
 10. `-debug match` reports nothing for rules whose left-hand side is not a trace.
 
-## Reducer commutativity
+## Reducer commutativity (current work, TODO.md "Work queue: Now")
 
 reducercommutativity (avg, max, rangesum, sep, sum) and array-crafted bAnd, bor, xor: `R(x) == R(swap(x, 0, 1)) ==
 R(rotate(x))` for a reduction `R` over `x[0..N)` of nondeterministic values, `N` a literal from 5 to 100000; none is

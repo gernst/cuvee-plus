@@ -83,6 +83,8 @@ Run with growing k (1, 2, 4, 8, ...) within the time limit, by `-vcgen` and z3, 
 false tasks on Loops, about 25 on Arrays, plus the `_unwindbound` true tasks with small bounds and the literal sizes
 of reducercommutativity.
 
+Sections 1 and 2 are current work (TODO.md, "Work queue: Now"), before plans A and B.
+
 ## 1. Equalities from the simplex to the classes
 
 **Symptom.** `-slice` on `array-crafted/zero_sum1` (fill `a`, add its values to `sum`, subtract them again,
@@ -100,7 +102,12 @@ per loop, which the classes solve, so that the counts of two such loops become t
 the simplifier compares two atoms of the same function whose arguments differ only in counts. Measure on zero_sum1,
 standard_maxInArray_ground and standard_minInArray_ground-2 first.
 
-## 2. Integer reasoning about remainders
+## 2. Integer reasoning about remainders (done in part, 0.52.15)
+
+Done: `(p + c) % m` from a known `p % m` for `m <= 4` (`Simplify.mod`) and the case split on `p % m` (`Prove.remainders`),
+with the definition of div and mod in the simplex: pr2, mbpr2-mbpr4. Open: pr3-pr5 and pnr*, whose updates have 2^s cases
+(ideas/conditional-stores.md).
+
 
 **Symptom.** The strided stores (array-tiling `mbpr*`, `pr*`, `pnr*`, 22 true tasks): open is `(i - 1) % 2 == 0`
 against `i % 2 == 0` for a variable bound by a combinator. The simplex is rational; the case splits cover remainders

@@ -77,11 +77,13 @@ case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], tab
     then add(ring, Constraint.le(Arith.toPoly(ring, left) + Poly.one, Arith.toPoly(ring, right)))
     else add(ring, Constraint.lt(Arith.toPoly(ring, left), Arith.toPoly(ring, right)))
 
-  // on Int, the coefficients are rounded, which is exact for integers (Poly.floor); an atom t div k for a positive
-  // literal k brings its bounds k * (t div k) <= t <= k * (t div k) + k - 1 (with t div k rounding down, as in the
-  // binary search's midpoint, l <= (h + l) / 2 < h for l < h), and an atom t mod k for a literal k != 0 its range
-  // 0 <= t mod k <= |k| - 1, added once with the first constraint that mentions it, so a denied atom gets them as
-  // well; t is smaller than the atom, so its own divisions terminate, and a range mentions only its atom
+  // on Int, the coefficients are rounded, which is exact for integers (Poly.floor); an atom t div k or t mod k for a
+  // literal k != 0 brings the definition of both by SMT-LIB, t == k * (t div k) + t mod k with 0 <= t mod k <= |k| - 1,
+  // which bounds the quotient as well (k * (t div k) <= t <= k * (t div k) + k - 1 for k > 0, the binary search's
+  // midpoint l <= (h + l) / 2 < h for l < h) and relates the two, e.g. t == 2 * n for t % 2 == 0 and t / 2 == n
+  // (array-tiling/pr2); added once with the first constraint that mentions either atom, so a denied atom gets it as
+  // well; t is smaller than the atoms, so its own divisions terminate, and the definition mentions only the two atoms
+  // of t and k, whose definitions are then known
   def add(ring: Ring, c: Constraint): Linear =
     val c_ = if ring == Ints.ring then Constraint(c.poly.floor, c.strict) else c
     if constraints.contains(c_)
@@ -90,18 +92,20 @@ case class Linear(constraints: List[Constraint], diseqs: List[(Ring, Poly)], tab
       val divisions =
         for
           mono <- c_.poly.monos
-          case (atom @ Ints.div(t, Ints.ring.num(k: BigInt)), _) <- mono.atoms
-          if ring == Ints.ring && k > 0
-        yield (Arith.toPoly(ring, t), Poly.atom(atom) * Rational(k), Rational(k - 1))
-      val remainders =
-        for
-          mono <- c_.poly.monos
-          case (atom @ Ints.mod(_, Ints.ring.num(k: BigInt)), _) <- mono.atoms
-          if ring == Ints.ring && k != 0
-        yield (Poly.atom(atom), Rational(k.abs - 1))
-      val linear = divisions.distinct.foldLeft(copy(constraints = c_ :: constraints, tableau = tableau.add(c_))) { case (linear, (t, d, offset)) =>
-        linear.add(ring, Constraint.le(d, t)).add(ring, Constraint.le(t, d + Poly.const(offset)))
-      }
-      remainders.distinct.foldLeft(linear) { case (linear, (r, max)) =>
-        linear.add(ring, Constraint.le(Poly.zero, r)).add(ring, Constraint.le(r, Poly.const(max)))
+          (atom, _) <- mono.atoms
+          (t, k, n) <- atom match
+            case Ints.div(t, k @ Ints.ring.num(n: BigInt)) if ring == Ints.ring && n != 0 => List((t, k, n))
+            case Ints.mod(t, k @ Ints.ring.num(n: BigInt)) if ring == Ints.ring && n != 0 => List((t, k, n))
+            case _                                                                      => Nil
+        yield (t, k, n)
+      divisions.distinct.foldLeft(copy(constraints = c_ :: constraints, tableau = tableau.add(c_))) { case (linear, (t, k, n)) =>
+        val q = Poly.atom(Ints.div(t, k))
+        val r = Poly.atom(Ints.mod(t, k))
+        val t_ = Arith.toPoly(ring, t)
+        val definition = q * Rational(n) + r
+        linear
+          .add(ring, Constraint.le(definition, t_))
+          .add(ring, Constraint.le(t_, definition))
+          .add(ring, Constraint.le(Poly.zero, r))
+          .add(ring, Constraint.le(r, Poly.const(Rational(n.abs - 1))))
       }

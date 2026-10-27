@@ -104,13 +104,17 @@ object Prove extends Transform:
     found.toList.distinct
 
   // the remainders x % m by a literal 2 <= m <= 4 in `expr` whose variables are among `outer`, with m, whose values
-  // are 0, ..., m - 1 (the remainder of SMT-LIB is not negative)
+  // are 0, ..., m - 1 (the remainder of SMT-LIB is not negative); of x without its constant, which decides those of
+  // x + c as well (see Simplify.mod), e.g. one split on i % 2 for i % 2 and (i + 1) % 2
   def remainders(expr: Expr, outer: Set[Var]): List[(Expr, BigInt)] =
     val found = collection.mutable.ListBuffer[(Expr, BigInt)]()
 
     def visit(expr: Expr): Expr =
       expr match
-        case Ints.mod(arg, Ints.num(m: BigInt)) if 2 <= m && m <= 4 && arg.free.nonEmpty && arg.free.subsetOf(outer) => found += ((expr, m))
+        case Ints.mod(arg, k @ Ints.num(m: BigInt)) if 2 <= m && m <= 4 && arg.free.nonEmpty && arg.free.subsetOf(outer) =>
+          val poly = Arith.toPoly(Ints.ring, arg).normalize
+          val base = (poly - Poly.const(poly.const)).normalize
+          found += ((Ints.mod(base.toExpr(Ints.ring), k), m))
         case _ =>
       expr.map(visit)
 

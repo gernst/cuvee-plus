@@ -69,8 +69,10 @@ rules, and the memos. Each assumed fact goes to all theories:
 - **Linear** ([`Linear`](../src/cuvee/prove/Linear.scala), [`Simplex`](../src/cuvee/prove/Simplex.scala)): the general
   simplex over the rationals with bounds (Dutertre and de Moura), strict bounds by an infinitesimal, Bland's rule. On
   `Int`, a strict comparison is the non-strict one offset by 1 and coefficients are rounded (`Poly.floor`), so
-  `2 * x < 7` bounds `x` by 3; products of atoms are variables of their own. An atom `t div k` for a positive literal
-  `k` brings `k * (t div k) <= t <= k * (t div k) + k - 1`, an atom `t % k` brings `0 <= t % k <= |k| - 1`.
+  `2 * x < 7` bounds `x` by 3; products of atoms are variables of their own. An atom `t div k` or `t % k` for a literal
+  `k != 0` brings the definition of both by SMT-LIB, `t == k * (t div k) + t % k` with `0 <= t % k <= |k| - 1`, which
+  bounds the quotient and relates the two, e.g. `t == 2 * n` for `t % 2 == 0` and `t / 2 == n` (array-tiling/pr2,
+  tcpy).
   Disequations are refuted when the constraints determine the difference. The tableau is persistent (`Tableau`): a
   constraint is added to the solved tableau of its context and pivots from there, so a check of `implied` costs a
   few pivots. A variable of a new fact that the constraints fix to a value, e.g. `k` of `0 <= k` and `k < n` with
@@ -114,7 +116,9 @@ binders, derivatives, and `old`; `Split` uses it.
   the atoms are replaced by their arguments: `(x % 2^32 + 1) % 2^32` is `(x + 1) % 2^32`; so are the variables
   defined by such a remainder, and those defined by a polynomial that is constant modulo `k`, e.g. `zz % 2` with
   `zz == 2 * count(...)` (`Simplify.remainders`); not those whose definition only reduces to other atoms, which may
-  be variables whose definitions lead back. A remainder whose argument,
+  be variables whose definitions lead back. For a small `k` (at most 4), the remainder of `p + c` is that of `p` plus `c`
+  if the context fixes the remainder of `p`, e.g. `(i + 1) % 2` is `1` where `i % 2 == 0`: the parity of successors,
+  which the rational simplex does not see (mbpr2). A remainder whose argument,
   or its representative centered around 0, is known to be in `0, ..., k - 1` is that argument. A trace whose results
   are remainders modulo `k` or the accumulator, with an initial value in range, assumes the range of its accumulator
   (`wrapped`) ([remainders.dfy](../examples/dafny/prove/remainders.dfy), `examples/c/teq/unsigned_*.c`).
@@ -199,7 +203,8 @@ Their costs are in teq.md ("What a forward lemma costs"). `-debug forward` print
   up to four splits deep, on the first that applies of: a premise that is a disjunction of two or three formulas
   (e.g. the `_cases` rules of `teq:unsigned`); an atom of a guard of an update whose variables are free in the goal
   ([diamond.dfy](../examples/dafny/teq/diamond.dfy)); a remainder `x % m` by a literal `2 <= m <= 4`; the equation
-  `i == j` of a read after a write `a[i := v][j]`. Other splits are left to `-split`.
+  `i == j` of a read after a write `a[i := v][j]`. The split on a remainder is on that of the polynomial without its
+  constant, which decides those of `p + c` as well (see "Remainders"). Other splits are left to `-split`.
 - **Counterexamples** (`Eval.counterexample`): a remaining goal over at most four integer or boolean variables,
   without traces, lists, or other functions than those of arithmetic and logic, is refuted if it evaluates to false
   at small values or the literals of the goal plus or minus 1; it becomes `false`, answered `incorrect` unless the

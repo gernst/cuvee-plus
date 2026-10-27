@@ -1,5 +1,11 @@
 # Conditional stores instead of cases
 
+Current work, the third step of the strided stores (TODO.md, "Work queue: Now"). Rejected by decision (Oct 27,
+2026): merging the cases in the simplifier (`Simplify.eps`), even restricted to chains of stores at the same indices
+whose values do not read the array; only cases with equal results are merged, since the case distinction of an update
+is what the lemmas match. Measured before the decision: pr3 proved, rew and ms2 lost (a store of a choice of arrays,
+and a reset and an accumulation at one cell merged into one value).
+
 A loop body with s conditional stores, each choosing a value by a guard that
 does not depend on the iteration, becomes an update with 2^s cases, one per
 path of the symbolic execution of `-teq`, e.g. the MonoCera benchmarks

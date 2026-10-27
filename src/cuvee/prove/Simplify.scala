@@ -791,20 +791,34 @@ object Simplify:
       // the coefficients and the constant of a polynomial are taken modulo n, e.g. (2 * x + 3) % 2 is 1, after its
       // remainders modulo multiples of n are replaced by their arguments, e.g. (x % 4294967296 + 1) % 4294967296 is
       // (x + 1) % 4294967296 and (x % 4294967296) % 2 is x % 2; the remainder is the polynomial itself if it is known to
-      // be in the range 0, ..., n - 1, or a representative of it (see representatives)
+      // be in the range 0, ..., n - 1, or a representative of it (see representatives); for a small n, the remainder of
+      // p + c is that of p plus c, if the context fixes the remainder of p, e.g. (i + 1) % 2 is 1 where i % 2 == 0, the
+      // parity of successors, which the rational simplex does not see (the case splits of Prove are on p % n as well)
       case (_, Lit(n: BigInt, _)) if n != 0 =>
         val poly = Arith.toPoly(Ints.ring, left)
         val reduced = remainders(ctx, n, poly).modulo(n)
-        if reduced != poly.normalize
-        then mod(config, state, ctx, reduced.toExpr(Ints.ring), right)
-        else
-          val inside =
-            for
-              poly_ <- representatives(n, reduced)
-              expr = poly_.toExpr(Ints.ring)
-              if simplify(config, state, ctx.neutral, And(List(Ints.le(Ints.zero, expr), Ints.lt(expr, Lit(n.abs, Sort.int))))) == True
-            yield expr
-          inside.headOption.getOrElse(Ints.mod(left, right))
+        val base = (reduced - Poly.const(reduced.const)).normalize
+        val known =
+          if reduced.const.isZero || base.monos.isEmpty || n.abs > 4
+          then None
+          else
+            val atom = Ints.mod(base.toExpr(Ints.ring), right)
+            List.range(BigInt(0), n.abs).find(r => ctx.neutral.implied(Eq(atom, Lit(r, Sort.int))))
+        (reduced != poly.normalize, known) match
+          case (true, _) =>
+            mod(config, state, ctx, reduced.toExpr(Ints.ring), right)
+
+          case (false, Some(r)) =>
+            Lit((r + reduced.const.num) mod n.abs, Sort.int)
+
+          case (false, None) =>
+            val inside =
+              for
+                poly_ <- representatives(n, reduced)
+                expr = poly_.toExpr(Ints.ring)
+                if simplify(config, state, ctx.neutral, And(List(Ints.le(Ints.zero, expr), Ints.lt(expr, Lit(n.abs, Sort.int))))) == True
+              yield expr
+            inside.headOption.getOrElse(Ints.mod(left, right))
 
       case _ =>
         Ints.mod(left, right)
@@ -1063,7 +1077,9 @@ object Simplify:
   // and a single case is its result, e.g. case b => y case c => y is y, which is a trace that keeps its value;
   // where no guard holds, this chooses the value that is not specified, which is unused, since the guards of
   // the updates of trace equation systems hold in all iterations by their iteration constraints;
-  // without cases, e.g. when all guards are false, the result of type `typ` is not specified
+  // without cases, e.g. when all guards are false, the result of type `typ` is not specified; only cases with equal
+  // results are merged, the case distinction of an update is kept otherwise (conditional stores are not merged into
+  // stores of conditional values, ideas/conditional-stores.md)
   def eps(config: Config, state: State, ctx: Context, typ: Type, updates: List[Upd]): Expr =
     val merged =
       Eps.flatten(updates).foldLeft(List.empty[Upd]): (merged, update) =>

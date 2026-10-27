@@ -5,9 +5,48 @@ tasks.
 
 ## Work queue: database and engine
 
-By expected gain; plans in [ideas/canonical.md](ideas/canonical.md) and [ideas/prove-next.md](ideas/prove-next.md).
 Priority: more correct results, `true` first; speed only where a task times out that would succeed. Changed
 benchmarks are not rerun with Cuvée.
+
+### Now (chosen Oct 27, 2026)
+
+In this order; each is checked on its tasks first, then by one cloud run of Arrays and Loops (no task lost). Open
+tasks are from the cloud run of Oct 27 (0.52.14 without the cleanup, Ryzen, 120 s).
+
+- [ ] **Strided stores** (array-tiling, 22 of 29 open: `pr2`-`pr5`, `mbpr2`-`mbpr5`, `pnr2`-`pnr5`, `nr2`-`nr5`,
+      `tcpy`, ...). Three gaps, in this order:
+      1. done (0.52.15): the parity of successors, `(p + c) % m` from a known `p % m` for `m <= 4`, the case split on
+         `p % m` (pr2, mbpr2-mbpr4);
+      2. done (0.52.15): the definition of div and mod in the simplex (tcpy, diff-2-n-u); no forward lemmas for
+         division;
+      3. open: the 2^s cases of s conditional stores (pr3-pr5, pnr2-pnr5). Merging them into stores of conditional
+         values was tried and rejected by decision: only cases with equal results are merged, the case distinction of
+         updates stays (ideas/conditional-stores.md); another route is open;
+      4. open: nr2-nr5, whose inner loop over two positions leaves cases that store at `2 * k` and `2 * k + 1`, the
+         iteration variable written as the literal it equals in each case (ideas/engine-gaps.md, gap 3).
+- [ ] **Equalities from the simplex to the classes** (ideas/prove-next.md, section 1): two counts known equal only
+      by inequalities stay different terms (`n₂ == SIZE == n₃` by the exit test and the bound of the iteration
+      constraint). The general exchange of all equalities lost 21 results of Arrays and 13 of Loops; instead, the
+      equation `i == N` at the exit of a loop whose counter the test bounds, stated once per loop, or on demand where
+      two atoms of the same function differ only in counts. The zero_sum tasks are solved by `-teq` now (18 of 18);
+      measure on zero_sum1 with `-slice`, standard_maxInArray_ground and standard_minInArray_ground-2, then look for
+      the tasks of Arrays and Loops whose remaining goal compares such terms.
+- [ ] **array-patterns** (37 tasks, 30 true, none solved: 20 unknown, 17 timeouts): a loop `while(1)` stores at a
+      nondeterministic index into two arrays (`array1[index] = f(index)`, `array2[index] = g(index)` or kept), and a
+      final loop sums both arrays, bounded by a closed form. Plan: the goals after `-teq -prove` of array1 and
+      array10 first; then the value of a cell after stores at a list of keys (`if occurs(k, keys) then ... else
+      a0[k]`, teq.dfy), a pointwise bound of the sum of both arrays per cell (the cancelling pairs), and a bound of
+      a sum by a pointwise bound over a counter; lemmas local to the tasks first, into the database once two tasks
+      share them; why 17 time out.
+- [ ] **Reducer commutativity** (reducercommutativity 28, array-crafted bAnd, bor, xor 15; none solved; plan in
+      ideas/array-lemmas.md): one fold per operator (`bitands`, `bitors`, `bitxors`, max and min as folds with their
+      symmetric variants), the exchange of the seed with an element (swap) and the move of the last element to the
+      seed (rotation, after the shift loop) per operator, the value lists as slices so that the reads of lists and
+      of arrays meet; sum and avg time out (find why first).
+
+### Later
+
+By expected gain; plans in [ideas/canonical.md](ideas/canonical.md) and [ideas/prove-next.md](ideas/prove-next.md).
 
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
@@ -22,20 +61,13 @@ benchmarks are not rerun with Cuvée.
 - [ ] ps2-ll_unwindbound1 times out at 60 s.
 - [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma),
       `pcomp`, `sqm-if`, `nsqm-if`, `condm`.
-- [ ] Strided stores (array-tiling `mbpr*`, `pr*`, `pnr*`, 22 true tasks): the parity `(i - 1) % 2 == 0` against
-      `i % 2 == 0` needs integer reasoning about remainders.
 - [ ] Counterexamples by concrete evaluation of `sum`, `map`, `counter` for a literal `n` (30 unsafe array-fpi tasks,
       e.g. brs2f).
 - [ ] Lost tasks: in-de52, in-de62 (more loops than the depth of the case splits).
 - [ ] partial_mod_count_* (true): conditional stores whose second value is not a constant, then a count of zeros.
-- [ ] array-patterns (30 true tasks): pairwise cancelling sums over stores at nondeterministic indices.
 - [ ] Arrays (ideas/array-lemmas.md, Oct 26): the gaps of the engine behind the workarounds in the database
       (compactions and filters, copies from both ends, cases split at a position), each listed with its tasks; then
-      replace the workarounds by their plain forms; plan in ideas/engine-gaps.md. Division with remainder and parity in the arithmetic of `-prove`
-      (pr2, mbpr2, array-tiling/tcpy; forward lemmas at every division cost too much).
-- [ ] Reducer commutativity (reducercommutativity, array-crafted bAnd/bor/xor; plan in ideas/array-lemmas.md): one
-      fold per operator (`bitands`, `bitors`, `bitxors`, max and min as folds with their symmetric variants), swap and
-      rotation lemmas per operator, the value lists as slices.
+      replace the workarounds by their plain forms; plan in ideas/engine-gaps.md (division and parity: "Now").
 - [ ] Deferred: the cost of `-prove` (forward instances are simplified at every firing; a memo of them was measured
       and costs more, Oct 27, so the remedy is fewer forward lemmas: rules on the atoms of the goals); the rest of nla-digbench (geo1,
       geo3, cohencu); the non-terminations at the bound on the steps (fermat1, egcd2, mannadiv); equalities from the

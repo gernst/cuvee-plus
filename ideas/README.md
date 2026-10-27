@@ -3,6 +3,16 @@
 Proposals, plans and open points that are not implemented; a proposal is removed once it is implemented and
 documented in `doc/`.
 
+**Current work** (Oct 27, 2026; the order and the tasks in TODO.md, "Work queue: Now"):
+1. strided stores: [prove-next.md](prove-next.md) section 2 (remainders), [engine-gaps.md](engine-gaps.md) gap 4(b)
+   (division in the simplex), [conditional-stores.md](conditional-stores.md) (the cases of conditional stores);
+2. equalities from the simplex to the classes: [prove-next.md](prove-next.md) section 1;
+3. array-patterns: TODO.md (no plan file yet);
+4. reducer commutativity: [multisets.md](multisets.md) (bags of the values, the design), [array-lemmas.md](array-lemmas.md),
+   "Reducer commutativity".
+
+The other files below are not being worked on now.
+
 - [portfolio.md](portfolio.md): a wrapper (portfolio.py) that runs fuzzing, cuvee-fallback, `-chc` and bounded
   unrolling in parallel on the native binary, with what each method is good at and the steps.
 - [slice.md](slice.md): whether `-slice` proves tasks on its own (three quarters of what `-teq` proves), why it cannot
@@ -44,6 +54,8 @@ documented in `doc/`.
 - [nondet.md](nondet.md): determinization of every source of nondeterminism (havoc, uninitialized variables, choice,
   iteration, calls by contract, ODEs) by an oracle `nondet(ticks)` with a global counter, for witnesses, `-teq`, and
   nondeterministic implementations as expressions.
+- [multisets.md](multisets.md): bags of the values of a list, the folds that do not depend on the order as folds of
+  bags, and the swap and rotation of arrays as lemmas on bags, for reducer commutativity (a design).
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 
