@@ -210,6 +210,48 @@ lemma {:rw} {:teq} earlier_consts<a>(k: int, n: int, x: a)
   ensures earlier(k, ⌊consts(n, x)⌋)
     == x
 
+// the lengths of the lists of the database, by their definitions, from the simpler to the more specific; the counts
+// clamp, hence a count that is not negative; a list of length 0 is the empty list
+lemma {:rw} {:teq} length_nil<a>()
+  ensures length(nil as List<a>) == 0
+
+lemma {:rw} {:teq} length_cons<a>(x: a, xs: List<a>)
+  ensures length(cons(x, xs)) == length(xs) + 1
+
+lemma {:rw} {:teq} length_eq_zero<a>(xs: List<a>)
+  ensures (length(xs) == 0) <==> (xs == nil)
+
+lemma {:rw} {:teq} length_counter(i: int, c: int, n: int)
+  requires 0 <= n
+  ensures length(⌊counter(i, c, n)⌋) == n
+
+lemma {:rw} {:teq} length_consts<a>(n: int, x: a)
+  requires 0 <= n
+  ensures length(⌊consts(n, x)⌋) == n
+
+lemma {:rw} {:teq} length_prefix<a>(k: int, xs: List<a>)
+  requires 0 <= k <= length(xs)
+  ensures length(prefix(k, xs)) == k
+
+// a prefix at least as long as the list is the list
+lemma {:rw} {:teq} prefix_length<a>(k: int, xs: List<a>)
+  requires length(xs) <= k
+  ensures prefix(k, xs) == xs
+
+lemma {:rw} {:teq} length_maps<a, b>(xs: List<a>, F: (a) -> b)
+  ensures length(maps(for xs yield x :: F(x))) == length(xs)
+
+lemma {:rw} {:teq} length_maps_deps<a, b, c>(xs: List<a>, ys: List<b>, F: (a, b) -> c)
+  requires length(ys) == length(xs)
+  ensures length(maps(for xs, ys yield x, y :: F(x, y))) == length(xs)
+
+lemma {:rw} {:teq} length_selects<a, b>(a: array<a, b>, keys: List<a>)
+  ensures length(selects(a, keys)) == length(keys)
+
+lemma {:rw} {:teq} length_stores<a, b>(a: array<a, b>, keys: List<a>, values: List<b>)
+  requires length(values) == length(keys)
+  ensures length(⌊stores(a, keys, values)⌋) == length(keys)
+
 // a choice of a loop, e.g. the numbers of iterations of an inner loop, whose values are all determined by the
 // iteration constraint is a constant list, which the reads of the choice then follow (earlier_consts)
 lemma {:rw} {:teq} consts_choice<a>(n: int, xs: List<a>, c: a)

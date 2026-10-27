@@ -38,16 +38,10 @@ tasks are from the cloud run of Oct 27 (0.52.14 without the cleanup, Ryzen, 120 
       a0[k]`, teq.dfy), a pointwise bound of the sum of both arrays per cell (the cancelling pairs), and a bound of
       a sum by a pointwise bound over a counter; lemmas local to the tasks first, into the database once two tasks
       share them; why 17 time out.
-- [ ] **Reducer commutativity** (reducercommutativity 28, array-crafted bAnd, bor, xor 15; none solved; plan in
-      ideas/array-lemmas.md): one fold per operator (`bitands`, `bitors`, `bitxors`, max and min as folds with their
-      symmetric variants), the exchange of the seed with an element (swap) and the move of the last element to the
-      seed (rotation, after the shift loop) per operator, the value lists as slices so that the reads of lists and
-      of arrays meet; sum and avg time out (find why first).
-
-### Later
-
-By expected gain; plans in [ideas/canonical.md](ideas/canonical.md) and [ideas/prove-next.md](ideas/prove-next.md).
-
+- [ ] **Reducer commutativity** (reducercommutativity 28, array-crafted bAnd, bor, xor 15): the module `teq:multisets`
+      (ideas/multisets.md), optional; converting the folds of all lists proves the sums and averages but loses 34 tasks
+      (innermost rewriting preempts the rules around the folds); next: multisets as a detour for permutations only;
+      open: sep (a count by a predicate of C's signed `%`), the bitwise reductions (no folds), the Lean model.
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).

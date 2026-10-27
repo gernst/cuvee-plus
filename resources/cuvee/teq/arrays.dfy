@@ -59,6 +59,14 @@ lemma {:rw} {:teq} select_current_trace_reset_keep(a0: array<int, int>, j: int, 
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a))[j]
       == if n <= 0 then a0[j] else c
 
+// a loop that moves each element of i + 1, ..., i + n one position down reads the next element of the initial array at
+// the positions it writes, i, ..., i + n - 1, which it has not written yet, and the initial array elsewhere
+// (from reducercommutativity, array-crafted bAnd, bor, xor: the rotation)
+lemma {:rw} {:teq} select_current_trace_shift(a: array<int, int>, i: int, n: int, j: int)
+  requires 0 <= n
+  ensures current(trace(a, for ⌊counter(i, 1, n)⌋ do x, k :: x[k := x[k + 1]]))[j]
+    == if i <= j < i + n then a[j + 1] else a[j]
+
 // a read at a position other than that of an update, also where the simplifier does not decide that they differ, from
 // a fact j != i
 // (from array_of_struct_single_elem_init, single_elem_safe)

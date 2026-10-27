@@ -419,7 +419,7 @@ object Config:
   // of the lemma database, which the output hides like the rest of the database if the feature teq is known (-teq),
   // and prints otherwise, e.g. for -print lean of the database
   val include =
-    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; <feature>:<name> injects the module <name> of a feature: teq:<concept> of the lemma database of -teq (aggregation, arithmetic, arrays, counters, search, sorted, strides, unsigned), implement:<name> of the implementations of -implement"):
+    flag("-include", "<file>", "inject <file> into the input after its prelude, parsed in the language of its extension; <feature>:<name> injects the module <name> of a feature: teq:<concept> of the lemma database of -teq (aggregation, arithmetic, arrays, counters, multisets, search, series, sorted, strides, unsigned), implement:<name> of the implementations of -implement"):
       // an unknown feature is reported with the input (see injected), a module that does not exist by the source
       // (see Source.resource)
       case (config, file :: rest) if file.contains(":") =>
@@ -496,7 +496,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.52.15"
+  val release = "0.52.16"
 
   def version() =
     println("Cuvée " + release)

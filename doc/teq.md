@@ -80,7 +80,12 @@ The modified variables of a loop are partitioned by the strongly connected compo
 (`TEQ.system`, `util.SCC`): a variable reads the variables of its results and, if the paths are guarded, of the
 guards. Each component, after those it reads, becomes one trace: a single accumulator for a variable in no cycle, as
 in the paper, several for a cycle, with the counter, the histories of the components it reads and the choices as
-dependencies. The exit values are `current(X)` and `current(S).i`. The component graph is acyclic, so the system of a
+dependencies. The choices of a loop are lists `Z?` with one value per iteration, stated as `length(Z?) == n` for the
+number of iterations `n`, since they are the only dependencies that are no traces over the counter; the length lemmas
+of teq.dfy (`length_counter`, `length_prefix`, `length_eq_zero`, ...) reduce these facts where the lists are known, so
+that a choice still occurs only in its equation for the one-point rule. (An experiment with the choices as arrays read
+over the counter, `selects(Z?, ⌊K⌋)`, is on the branch `choices-arrays`: the arrays carry values beyond the iterations,
+so the facts about the choices became equations of `selects` terms that the variable cannot carry.) The exit values are `current(X)` and `current(S).i`. The component graph is acyclic, so the system of a
 nested loop is closed: its counter, traces and exit values are substituted by their definitions, and an inner loop is
 a value of the outer update; an outermost loop keeps its definitions as equations, which the engine follows through
 the classes. The per-variable traces of a cycle are views ([prove.md](prove.md)), and a rule may also match a cycle as
@@ -104,6 +109,7 @@ modules are injected after it by `-include teq:<concept>`:
 | `strides` | strided stores and stores ahead (MonoCera) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |
 | `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, geometric `series`; after `aggregation`, `arithmetic` |
+| `multisets` | the multiset of a list (`elems`, the multisets of the core) and the folds that do not depend on the order as folds of it (`msum`, `mparity`, `mmax`, `mmin`, the multiplicities); the sums and parities of reads at keys converted to them; swap, shift and rotation of arrays preserve the multiset; after `aggregation`, not in `-svcomp` (ideas/multisets.md) |
 
 Rules are tried in the order of the modules and of the files, so the order decides which abstraction a fragment
 gets; a rule whose pattern subsumes another comes after it. Within a module, the function declarations come first,

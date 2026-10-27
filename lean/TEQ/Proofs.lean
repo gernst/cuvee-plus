@@ -255,6 +255,56 @@ theorem earlier_consts : Stmt.earlier_consts := by
   rw [earlier_N_nonneg k _ hk, consts_N]
   exact N.earlier_consts k.toNat n.toNat x (by rw [N.integer_cast, N.integer_cast]; omega)
 
+-- lengths: the database's length is the integer of List.length, a trace over a list has one earlier state per value
+
+theorem length_nil : Stmt.length_nil := by intro α _; rfl
+
+theorem length_cons : Stmt.length_cons := by intro α _ x xs; simp
+
+theorem length_eq_zero : Stmt.length_eq_zero := by
+  intro α _ xs
+  cases xs with
+  | nil => simp
+  | cons y ys => simp
+
+theorem length_counter : Stmt.length_counter := by
+  intro i c n hn; rw [counter_N, N.length_butlast_counter]; omega
+
+theorem length_butlast_consts_N {α : Type} [Inhabited α] (m : Nat) (x : α) : (butlast (N.consts m x)).length = m := by
+  induction m with
+  | zero => rfl
+  | succ m ih => simp only [N.consts, butlast, List.length_cons, ih]
+
+theorem length_consts : Stmt.length_consts := by
+  intro α _ n x hn; rw [consts_N, length_butlast_consts_N]; omega
+
+theorem length_prefix : Stmt.length_prefix := by
+  intro α _ k xs ⟨hk, hkl⟩
+  rw [prefix_N, N.length_prefix k.toNat xs (by omega)]; omega
+
+theorem prefix_length : Stmt.prefix_length := by
+  intro α _ k xs h
+  induction xs generalizing k with
+  | nil => rfl
+  | cons x ys ih =>
+    simp only [List.length_cons] at h
+    simp only [«prefix»]
+    rw [if_neg (by omega), ih (k - 1) (by omega)]
+
+theorem length_maps : Stmt.length_maps := by
+  intro α β _ _ xs F n hxs; rw [N.length_maps]
+
+theorem length_maps_deps : Stmt.length_maps_deps := by
+  intro α β γ _ _ _ xs ys F n hxs hys h
+  rw [N.length_maps, N.length_zip_eq xs ys xs.length rfl (by omega)]
+
+theorem length_selects : Stmt.length_selects := by
+  intro α β _ _ a keys n hkeys; rw [selects, N.length_maps]
+
+theorem length_stores : Stmt.length_stores := by
+  intro α β _ _ a keys values n hkeys hvalues h
+  rw [stores, N.length_butlast_trace, N.length_zip_eq keys values keys.length rfl (by omega)]
+
 theorem consts_choice : Stmt.consts_choice := by
   intro α _ n xs c hxs; rw [counter_N, consts_N]; exact N.consts_choice n.toNat xs c (by omega)
 
@@ -321,6 +371,81 @@ theorem earlier_counts : Stmt.earlier_counts := by
   intro α _ j x e vs n hvs ⟨hj, hjn⟩
   rw [earlier_N_nonneg j _ hj, prefix_N]
   exact N.earlier_counts j.toNat x e vs n.toNat (by omega) (by rw [N.integer_cast, N.integer_cast]; omega)
+
+-- a store at a key that is not among the keys leaves their selects unchanged
+theorem selects_update_not_occurs {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (k : α) (v : β)
+    (keys : List α) (h : ¬occurs k keys) : selects (fun j => if j = k then v else a j) keys = selects a keys := by
+  induction keys with
+  | nil => rfl
+  | cons y ys ih =>
+    simp only [occurs, not_or] at h
+    simp only [selects, maps] at ih ⊢
+    rw [ih h.2, if_neg h.1]
+
+-- the selects after a store at one of distinct keys: the stored value in place of the old one, the rest unchanged; the
+-- aggregates are folds of an operation g over the values from a neutral element z
+theorem fold_selects_update {α β : Type} [Inhabited α] [Inhabited β] (z : Int) (g : β → Int) (agg : List β → Int)
+    (hnil : agg [] = z) (hcons : ∀ v vs, agg (v :: vs) = g v + agg vs)
+    (a : α → β) (k : α) (v : β) (keys : List α) (hd : distincts keys) :
+    agg (selects (fun j => if j = k then v else a j) keys)
+      = if occurs k keys then agg (selects a keys) + g v - g (a k) else agg (selects a keys) := by
+  induction keys with
+  | nil => rw [if_neg (by simp [occurs])]; rfl
+  | cons y ys ih =>
+    simp only [distincts] at hd
+    have hs : ∀ (f : α → β), selects f (y :: ys) = f y :: selects f ys := fun f => rfl
+    rw [hs, hs, hcons, hcons]
+    by_cases e : y = k
+    · subst e
+      rw [if_pos (show occurs y (y :: ys) from Or.inl rfl), if_pos rfl, selects_update_not_occurs a y v ys hd.1]
+      omega
+    · have ho : occurs k (y :: ys) ↔ occurs k ys := by simp only [occurs]; exact ⟨fun h => h.resolve_left e, Or.inr⟩
+      rw [if_neg e, ite_iff ho, ih hd.2]
+      split <;> omega
+
+theorem sum_selects_update : Stmt.sum_selects_update := by
+  intro α _ a k v keys n hkeys hd
+  exact fold_selects_update 0 id sum rfl (fun _ _ => rfl) a k v keys hd
+
+theorem parity_selects_update : Stmt.parity_selects_update := by
+  intro α _ a k v keys n hkeys hd
+  exact fold_selects_update 0 (fun w => if w % 2 = 0 then 1 else -1) parity rfl (fun _ _ => rfl) a k v keys hd
+
+theorem count_selects_update : Stmt.count_selects_update := by
+  intro α β _ _ a k w e keys n hkeys hd
+  exact fold_selects_update 0 (fun u => if u = e then 1 else 0) (count e) rfl (fun _ _ => rfl) a k w keys hd
+
+
+-- the lengths of the folds of aggregation.dfy
+theorem length_sums : Stmt.length_sums := by
+  intro x values n hvalues; rw [sums, N.length_butlast_trace]
+
+theorem length_maxs : Stmt.length_maxs := by
+  intro x values n hvalues; rw [maxs, N.length_butlast_trace]
+
+theorem length_mins : Stmt.length_mins := by
+  intro x values n hvalues; rw [mins, N.length_butlast_trace]
+
+theorem length_counts : Stmt.length_counts := by
+  intro α _ x e vs n hvs; rw [counts, N.length_butlast_trace]
+
+theorem length_compacts : Stmt.length_compacts := by
+  intro c0 ks P n hks
+  rw [compacts, N.length_butlast_trace, counts, N.length_zip_eq ks _ ks.length rfl]
+  rw [N.length_butlast_trace, N.length_maps]
+
+theorem length_filters_above : Stmt.length_filters_above := by
+  intro c0 ks b F n hks
+  rw [filters_above, N.length_butlast_trace, counts, N.length_zip_eq ks _ ks.length rfl]
+  rw [N.length_butlast_trace, N.length_maps]
+
+theorem length_filters_below : Stmt.length_filters_below := by
+  intro c0 ks b F n hks
+  rw [filters_below, N.length_butlast_trace, counts, N.length_zip_eq ks _ ks.length rfl]
+  rw [N.length_butlast_trace, N.length_maps]
+
+theorem length_parities : Stmt.length_parities := by
+  intro x values n hvalues; rw [parities, N.length_butlast_trace]
 
 theorem sums_consts : Stmt.sums_consts := by
   intro x n c; rw [consts_N, counter_N]; exact N.sums_consts x n.toNat c
@@ -712,6 +837,31 @@ theorem select_current_trace_reset_keep : Stmt.select_current_trace_reset_keep :
   rw [counter_N, N.select_current_trace_reset_keep]
   exact ite_iff (toNat_zero_iff n) _ _
 
+-- the shift of i + 1, ..., i + m one position down, by induction on the iterations: the first moves a[i + 1] to i,
+-- the rest read the positions above i + 1, which it has not written
+theorem select_current_trace_shift_N (m : Nat) : ∀ (a : Int → Int) (i j : Int),
+    current (trace a (butlast (N.counter i 1 m)) (fun x k => fun l => if l = k then x (k + 1) else x l)) j
+      = if i ≤ j ∧ j < i + m then a (j + 1) else a j := by
+  induction m with
+  | zero => intro a i j; simp only [N.counter, butlast, trace, current]; rw [if_neg (by omega)]
+  | succ m ih =>
+    intro a i j
+    rw [N.butlast_counter_succ]
+    simp only [trace]
+    simp only [current]
+    rw [ih]
+    by_cases h1 : i + 1 ≤ j ∧ j < i + 1 + m
+    · rw [if_pos h1, if_neg (by omega : ¬j + 1 = i), if_pos (by omega)]
+    · rw [if_neg h1]
+      by_cases e : j = i
+      · subst e; rw [if_pos rfl, if_pos (by omega)]
+      · rw [if_neg e, if_neg (by omega)]
+
+theorem select_current_trace_shift : Stmt.select_current_trace_shift := by
+  intro a i n j hn
+  rw [counter_N, select_current_trace_shift_N, Int.toNat_of_nonneg hn]
+
+
 theorem select_store_other : Stmt.select_store_other := N.select_store_other
 
 theorem selects_stores_counter : Stmt.selects_stores_counter := by
@@ -843,6 +993,9 @@ theorem select_current_trace_ahead_down : Stmt.select_current_trace_ahead_down :
 
 -- the lemmas of unsigned.dfy
 
+theorem length_mods : Stmt.length_mods := by
+  intro i c m n hn; rw [mods, N.length_butlast_trace, counter_N, N.length_butlast_counter]; omega
+
 theorem invs_mods_upper : Stmt.invs_mods_upper := by
   intro b i c m n h
   rw [mods_N, N.invs_mods_upper b i c m n.toNat h, N.integer_cast]
@@ -935,6 +1088,9 @@ theorem fifths_closed : Stmt.fifths_closed := by
 
 theorem current_trace_geometric : Stmt.current_trace_geometric := by
   intro y0 z n; rw [counter_N, pow_N]; exact N.current_trace_geometric y0 z n.toNat
+
+theorem length_series : Stmt.length_series := by
+  intro x0 z a n hn; rw [series, N.length_butlast_trace, counter_N, N.length_butlast_counter]; omega
 
 theorem current_series : Stmt.current_series := by
   intro x0 z a n; rw [series_N, pow_N]; exact N.current_series x0 z a n.toNat

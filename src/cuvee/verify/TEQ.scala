@@ -441,7 +441,9 @@ object TEQ extends Transform:
     val counter = Counter(Ints.zero, Ints.one, n)
     val current = sharp.indices.map(exits).toList
     val iterations = Invs(Butlast(K) :: sharp.indices.map(histories).toList ++ Zs, k :: sharp ++ zs, constraint)
-    val rest = List(iterations, Ints.le(Ints.zero, n))
+    // the lists of the choices have one value per iteration (length of teq.dfy)
+    val lengths = Zs.map(Z => Eq(App(state, state.funs(("length", 1)), List(Z)), n))
+    val rest = List(iterations, Ints.le(Ints.zero, n)) ++ lengths
 
     if closed
     then

@@ -69,6 +69,7 @@
           ((k$9 (butlast K$10)) (tmp$6 Tmp?$7))
           (not (= tmp$6 0)))
         (<= 0 n$8)
+        (= (length Tmp?$7) n$8)
         (<= 0 x$14))
       (= (mod x$14 2) 0))))
 
@@ -95,6 +96,7 @@
           ((k$9 (butlast K$10)) (tmp$6 Tmp?$7))
           (not (= tmp$6 0)))
         (<= 0 n$8)
+        (= (length Tmp?$7) n$8)
         (< x$14 0))
       (= 0 (mod x$14 2)))))
 

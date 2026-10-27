@@ -1,6 +1,16 @@
 # Multisets for folds that do not depend on the order
 
-A design, not implemented (Oct 27, 2026), over the multisets of the core (cvc5's bags). The folds of the database over lists (`sum`, `parity`, `count`, the maxima
+A design over the multisets of the core (cvc5's bags), implemented in part (Oct 27, 2026) as the module `teq:multisets`
+(resources/cuvee/teq/multisets.dfy; doc/teq.md): `elems`, `msum`, `mparity`, `mmax`, `mmin`, the multiplicities, the
+conversions of the sums and parities of reads at keys, swap and shift of arrays; optional, not in `-svcomp`.
+Measured (cloud, Oct 27, with the lengths of the choice lists of 0.52.16): converting the folds of all lists
+(`sum(xs) == msum(elems(xs))`, `count`, `current(maxs(...))`) proves the 10 sums and averages of reducercommutativity and
+mapsum, mapavg (+18 on Arrays), but loses 7 of Arrays (the maxima of standard_maxInArray_ground, ms2-ms5) and 27 of Loops
+(sqrt1, ps2-ps6, ...): rewriting is innermost, so a conversion of the inner fold preempts the rules of teq:aggregation
+on the comparisons around it. Next: the multisets as a detour for permutations only, a fold converted where its array is
+a permuted form (a chain of stores, the shift) and converted back once the permutation is removed. Open as well: sep
+(C's `%` keeps the sign, so the loop is a count by a predicate, no `parity`), the bitwise reductions (no folds yet), and
+the Lean model of the multisets (the module is not in `MODULES` of generate.py). The folds of the database over lists (`sum`, `parity`, `count`, the maxima
 and minima, the bitwise reductions of C) are stated over lists, so a permutation of an array (a swap, a rotation) is
 invisible only through one lemma per fold and per kind of permutation. A multiset of the values separates the two: a
 fold that does not depend on the order is a function of the multiset, and a permutation preserves the multiset.

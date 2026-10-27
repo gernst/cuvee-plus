@@ -96,6 +96,10 @@ function {:teq} {:fold} series(x0: int, z: int, a: int, n: int): Trace<int>
   trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: x * z + a)
 }
 
+lemma {:rw} {:teq} length_series(x0: int, z: int, a: int, n: int)
+  requires 0 <= n
+  ensures length(⌊series(x0, z, a, n)⌋) == n
+
 // without division: (z - 1) times its value plus a is the same power of z times (z - 1) times its initial value plus
 // a; a forward fact, since the value is a quotient by z - 1, which is 0 for z == 1
 lemma {:fw} {:teq} current_series(x0: int, z: int, a: int, n: int)

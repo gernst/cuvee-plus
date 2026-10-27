@@ -12,6 +12,10 @@ function {:teq} {:fold} mods(i: int, c: int, m: int, n: int): Trace<int>
   trace(i, for ⌊counter(0, 1, n)⌋ do x, k :: (x + c) % m)
 }
 
+lemma {:rw} {:teq} length_mods(i: int, c: int, m: int, n: int)
+  requires 0 <= n
+  ensures length(⌊mods(i, c, m, n)⌋) == n
+
 // an upper bound b of a counter by c modulo m holds for all its values iff it holds for the last of them without the
 // remainder, since the values reach b before they could wrap around, b + c <= m; the initial value is below b,
 // otherwise see the next lemma, whose disjunction is not split in the context of a combinator

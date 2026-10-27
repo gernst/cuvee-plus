@@ -199,6 +199,52 @@ def Stmt.earlier_consts : Prop :=
     0 ≤ k ∧ k < n →
       (earlier k (butlast (consts n x)) = x)
 
+def Stmt.length_nil : Prop :=
+  ∀ {α : Type} [Inhabited α],
+    length (nil : List α) = 0
+
+def Stmt.length_cons : Prop :=
+  ∀ {α : Type} [Inhabited α] (x : α) (xs : List α),
+    length (cons x xs) = length xs + 1
+
+def Stmt.length_eq_zero : Prop :=
+  ∀ {α : Type} [Inhabited α] (xs : List α),
+    length xs = 0 ↔ xs = nil
+
+def Stmt.length_counter : Prop :=
+  ∀ (i : Int) (c : Int) (n : Int),
+    0 ≤ n → length (butlast (counter i c n)) = n
+
+def Stmt.length_consts : Prop :=
+  ∀ {α : Type} [Inhabited α] (n : Int) (x : α),
+    0 ≤ n → length (butlast (consts n x)) = n
+
+def Stmt.length_prefix : Prop :=
+  ∀ {α : Type} [Inhabited α] (k : Int) (xs : List α),
+    0 ≤ k ∧ k ≤ length xs → length («prefix» k xs) = k
+
+def Stmt.prefix_length : Prop :=
+  ∀ {α : Type} [Inhabited α] (k : Int) (xs : List α),
+    length xs ≤ k → «prefix» k xs = xs
+
+def Stmt.length_maps : Prop :=
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (xs : List α) (F : α → β) (n : Int) (hxs : length xs = n),
+    length (maps xs (fun x => F x)) = length xs
+
+def Stmt.length_maps_deps : Prop :=
+  ∀ {α β γ : Type} [Inhabited α] [Inhabited β] [Inhabited γ] (xs : List α) (ys : List β) (F : α → β → γ) (n : Int) (hxs : length xs = n) (hys : length ys = n),
+    length ys = length xs
+      → length (maps (List.zip xs ys) (fun ⟨x, y⟩ => F x y)) = length xs
+
+def Stmt.length_selects : Prop :=
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (keys : List α) (n : Int) (hkeys : length keys = n),
+    length (selects a keys) = length keys
+
+def Stmt.length_stores : Prop :=
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (keys : List α) (values : List β) (n : Int) (hkeys : length keys = n) (hvalues : length values = n),
+    length values = length keys
+      → length (butlast (stores a keys values)) = length keys
+
 def Stmt.consts_choice : Prop :=
   ∀ {α : Type} [Inhabited α] (n : Int) (xs : List α) (c : α) (hxs : length xs = n),
     invs (List.zip (butlast (counter 0 1 n)) xs) (fun ⟨k, x⟩ => x = c)
@@ -251,6 +297,10 @@ noncomputable def count {α : Type} [Inhabited α] (e : α) (vs : List α) : Int
 noncomputable def sums (x : Int) (values : List Int) : Trace Int :=
   trace x values (fun s v => s + v)
 
+def Stmt.length_sums : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    length (butlast (sums x values)) = length values
+
 def Stmt.current_sums : Prop :=
   ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     current (sums x values) = x + sum values
@@ -281,11 +331,19 @@ noncomputable def maxs (x : Int) (values : List Int) : Trace Int :=
     values
     (fun m v => if m < v then v else if v ≤ m then m else unspecified)
 
+def Stmt.length_maxs : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    length (butlast (maxs x values)) = length values
+
 noncomputable def mins (x : Int) (values : List Int) : Trace Int :=
   trace
     x
     values
     (fun m v => if v < m then v else if m ≤ v then m else unspecified)
+
+def Stmt.length_mins : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    length (butlast (mins x values)) = length values
 
 noncomputable def counts {α : Type} [Inhabited α] (x : Int) (e : α)
                                                   (vs : List α) : Trace Int :=
@@ -293,6 +351,10 @@ noncomputable def counts {α : Type} [Inhabited α] (x : Int) (e : α)
     x
     vs
     (fun y v => if v = e then y + 1 else if v ≠ e then y else unspecified)
+
+def Stmt.length_counts : Prop :=
+  ∀ {α : Type} [Inhabited α] (x : Int) (e : α) (vs : List α) (n : Int) (hvs : length vs = n),
+    length (butlast (counts x e vs)) = length vs
 
 def Stmt.counts_false : Prop :=
   ∀ (x : Int) (bs : List Prop) (n : Int) (hbs : length bs = n),
@@ -336,6 +398,35 @@ def Stmt.earlier_counts : Prop :=
   ∀ {α : Type} [Inhabited α] (j : Int) (x : Int) (e : α) (vs : List α) (n : Int) (hvs : length vs = n),
     0 ≤ j ∧ j < n →
       (earlier j (butlast (counts x e vs)) = x + count e («prefix» j vs))
+
+def Stmt.sum_selects_update : Prop :=
+  ∀ {α : Type} [Inhabited α] (a : α → Int) (k : α) (v : Int) (keys : List α) (n : Int) (hkeys : length keys = n),
+    distincts keys
+      → sum (selects (fun j => if j = k then v else a j) keys)
+        = (if occurs k keys then
+             sum (selects a keys) + v - a k
+           else
+             sum (selects a keys))
+
+def Stmt.parity_selects_update : Prop :=
+  ∀ {α : Type} [Inhabited α] (a : α → Int) (k : α) (v : Int) (keys : List α) (n : Int) (hkeys : length keys = n),
+    distincts keys
+      → parity (selects (fun j => if j = k then v else a j) keys)
+        = (if occurs k keys then
+             parity (selects a keys) + (if v % 2 = 0 then 1 else -1)
+               - (if a k % 2 = 0 then 1 else -1)
+           else
+             parity (selects a keys))
+
+def Stmt.count_selects_update : Prop :=
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (k : α) (w : β) (e : β) (keys : List α) (n : Int) (hkeys : length keys = n),
+    distincts keys
+      → count e (selects (fun j => if j = k then w else a j) keys)
+        = (if occurs k keys then
+             count e (selects a keys) + (if w = e then 1 else 0)
+               - (if a k = e then 1 else 0)
+           else
+             count e (selects a keys))
 
 def Stmt.sums_consts : Prop :=
   ∀ (x : Int) (n : Int) (c : Int),
@@ -473,6 +564,10 @@ noncomputable def compacts (c0 : Int → Int) (ks : List Int)
        else
          if ¬P k then c else unspecified)
 
+def Stmt.length_compacts : Prop :=
+  ∀ (c0 : Int → Int) (ks : List Int) (P : Int → Prop) (n : Int) (hks : length ks = n),
+    length (butlast (compacts c0 ks P)) = length ks
+
 def Stmt.select_current_compacts_lower : Prop :=
   ∀ (c0 : Int → Int) (K : Trace Int) (n : Int) (m : Int) (x : Int) (P : Int → Prop),
     K = counter 0 1 n
@@ -500,6 +595,10 @@ noncomputable def filters_above (c0 : Int → Int) (ks : List Int) (b : Int)
        else
          if F k < b then c else unspecified)
 
+def Stmt.length_filters_above : Prop :=
+  ∀ (c0 : Int → Int) (ks : List Int) (b : Int) (F : Int → Int) (n : Int) (hks : length ks = n),
+    length (butlast (filters_above c0 ks b F)) = length ks
+
 def Stmt.select_current_filters_above : Prop :=
   ∀ (c0 : Int → Int) (ks : List Int) (b : Int) (F : Int → Int) (m : Int) (x : Int) (n : Int) (hks : length ks = n),
     m = count True (maps ks (fun k => b ≤ F k)) ∧ 0 ≤ x ∧ x < m
@@ -519,6 +618,10 @@ noncomputable def filters_below (c0 : Int → Int) (ks : List Int) (b : Int)
          else
            unspecified)
 
+def Stmt.length_filters_below : Prop :=
+  ∀ (c0 : Int → Int) (ks : List Int) (b : Int) (F : Int → Int) (n : Int) (hks : length ks = n),
+    length (butlast (filters_below c0 ks b F)) = length ks
+
 def Stmt.select_current_filters_below : Prop :=
   ∀ (c0 : Int → Int) (K : Trace Int) (n : Int) (b : Int) (F : Int → Int) (m : Int) (x : Int),
     K = counter 0 1 n
@@ -533,6 +636,10 @@ noncomputable def parities (x : Int) (values : List Int) : Trace Int :=
     values
     (fun s v =>
        if v % 2 = 0 then s + 1 else if v % 2 ≠ 0 then s - 1 else unspecified)
+
+def Stmt.length_parities : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    length (butlast (parities x values)) = length values
 
 def Stmt.current_parities : Prop :=
   ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
@@ -1007,6 +1114,17 @@ def Stmt.select_current_trace_reset_keep : Prop :=
       j
       = (if n ≤ 0 then a0 j else c)
 
+def Stmt.select_current_trace_shift : Prop :=
+  ∀ (a : Int → Int) (i : Int) (n : Int) (j : Int),
+    0 ≤ n
+      → current
+        (trace
+           a
+           (butlast (counter i 1 n))
+           (fun x k => fun j => if j = k then x (k + 1) else x j))
+        j
+        = (if i ≤ j ∧ j < i + n then a (j + 1) else a j)
+
 def Stmt.select_store_other : Prop :=
   ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (i : α) (v : β) (j : α),
     j ≠ i → (fun j => if j = i then v else a j) j = a j
@@ -1377,6 +1495,10 @@ def Stmt.select_current_trace_ahead_down : Prop :=
 noncomputable def mods (i : Int) (c : Int) (m : Int) (n : Int) : Trace Int :=
   trace i (butlast (counter 0 1 n)) (fun x k => (x + c) % m)
 
+def Stmt.length_mods : Prop :=
+  ∀ (i : Int) (c : Int) (m : Int) (n : Int),
+    0 ≤ n → length (butlast (mods i c m n)) = n
+
 def Stmt.invs_mods_upper : Prop :=
   ∀ (b : Int) (i : Int) (c : Int) (m : Int) (n : Int),
     0 ≤ i ∧ i < b ∧ 0 < c ∧ b + c ≤ m
@@ -1510,6 +1632,10 @@ def Stmt.current_trace_geometric : Prop :=
 
 noncomputable def series (x0 : Int) (z : Int) (a : Int) (n : Int) : Trace Int :=
   trace x0 (butlast (counter 0 1 n)) (fun x k => x * z + a)
+
+def Stmt.length_series : Prop :=
+  ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),
+    0 ≤ n → length (butlast (series x0 z a n)) = n
 
 def Stmt.current_series : Prop :=
   ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),

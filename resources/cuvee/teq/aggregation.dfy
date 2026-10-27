@@ -47,6 +47,9 @@ function {:teq} {:fold} sums(x: int, values: List<int>): Trace<int>
   trace(x, for values do s, v :: s + v)
 }
 
+lemma {:rw} {:teq} length_sums(x: int, values: List<int>)
+  ensures length(⌊sums(x, values)⌋) == length(values)
+
 lemma {:rw} {:teq} current_sums(x: int, values: List<int>)
   ensures current(sums(x, values))
     == x + sum(values)
@@ -82,11 +85,17 @@ function {:teq} {:fold} maxs(x: int, values: List<int>): Trace<int>
   trace(x, for values do m, v :: case m < v => v case v <= m => m)
 }
 
+lemma {:rw} {:teq} length_maxs(x: int, values: List<int>)
+  ensures length(⌊maxs(x, values)⌋) == length(values)
+
 // (used on SV-COMP by standard_minInArray_ground-2 only)
 function {:teq} {:fold} mins(x: int, values: List<int>): Trace<int>
 {
   trace(x, for values do m, v :: case v < m => v case m <= v => m)
 }
+
+lemma {:rw} {:teq} length_mins(x: int, values: List<int>)
+  ensures length(⌊mins(x, values)⌋) == length(values)
 
 // the number of occurrences of a value, counted from an initial value
 // (used on SV-COMP by half, sumt2 only)
@@ -94,6 +103,9 @@ function {:teq} {:fold} counts<a>(x: int, e: a, vs: List<a>): Trace<int>
 {
   trace(x, for vs do y, v :: case v == e => y + 1 case v != e => y)
 }
+
+lemma {:rw} {:teq} length_counts<a>(x: int, e: a, vs: List<a>)
+  ensures length(⌊counts(x, e, vs)⌋) == length(vs)
 
 // on booleans, the guards are the values themselves; the occurrences of false come first,
 // since the guard b of the other lemma also matches !b, which counts the occurrences of true among the negations
@@ -130,6 +142,29 @@ lemma {:rw} {:teq} current_counts<a>(x: int, e: a, vs: List<a>)
 lemma {:rw} {:teq} earlier_counts<a>(j: int, x: int, e: a, vs: List<a>)
   ensures earlier(j, ⌊counts(x, e, vs)⌋)
     == x + count(e, prefix(j, vs))
+
+// the aggregates of the values read at distinct keys after a store: the stored value replaces the old one if the key is
+// among them, otherwise nothing changes; one per aggregate of lists (sum, parity, count), restored from the legacy
+// database of 0.50.3 (distincts of a counter is distincts_counter of teq.dfy)
+// (for array-patterns: the store of the last iteration of a loop before its break)
+lemma {:rw} {:teq} sum_selects_update<a>(a: array<a, int>, k: a, v: int, keys: List<a>)
+  requires distincts(keys)
+  ensures sum(selects(a[k := v], keys))
+    == if occurs(k, keys) then sum(selects(a, keys)) + v - a[k] else sum(selects(a, keys))
+
+lemma {:rw} {:teq} parity_selects_update<a>(a: array<a, int>, k: a, v: int, keys: List<a>)
+  requires distincts(keys)
+  ensures parity(selects(a[k := v], keys))
+    == if occurs(k, keys)
+       then parity(selects(a, keys)) + (if v % 2 == 0 then 1 else -1) - (if a[k] % 2 == 0 then 1 else -1)
+       else parity(selects(a, keys))
+
+lemma {:rw} {:teq} count_selects_update<a, b>(a: array<a, b>, k: a, w: b, e: b, keys: List<a>)
+  requires distincts(keys)
+  ensures count(e, selects(a[k := w], keys))
+    == if occurs(k, keys)
+       then count(e, selects(a, keys)) + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
+       else count(e, selects(a, keys))
 
 // the prefix sums of n copies of c, from x, are the counter from x by c: the counter of an inner loop, whose trace is
 // folded into sums over its dependency before that is known to be a counter (see examples/dafny/sorting/nested_sum.dfy)
@@ -268,6 +303,9 @@ function {:teq} {:fold} compacts(c0: array<int, int>, ks: List<int>, P: (int) ->
   trace(c0, for ks, ⌊counts(0, true, maps(for ks yield k :: P(k)))⌋ do c, k, j :: case P(k) => c[j := k] case !P(k) => c)
 }
 
+lemma {:rw} {:teq} length_compacts(c0: array<int, int>, ks: List<int>, P: (int) -> bool)
+  ensures length(⌊compacts(c0, ks, P)⌋) == length(ks)
+
 // the x-th of them is at least x, and at most x plus the iterations without P after it
 // (from standard_partial_init_ground)
 lemma {:rw} {:teq} select_current_compacts_lower(c0: array<int, int>, K: Trace<int>, n: int, m: int, x: int,
@@ -294,6 +332,9 @@ function {:teq} {:fold} filters_above(c0: array<int, int>, ks: List<int>, b: int
         case b <= F(k) => c[j := F(k)] case F(k) < b => c)
 }
 
+lemma {:rw} {:teq} length_filters_above(c0: array<int, int>, ks: List<int>, b: int, F: (int) -> int)
+  ensures length(⌊filters_above(c0, ks, b, F)⌋) == length(ks)
+
 // (from standard_partition_ground-2, standard_partition_original_ground)
 lemma {:rw} {:teq} select_current_filters_above(c0: array<int, int>, ks: List<int>, b: int, F: (int) -> int, m: int,
                                                 x: int)
@@ -310,6 +351,9 @@ function {:teq} {:fold} filters_below(c0: array<int, int>, ks: List<int>, b: int
         case b <= F(k) => c case F(k) < b => c[j := F(k)])
 }
 
+lemma {:rw} {:teq} length_filters_below(c0: array<int, int>, ks: List<int>, b: int, F: (int) -> int)
+  ensures length(⌊filters_below(c0, ks, b, F)⌋) == length(ks)
+
 // (from standard_partition_original_ground)
 lemma {:rw} {:teq} select_current_filters_below(c0: array<int, int>, K: Trace<int>, n: int, b: int, F: (int) -> int,
                                                 m: int, x: int)
@@ -324,6 +368,9 @@ function {:teq} {:fold} parities(x: int, values: List<int>): Trace<int>
 {
   trace(x, for values do s, v :: case v % 2 == 0 => s + 1 case v % 2 != 0 => s - 1)
 }
+
+lemma {:rw} {:teq} length_parities(x: int, values: List<int>)
+  ensures length(⌊parities(x, values)⌋) == length(values)
 
 // (unused on SV-COMP; the final value of the fold parities)
 lemma {:rw} {:teq} current_parities(x: int, values: List<int>)

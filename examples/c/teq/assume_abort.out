@@ -48,7 +48,7 @@
 
 (goal
   (forall
-    ((K$17 (Trace Int)) (Tmp?$14 (List Int)) (tmp$26 Int))
+    ((K$17 (Trace Int)) (K?$13 (List Int)) (Tmp?$14 (List Int)) (tmp$26 Int))
     (=>
       (and
         (= K$17 (counter 0 1 1000))
@@ -60,6 +60,8 @@
           ((k$16 (butlast K$17))
             (tmp$12 Tmp?$14))
           (< tmp$12 10))
+        (= (length K?$13) 1000)
+        (= (length Tmp?$14) 1000)
         (<= 0 tmp$26)
         (< tmp$26 1000))
       (<
