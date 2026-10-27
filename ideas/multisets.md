@@ -7,8 +7,12 @@ Measured (cloud, Oct 27, with the lengths of the choice lists of 0.52.16): conve
 (`sum(xs) == msum(elems(xs))`, `count`, `current(maxs(...))`) proves the 10 sums and averages of reducercommutativity and
 mapsum, mapavg (+18 on Arrays), but loses 7 of Arrays (the maxima of standard_maxInArray_ground, ms2-ms5) and 27 of Loops
 (sqrt1, ps2-ps6, ...): rewriting is innermost, so a conversion of the inner fold preempts the rules of teq:aggregation
-on the comparisons around it. Next: the multisets as a detour for permutations only, a fold converted where its array is
-a permuted form (a chain of stores, the shift) and converted back once the permutation is removed. Open as well: sep
+on the comparisons around it. Considered next: the
+multisets as a detour for permutations only, converted back afterwards; the conversion back loops with the forward one
+where a permutation lemma fails. In progress instead (Oct 28, uncommitted): the twins of the lemmas of teq:aggregation
+that consume a fold of a list (`sum_consts`, `sum_counter`, the counts, the bounds of the maxima and minima, the updates
+of selects), the same statements on the folds of multisets, so that the conversion of all folds preempts none of them;
+locally standard_maxInArray_ground and sqrt1-ll are proved again; its forward lemmas have no twins. Open as well: sep
 (C's `%` keeps the sign, so the loop is a count by a predicate, no `parity`), the bitwise reductions (no folds yet), and
 the Lean model of the multisets (the module is not in `MODULES` of generate.py). The folds of the database over lists (`sum`, `parity`, `count`, the maxima
 and minima, the bitwise reductions of C) are stated over lists, so a permutation of an array (a swap, a rotation) is

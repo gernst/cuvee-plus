@@ -11,7 +11,7 @@ benchmarks are not rerun with Cuvée.
 ### Now (chosen Oct 27, 2026)
 
 In this order; each is checked on its tasks first, then by one cloud run of Arrays and Loops (no task lost). Open
-tasks are from the cloud run of Oct 27 (0.52.14 without the cleanup, Ryzen, 120 s).
+tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.16, Ryzen, 120 s, one core).
 
 - [ ] **Strided stores** (array-tiling, 22 of 29 open: `pr2`-`pr5`, `mbpr2`-`mbpr5`, `pnr2`-`pnr5`, `nr2`-`nr5`,
       `tcpy`, ...). Three gaps, in this order:
@@ -23,25 +23,35 @@ tasks are from the cloud run of Oct 27 (0.52.14 without the cleanup, Ryzen, 120 
          values was tried and rejected by decision: only cases with equal results are merged, the case distinction of
          updates stays (ideas/conditional-stores.md); another route is open;
       4. open: nr2-nr5, whose inner loop over two positions leaves cases that store at `2 * k` and `2 * k + 1`, the
-         iteration variable written as the literal it equals in each case (ideas/engine-gaps.md, gap 3).
+         iteration variable written as the literal it equals in each case (ideas/engine-gaps.md, gap 3); no evaluation
+         of concrete traces, by decision.
 - [ ] **Equalities from the simplex to the classes** (ideas/prove-next.md, section 1): two counts known equal only
       by inequalities stay different terms (`n₂ == SIZE == n₃` by the exit test and the bound of the iteration
       constraint). The general exchange of all equalities lost 21 results of Arrays and 13 of Loops; instead, the
       equation `i == N` at the exit of a loop whose counter the test bounds, stated once per loop, or on demand where
       two atoms of the same function differ only in counts. The zero_sum tasks are solved by `-teq` now (18 of 18);
       measure on zero_sum1 with `-slice`, standard_maxInArray_ground and standard_minInArray_ground-2, then look for
-      the tasks of Arrays and Loops whose remaining goal compares such terms.
+      the tasks of Arrays and Loops whose remaining goal compares such terms. Oct 27: the three are solved (0.52.14),
+      and a search of the remaining goals of the cloud logs found no task of this kind; set aside until one shows up.
 - [ ] **array-patterns** (37 tasks, 30 true, none solved: 20 unknown, 17 timeouts): a loop `while(1)` stores at a
       nondeterministic index into two arrays (`array1[index] = f(index)`, `array2[index] = g(index)` or kept), and a
       final loop sums both arrays, bounded by a closed form. Plan: the goals after `-teq -prove` of array1 and
       array10 first; then the value of a cell after stores at a list of keys (`if occurs(k, keys) then ... else
       a0[k]`, teq.dfy), a pointwise bound of the sum of both arrays per cell (the cancelling pairs), and a bound of
       a sum by a pointwise bound over a counter; lemmas local to the tasks first, into the database once two tasks
-      share them; why 17 time out.
+      share them; why 17 time out. Oct 27: the goal of array1 is the sum over a range of two arrays after stores at
+      repeating keys, related pointwise (`array2[N - 1 - j] == -array1[j]`); the updates of sums of selects
+      (`sum_selects_update`, restored in 0.52.16) decide the last iteration; multisets do not give the rest (the
+      relation is pointwise, and the last write per key has no closed form); set aside by decision.
 - [ ] **Reducer commutativity** (reducercommutativity 28, array-crafted bAnd, bor, xor 15): the module `teq:multisets`
-      (ideas/multisets.md), optional; converting the folds of all lists proves the sums and averages but loses 34 tasks
-      (innermost rewriting preempts the rules around the folds); next: multisets as a detour for permutations only;
-      open: sep (a count by a predicate of C's signed `%`), the bitwise reductions (no folds), the Lean model.
+      (ideas/multisets.md), optional; converting the folds of all lists proves the sums and averages but lost 34 tasks
+      (innermost rewriting preempts the rules around the folds); in progress (Oct 28): the twins of the lemmas of
+      teq:aggregation on the folds of multisets, which keep the conversion of all folds from preempting them; open:
+      sep (a count by a predicate of C's signed `%`), the bitwise reductions (no folds), the Lean model of multisets.
+- [ ] functions_1-2 (false, lost in 0.52.16): `forall Result?: List<int> :: length(Result?) != 134217728` needs that a
+      list of a given length exists, which neither the rules nor z3 decide. A predicate `haslength(n, xs)` that the
+      engine drops when `xs` occurs nowhere else was considered and dropped by decision (Oct 28): one task, and a
+      special case of the engine for one function of the database.
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
@@ -195,8 +205,8 @@ Cleanup, none of it a bug.
   right-hand side of an equation.
 - Guarded cases are matched in order, so a higher-order guard bound by a later case is still open for an earlier one.
 - Which lemmas of the database should be `{:fw}` rather than `{:rw}`.
-- No bounds of division (`l <= (h + l) / 2`) except for `t div k` in the arithmetic of `-prove` (not `quot` of C),
-  no cancellation (`2 * n / 2`, mlceu2).
+- Division in the arithmetic of `-prove` only by the definition of `t div k` and `t mod k` for a literal `k`
+  (0.52.15), not for `quot` of C, no cancellation (`2 * n / 2`, mlceu2).
 - The selection of dependencies is not backtracked when a side condition fails (nested_mult).
 - A bare bound variable in the body of an `invs` pattern is synthesized as a map and matches every fragment of that
   shape (cocktail_sort, selection_sort); `Rule.check` could reject such left-hand sides with `invs` side conditions.

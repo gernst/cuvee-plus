@@ -126,6 +126,11 @@ or solvers consume.
   conditions, stated in the orientation of the atom in the goals. The
   instances of forward lemmas are not memoized: a memo keyed by the
   canonical facts costs more than it saves (doc/prove.md).
+- The module `teq:multisets` converts the folds of lists (`sum`, `parity`,
+  `count`, `current(maxs(...))`, `current(mins(...))`) to folds of multisets;
+  every rewrite lemma of `teq:aggregation` that consumes such a fold has its
+  twin on the fold of the multiset there, since rewriting is innermost and an
+  inner conversion would preempt it: a new consumer gets its twin.
 - Long runs use a private copy of `cuvee.jar`: a rebuild during a run crashes
   the JVM, and the checkout's jar may contain uncommitted changes.
 - Runs on `-teq` examples take a timeout and one core

@@ -110,15 +110,119 @@ lemma {:rw} {:teq} single_select_le_elems(a: array<int, int>, k: int, keys: List
   requires occurs(k, keys)
   ensures (multiset{a[k]} <= elems(selects(a, keys))) <==> true
 
-// a fold of the values read at keys is the fold of their multiset; only for reads at keys, where the permutations of
-// arrays occur, not for all lists: a conversion of every sum or maximum preempts the rules of teq:aggregation on the
-// comparisons around them, since rewriting is innermost (cloud, Oct 27: 27 tasks of Loops lost, sqrt1, ps2-ps6)
-// (from reducercommutativity: sum, avg, sep)
-lemma {:rw} {:teq} sum_selects_elems(a: array<int, int>, keys: List<int>)
-  ensures sum(selects(a, keys)) == msum(elems(selects(a, keys)))
+// a fold of a list that does not depend on the order is the fold of its multiset, for all lists; the lemmas of
+// teq:aggregation that consume a fold of a list have their twins on the fold of its multiset below, so that a
+// conversion of an inner fold, which innermost rewriting applies first, preempts none of them
+// (from reducercommutativity: sum, avg, sep, max)
+lemma {:rw} {:teq} sum_elems(xs: List<int>)
+  ensures sum(xs) == msum(elems(xs))
 
-lemma {:rw} {:teq} parity_selects_elems(a: array<int, int>, keys: List<int>)
-  ensures parity(selects(a, keys)) == mparity(elems(selects(a, keys)))
+lemma {:rw} {:teq} parity_elems(xs: List<int>)
+  ensures parity(xs) == mparity(elems(xs))
+
+lemma {:rw} {:teq} count_elems<a>(e: a, xs: List<a>)
+  ensures count(e, xs) == elems(xs)[e]
+
+lemma {:rw} {:teq} current_maxs_elems(x: int, values: List<int>)
+  ensures current(maxs(x, values)) == mmax(x, elems(values))
+
+lemma {:rw} {:teq} current_mins_elems(x: int, values: List<int>)
+  ensures current(mins(x, values)) == mmin(x, elems(values))
+
+// the twins of the lemmas of teq:aggregation on folds of lists, the same statements on the folds of the multisets
+// (sum_consts, sum_counter, ..., the updates, the bounds of the maxima and minima); not of its forward lemmas
+lemma {:rw} {:teq} msum_consts(n: int, x: int)
+  requires 0 <= n
+  ensures msum(elems(⌊consts(n, x)⌋))
+    == x * n
+
+lemma {:rw} {:teq} msum_counter(i: int, c: int, n: int)
+  requires 0 <= n
+  ensures msum(elems(⌊counter(i, c, n)⌋))
+    == (2 * i + (n - 1) * c) * n / 2
+
+lemma {:rw} {:teq} msum_cases_below(n: int, c: int, d: int, e: int, P: (int) -> bool)
+  requires 0 <= e && n * c <= e && n * d <= e
+  ensures msum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then (if P(k) then c else d) else 0))) <= e
+
+lemma {:rw} {:teq} msum_mod_below(n: int, m: int, e: int)
+  requires 0 <= n && 0 < m && n * (m - 1) <= e
+  ensures msum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then k % m else 0))) <= e
+
+lemma {:rw} {:teq} msum_indicator_true<a>(xs: List<a>, P: a -> bool)
+  ensures msum(elems(maps(for xs yield x :: if P(x) then 1 else 0))) == elems(maps(for xs yield x :: P(x)))[true]
+
+lemma {:rw} {:teq} msum_indicator_false<a>(xs: List<a>, P: a -> bool)
+  ensures msum(elems(maps(for xs yield x :: if P(x) then 0 else 1))) == elems(maps(for xs yield x :: P(x)))[false]
+
+lemma {:rw} {:teq} msum_selects_update<a>(a: array<a, int>, k: a, v: int, keys: List<a>)
+  requires distincts(keys)
+  ensures msum(elems(selects(a[k := v], keys)))
+    == if occurs(k, keys) then msum(elems(selects(a, keys))) + v - a[k] else msum(elems(selects(a, keys)))
+
+lemma {:rw} {:teq} mparity_selects_update<a>(a: array<a, int>, k: a, v: int, keys: List<a>)
+  requires distincts(keys)
+  ensures mparity(elems(selects(a[k := v], keys)))
+    == if occurs(k, keys)
+       then mparity(elems(selects(a, keys))) + (if v % 2 == 0 then 1 else -1) - (if a[k] % 2 == 0 then 1 else -1)
+       else mparity(elems(selects(a, keys)))
+
+lemma {:rw} {:teq} mcount_selects_update<a, b>(a: array<a, b>, k: a, w: b, e: b, keys: List<a>)
+  requires distincts(keys)
+  ensures elems(selects(a[k := w], keys))[e]
+    == if occurs(k, keys)
+       then elems(selects(a, keys))[e] + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
+       else elems(selects(a, keys))[e]
+
+lemma {:rw} {:teq} mcount_consts<a>(n: int, e: a, v: a)
+  requires 0 <= n
+  ensures elems(⌊consts(n, v)⌋)[e]
+    == if v == e then n else 0
+
+lemma {:rw} {:teq} mcount_true_below(m: int, i: int, n: int)
+  requires i <= m <= i + n
+  ensures elems(maps(for ⌊counter(i, 1, n)⌋ yield k :: k < m))[true]
+    == m - i
+
+lemma {:rw} {:teq} mcount_true_above(m: int, i: int, n: int)
+  requires i <= m <= i + n
+  ensures elems(maps(for ⌊counter(i, 1, n)⌋ yield k :: m <= k))[true]
+    == i + n - m
+
+lemma {:rw} {:teq} mcount_remainder(n: int, m: int, r: int)
+  requires 0 <= n && 0 < m && 0 <= r < m
+  ensures elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: k % m))[r] == (n + m - 1 - r) / m
+
+lemma {:rw} {:teq} mcount_false_true(i: int, c: int, n: int, hs: List<int>, P: (int, int) -> bool)
+  requires 0 <= n
+  ensures elems(maps(for ⌊counter(i, c, n)⌋, hs yield k, h :: P(k, h)))[false]
+    == n - elems(maps(for ⌊counter(i, c, n)⌋, hs yield k, h :: P(k, h)))[true]
+
+lemma {:rw} {:teq} mcount_true_eq(ks: List<int>, r: int, hs: List<int>, F: (int, int) -> int)
+  ensures elems(maps(for ks, hs yield k, h :: F(k, h) == r))[true]
+    == elems(maps(for ks, hs yield k, h :: F(k, h)))[r]
+
+lemma {:rw} {:teq} mmax_earlier(k: int, x: int, values: List<int>)
+  ensures earlier(k, values) <= mmax(x, elems(values))
+
+lemma {:rw} {:teq} mmax_prefix_earlier(k: int, x: int, n: int, xs: List<int>)
+  requires 0 <= k < n
+  ensures earlier(k, xs) <= mmax(x, elems(prefix(n, xs)))
+
+lemma {:rw} {:teq} mmin_earlier(k: int, x: int, values: List<int>)
+  ensures mmin(x, elems(values)) <= earlier(k, values)
+
+lemma {:rw} {:teq} mmin_prefix_earlier(k: int, x: int, n: int, xs: List<int>)
+  requires 0 <= k < n
+  ensures mmin(x, elems(prefix(n, xs))) <= earlier(k, xs)
+
+lemma {:rw} {:teq} mmax_seeded_earlier(j: int, h: int, i: int, n: int, xs: List<int>)
+  requires h == i - 1 && h <= j < i + n
+  ensures earlier(j, xs) <= mmax(earlier(h, xs), elems(maps(for ⌊counter(i, 1, n)⌋ yield v :: earlier(v, xs))))
+
+lemma {:rw} {:teq} mmin_seeded_earlier(j: int, h: int, i: int, n: int, xs: List<int>)
+  requires h == i - 1 && h <= j < i + n
+  ensures mmin(earlier(h, xs), elems(maps(for ⌊counter(i, 1, n)⌋ yield v :: earlier(v, xs)))) <= earlier(j, xs)
 
 // a swap of two positions among distinct keys preserves the multiset of the values read there; the values are
 // conditions, since the simplifier evaluates the reads of the swap before the lemma matches

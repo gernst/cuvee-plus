@@ -3,13 +3,13 @@
 Proposals, plans and open points that are not implemented; a proposal is removed once it is implemented and
 documented in `doc/`.
 
-**Current work** (Oct 27, 2026; the order and the tasks in TODO.md, "Work queue: Now"):
-1. strided stores: [prove-next.md](prove-next.md) section 2 (remainders), [engine-gaps.md](engine-gaps.md) gap 4(b)
-   (division in the simplex), [conditional-stores.md](conditional-stores.md) (the cases of conditional stores);
-2. equalities from the simplex to the classes: [prove-next.md](prove-next.md) section 1;
-3. array-patterns: TODO.md (no plan file yet);
-4. reducer commutativity: [multisets.md](multisets.md) (bags of the values, the design), [array-lemmas.md](array-lemmas.md),
-   "Reducer commutativity".
+**Current work** (Oct 28, 2026; the order and the tasks in TODO.md, "Work queue: Now"):
+1. strided stores: remainders and division done (0.52.15, [prove-next.md](prove-next.md) section 2,
+   [engine-gaps.md](engine-gaps.md) gap 4); open the cases of conditional stores
+   ([conditional-stores.md](conditional-stores.md)) and the iteration variables of nr2-nr5 (engine-gaps.md, gap 3);
+2. equalities from the simplex to the classes ([prove-next.md](prove-next.md) section 1): set aside, no open task;
+3. array-patterns (TODO.md): set aside, the cancellation is a pointwise relation of two arrays;
+4. reducer commutativity: [multisets.md](multisets.md), in progress (the twins of the lemmas on folds).
 
 The other files below are not being worked on now.
 

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
 <!-- Cuvée as cuvee.xml, with the remaining goals lowered to first-order logic for z3 (-fallback) -->
-<benchmark tool="cuvee" displayName="Cuvée+Z3" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
+<benchmark tool="cuvee" displayName="Cuvée+Z3" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="1">
 
   <require cpuModel="Intel Core i9-9900 @ 3.10 GHz"/>
 

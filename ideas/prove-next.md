@@ -85,7 +85,10 @@ of reducercommutativity.
 
 Sections 1 and 2 are current work (TODO.md, "Work queue: Now"), before plans A and B.
 
-## 1. Equalities from the simplex to the classes
+## 1. Equalities from the simplex to the classes (set aside, Oct 27)
+
+zero_sum1, standard_maxInArray_ground and standard_minInArray_ground-2 are solved by 0.52.14, and no remaining goal of
+the cloud logs of Arrays and Loops compares counts that only the simplex knows equal; set aside until a task shows up.
 
 **Symptom.** `-slice` on `array-crafted/zero_sum1` (fill `a`, add its values to `sum`, subtract them again,
 `assert(sum == 0)`): the second loop leaves `sum == sum(prefix(n₂, Tmp?))`, the third subtracts
