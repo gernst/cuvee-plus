@@ -9,6 +9,12 @@ of traces are lifted into cases (`Simplify.cases`, 0.52.7), which produces such 
 `Simplify.eps` merges cases with equal results by the disjunction of their guards, and a single case is its result:
 `case b => y case c => y` is `y`. Lifting a conditional `ite(c, a, b)` out of a result gives cases `c` and `!c`,
 nested lifts conjunctions `c && d`, `c && !d`, ...; merging reintroduces disjunctions such as `(c && d) || !c`.
+Since 0.52.11, `TEQ.update` groups the paths of a loop body by their results already, before any simplification
+(examples/c/teq/stores_cases_point.c is proved without a lemma by it), and a single guarded case stays a choice there
+(0.52.12, ideas/engine-gaps.md, 3c). Only cases with equal results are merged, by decision (Oct 27): merging cases with
+different results by conditional values (`Simplify.eps`, chains of stores) lost tasks and was withdrawn
+(ideas/conditional-stores.md). Since 0.52.17, a side condition that does not simplify to true is tried once more with
+its choices lifted out of its atoms (`Normalize.choices`), a disjunctive view of the cases on demand, which keeps them.
 
 Disjunctive guards of expressions are a gap of the matcher (TODO.md, "Trace equation systems": literal disjunctive
 guards matched only through a higher-order variable pinned by a quantified side condition, merge, insertion_sort,
@@ -59,9 +65,9 @@ all.
 
 ## Steps
 
-1. Measure the lifting of conditionals alone (0.52.7): the tests and the SV-COMP sets, against the
-   baseline.
-2. Drop the merging by results in `Simplify.eps`, except for a choice whose results are all equal; split
-   disjunctive tests of branches into disjoint conjunctions.
+1. Done: the lifting of conditionals was adopted in 0.52.7; it split the addition of the reset-add loop of
+   brs2-brs5, recovered by a lemma in 0.52.17 (`select_current_trace_reset_add_keep`).
+2. Drop the merging by results in `Simplify.eps` and the grouping of `TEQ.update` (0.52.11), except for a choice
+   whose results are all equal; split disjunctive tests of branches into disjoint conjunctions.
 3. The grouping of cases for higher-order guard variables in `Rewrite`.
 4. Rerun, compare with `scripts/compare.py`, find lost rules with `scripts/missing.py`.

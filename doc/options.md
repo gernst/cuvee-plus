@@ -22,7 +22,7 @@ The transformations are applied in the order in which they are given, e.g.
 | `-arch 32\|64` | the data model of C input, 32 or 64 bit Linux (ILP32 or LP64), e.g. for `sizeof`; by default 64, or the data model of an SV-COMP task |
 | `-unbounded` | nondeterministic values of C input are unbounded integers, unsigned ones only nonnegative, instead of within the ranges of their types; unsigned arithmetic does not wrap around |
 | `-entry <name>` | the procedure where executions start, which `-teq` and `-chc` check; by default `main` in C, none otherwise (SV-LIB starts at its `verify-call` commands, `-chc` needs an entry point in Dafny, Boogie, and SMT-LIB); `-vcgen` ignores it and checks every procedure against its contract |
-| `-include <file>` | inject `<file>` into the input after its prelude, parsed in the language of its extension; `-include <feature>:<name>` injects the module `resources/cuvee/<feature>/<name>.dfy` of a feature (`Config.features`), after the entry modules of the known features: `teq:<concept>` a module of the lemma database of `-teq` (`aggregation`, `arithmetic`, `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`), which needs `-teq` or `-known teq`, `implement:<name>` the implementations of `-implement`, which need nothing, after their entry `implement.dfy` (no declarations yet); Dafny files can also include others themselves, `include "path"` ([architecture.md](architecture.md)) |
+| `-include <file>` | inject `<file>` into the input after its prelude, parsed in the language of its extension; `-include <feature>:<name>` injects the module `resources/cuvee/<feature>/<name>.dfy` of a feature (`Config.features`), after the entry modules of the known features: `teq:<concept>` a module of the lemma database of `-teq` (`aggregation`, `arithmetic`, `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`, `series`, `multisets`), which needs `-teq` or `-known teq`, `implement:<name>` the implementations of `-implement`, which need nothing, after their entry `implement.dfy` (no declarations yet); Dafny files can also include others themselves, `include "path"` ([architecture.md](architecture.md)) |
 | `-hybrid` | inject the definitions of parallel composition into Dafny input: channels, events, the history, `send`, and `receive` |
 
 ## Transformations
@@ -80,5 +80,5 @@ The transformations are applied in the order in which they are given, e.g.
 ./Cuvee.sh -teq examples/dafny/vcgen/sum.dfy                    # Trace Equation Systems
 ./Cuvee.sh -teq -z3 examples/dafny/vcgen/max.dfy                # loop-free, by symbolic execution
 ./Cuvee.sh -chc -z3 examples/c/horn/count.c                     # C, invariants by Horn clauses
-./Cuvee.sh -teq -prove -split -prove -fallback -z3 task.c   # as in SV-COMP
+./Cuvee.sh -svcomp -fallback -z3 -timeout 900000 task.c        # as in SV-COMP
 ```

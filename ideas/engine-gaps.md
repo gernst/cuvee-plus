@@ -191,5 +191,5 @@ debug line; until then the two lemmas stay.
 
 ## Order
 
-1, 2 done (0.52.9), 3 failed and reverted (0.52.10); next: 3b (the prototype and its measurement), 4, the database
-work, 5 once diagnosed.
+1, 2 done (0.52.9), 3 failed and reverted (0.52.10), 4 done (0.52.15), the database work done (Oct 27); open: 3b
+(the prototype and its measurement; nr2-nr5 wait for it), 5 once diagnosed.

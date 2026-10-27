@@ -5,11 +5,13 @@ documented in `doc/`.
 
 **Current work** (Oct 28, 2026; the order and the tasks in TODO.md, "Work queue: Now"):
 1. strided stores: remainders and division done (0.52.15, [prove-next.md](prove-next.md) section 2,
-   [engine-gaps.md](engine-gaps.md) gap 4); open the cases of conditional stores
-   ([conditional-stores.md](conditional-stores.md)) and the iteration variables of nr2-nr5 (engine-gaps.md, gap 3);
+   [engine-gaps.md](engine-gaps.md) gap 4); the cases of conditional stores by shape lemmas per number of cases
+   (0.52.17, [conditional-stores.md](conditional-stores.md); pnr3-pnr5, mods, modsf open); open the iteration
+   variables of nr2-nr5 (engine-gaps.md, gap 3);
 2. equalities from the simplex to the classes ([prove-next.md](prove-next.md) section 1): set aside, no open task;
 3. array-patterns (TODO.md): set aside, the cancellation is a pointwise relation of two arrays;
-4. reducer commutativity: [multisets.md](multisets.md), in progress (the twins of the lemmas on folds).
+4. reducer commutativity (doc/teq.md, "Multisets"): the module `teq:multisets` with the twins of the lemmas on
+   folds (0.52.16, in `-svcomp` since 0.52.17); open sep, max, the bitwise reductions.
 
 The other files below are not being worked on now.
 
@@ -54,8 +56,6 @@ The other files below are not being worked on now.
 - [nondet.md](nondet.md): determinization of every source of nondeterminism (havoc, uninitialized variables, choice,
   iteration, calls by contract, ODEs) by an oracle `nondet(ticks)` with a global counter, for witnesses, `-teq`, and
   nondeterministic implementations as expressions.
-- [multisets.md](multisets.md): bags of the values of a list, the folds that do not depend on the order as folds of
-  bags, and the swap and rotation of arrays as lemmas on bags, for reducer commutativity (a design).
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 

@@ -154,7 +154,7 @@ lists them.
   whose rewrite rules `-prove` applies, e.g. the counter lemma;
   `-include teq:<concept>` adds a module of
   [resources/cuvee/teq](resources/cuvee/teq) (`aggregation`, `arithmetic`,
-  `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`, `series`; the former
+  `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`, `series`, `multisets`; the former
   `nested` is in `resources/cuvee/legacy`). The lemmas of the migrated modules (teq.dfy, `aggregation`,
   `arithmetic`, `search`, `sorted`, `arrays`, `counters`, `strides`, `unsigned`, `series`) are proved in Lean 4 ([lean/](lean)), against
   statements generated from the modules, checked by `scripts/lean/check.sh`. The former single file
@@ -279,8 +279,8 @@ below and [doc/architecture.md](doc/architecture.md)). The runs included the mod
   -z3`, and `-chc -z3` on a safe and an unsafe C program and SV-LIB script),
   `upload` puts it into a draft on Zenodo (with a personal access token, see
   the script), which is published by hand. The archive of the current version
-  in fm-tools is 0.50.18,
-  [10.5281/zenodo.23607469](https://doi.org/10.5281/zenodo.23607469); the
+  in fm-tools is 0.52.17,
+  [10.5281/zenodo.23713558](https://doi.org/10.5281/zenodo.23713558); the
   paper cites the earlier
   [10.5281/zenodo.23317707](https://doi.org/10.5281/zenodo.23317707).
 - [doc/paper](doc/paper): the competition preview (LNCS), see

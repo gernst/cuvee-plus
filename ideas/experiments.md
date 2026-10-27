@@ -1,7 +1,10 @@
 # Experiments for a paper comparing TEQ with other techniques
 
 Plan of Oct 12, 2026, updated Oct 14 with the runs of 0.46 (15 min, `-verify`); older rows are kept for the
-comparison. `scripts/out/experiments.pdf` takes the newest runs of 0.49 and 0.50 only. The unbounded set (the
+comparison. **Outdated (Oct 28):** all numbers below are of 0.46 or earlier; `-verify` was removed in 0.48.0, the
+definitions run `-svcomp` (all modules, a second round of `-split -prove`, the witness) on one core since Oct 28, and
+the development runs are at 120 s (TODO.md and ideas/prove-next.md hold the comparison of 0.52.4 to 0.52.17). The
+tables need a 15 min rerun of the current version before a paper uses them (TODO.md, "Last"). `scripts/out/experiments.pdf` takes the newest runs of 0.49 and 0.50 only. The unbounded set (the
 Dafny translations of SV-COMP tasks and their C versions, formerly section 4) was dropped on Oct 23, 2026.
 
 ## 1. Aggregates over arrays: the MonoCera tests
@@ -54,7 +57,8 @@ and others (imported from the SV-COMP statistics, not run by us).
 | Cuvée (TEQ, 0.46.13, `-verify`, 60 s, i7-6700) | 144 true, 53 false | 148 true, 24 false |
 
 The other tools: the confirmed results of SV-COMP 2026 on the same tasks, see `scripts/out/experiments.pdf`. No
-scores, since Cuvée produces no witnesses: they are only meaningful with witness validation.
+scores: they are only meaningful with witness validation; Cuvée writes witnesses since 0.46.17 (`-witness`), without
+invariants (ideas/witnesses.md).
 
 - 0.46.13 adds the case splits, the recurrences in arrays and the counterexamples without a solver: against
   0.46.8 at 60 s, 52 gained and none lost on Arrays (44 of them unsafe tasks refuted), 12 gained and 1 lost
@@ -86,7 +90,7 @@ scores, since Cuvée produces no witnesses: they are only meaningful with witnes
 A virtual portfolio of TEQ and `-chc` (correct if either is, 15 min): with 0.46.9, 356 true and 106 false
 correct, against 287 and 25 for TEQ and 158 and 86 for CHC alone; TEQ+Z3 and CHC 413 true and 119 false, all
 without wrong results (0.42: 341 and 105, with the wrong results of `-fallback` then). TEQ is strong on arrays, Horn clauses on integer loops. The argument for TEQ as a complement to invariant inference,
-and for a portfolio (see the TODO "Portfolio of TEQ and CHC").
+and for a portfolio (ideas/portfolio.md; TODO.md, "SV-COMP").
 
 ## 4. Annotations against automation: the ACSL tasks
 
@@ -152,7 +156,8 @@ as tags (`correct-tags`).
 
 ## Ablations
 
-- The modules of the lemma database: teq.dfy alone against the optional modules (`aggregation`, `arithmetic`, `arrays`, `counters`, `search`, `sorted`, `strides`, `unsigned`), one at a time.
+- The modules of the lemma database: teq.dfy alone against the optional modules (`aggregation`, `arithmetic`, `arrays`, `counters`, `search`, `sorted`,
+  `strides`, `unsigned`, `series`, `multisets`), one at a time.
 - The simplifier with and without `mods` and the remainders (version 0.36.2).
 - The frequency of the rules (`scripts/rules.py`).
 - Time to proof: most proofs take less than 20 s, the time limit barely matters.
@@ -186,9 +191,8 @@ Done (Oct 14, 2026, Cuvée 0.46.13, 15 min, 2 cores, 7 GB): the ACSL tasks with 
 `CTranslated` and `CoreVerification` with `xml/cuvee.xml` and `xml/cuvee-chc.xml` (Xeon E3-1230 v5), sections 4
 and 5.
 
-To do: SV-LIB `CoreVerification` with `-teq` and `-chc` on 0.46.14 (patched for now; the fallback run confirms
-the fix);
-the three changed ACSL tasks (or all, for one version); TEQ on the programs of the ACSL tasks with 0.46.
+To do: all sections with the current version at 15 min (`xml/cuvee.xml`, `cuvee-fallback.xml`, `cuvee-chc.xml`,
+`cuvee-acsl.xml`), which replaces the patched results of 0.46; TEQ on the programs of the ACSL tasks.
 
 `scripts/experiments.py` makes `scripts/out/experiments.pdf` from the newest results that meet each experiment's
 requirements (options, time limit), with blanks for the missing ones. The other tools on SV-COMP come from the

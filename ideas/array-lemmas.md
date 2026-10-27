@@ -70,37 +70,11 @@ variants.
    standard_sentinel-2).
 10. `-debug match` reports nothing for rules whose left-hand side is not a trace.
 
-## Reducer commutativity (current work, TODO.md "Work queue: Now")
+## Reducer commutativity
 
-reducercommutativity (avg, max, rangesum, sep, sum) and array-crafted bAnd, bor, xor: `R(x) == R(swap(x, 0, 1)) ==
-R(rotate(x))` for a reduction `R` over `x[0..N)` of nondeterministic values, `N` a literal from 5 to 100000; none is
-solved, sum and avg time out.
-
-The goal of bAnd1 after `-teq -prove`, with `T` the values:
-
-```
-R1 = current(trace(T[0], for k in ⌊counter(0,1,99)⌋ :: bitand(r, earlier(k+1, T))))
-R2 = current(trace(T[1], for i in ⌊counter(1,1,99)⌋ :: bitand(r, s[i])))
-       s   = x21[0 := T[1]][1 := T[0]],   x21 = current(stores(x3, ⌊counter(0,1,100)⌋, T))
-R3 = current(trace(x56[0], for i in ⌊counter(1,1,99)⌋ :: bitand(r, x56[99 := T[1]][i])))
-       x56 = current(trace(s, for k in ⌊counter(0,1,99)⌋ :: x[k := x[k+1]]))
-```
-
-- R1 reads lists (`current_stores` evaluated the reads), R2 and R3 arrays: `s[i]` over two stores is not decided for
-  `i == 1`, the shift loop is not folded. The swap fold of sorted.dfy does not apply: the reads `x[1]`, `x[0]` of the
-  swap are evaluated before it matches, and where it does fold, `select_swap` evaluates its reads again.
-- Plan, by rules only, no normalization in the engine: one fold per operator, as `sums` for addition (`bitands`,
-  `bitors`, `bitxors`; `maxs`, `mins`; `parities` exists for sep), no higher-order step, since a step `F` would bind to
-  a `Lam` and its conditions would be quantified side conditions over beta-reduced lambdas; `max` and `min` as folds of
-  their conditionals, with the symmetric variants (`<` and `<=`, the mirrored comparisons, the case forms, argument
-  order); per operator first-order lemmas: the exchange of the seed with an element (the swap, with the values as
-  conditions `v == a[q]`, `w == a[p]`), the last element moved to the seed (the rotation, after the shift loop as
-  stores that read ahead); the value lists normalized by lemmas on `maps` of `earlier` at shifted counters (a slice),
-  such that R1 and R2 read the same term.
-- The removed `store_occurs_selects` fired at the reads of the swapped array; on a sum over five elements after a swap
-  the run ended without it (`unknown`, 19 s at a load of 13) instead of a timeout. The remaining goal is
-  `sum(selects(x[0 := T[1]][1 := T[0]], ⌊K⌋))`, the shape of a swap lemma for sums (prototype in the scratch include
-  of Oct 26, not run on an idle machine).
+Superseded by the multisets (doc/teq.md, "Multisets"; TODO.md, "Work queue: Now"): the module `teq:multisets` proves
+the sums and averages of reducercommutativity (0.52.16); max, sep and the bitwise reductions of array-crafted (bAnd,
+bor, xor) are open. The plan of Oct 26 (one fold and one swap and rotation lemma per operator) was not taken.
 
 ## Not addressed
 

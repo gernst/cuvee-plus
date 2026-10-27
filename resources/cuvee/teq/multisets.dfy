@@ -1,7 +1,7 @@
 // multisets: the folds that do not depend on the order of a list as folds of its multiset (the multisets of the core,
 // cvc5's bags), and the permutations of arrays (a swap, a rotation) as lemmas on the multisets of their values, such
 // that a fold of a permuted array is the same term as that of the original; an optional module over teq.dfy
-// (-include teq:multisets) after teq:aggregation, whose lemmas on lists apply first (ideas/multisets.md); the lemmas
+// (-include teq:multisets) after teq:aggregation, whose lemmas on lists apply first (doc/teq.md, "Multisets"); the lemmas
 // are ordered from the simpler to the more specific ones
 
 // the multiset of the elements of a list, the counterpart of Dafny's multiset(s) for the lists of the database (a

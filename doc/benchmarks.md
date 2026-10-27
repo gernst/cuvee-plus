@@ -23,9 +23,9 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 - `-T` overrides the time limit of the definition (`-T 60s` for runs during development), `--vcloudCPUModel` its
   CPU model (the `require` of the xml).
 - Limits during development: the CPU `AMD Ryzen 7 PRO 5750G with Radeon Graphics` or
-  `Intel Core i7-6700 @ 3.40 GHz` (the i7-10700 does not work), 1 or 2 minutes, 2
-  cores, 7 GB (four runs fit on one CPU); small subsets rather than whole categories, unless asked. Results of
-  different CPUs are not comparable in time.
+  `Intel Core i7-6700 @ 3.40 GHz` (the i7-10700 does not work), `-T 120s`, the core and memory of the definitions;
+  the standard sets are Arrays, Loops and the four of MonoCera, with `cuvee.xml` and `cuvee-fallback.xml`; new runs
+  with `--vcloudPriority URGENT`. Results of different CPUs are not comparable in time.
 - Check the first log files of a run for a missing jar (`Unable to access jarfile`) and crashes
   (`Exception in thread`, `OutOfMemoryError`).
 

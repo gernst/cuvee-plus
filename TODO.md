@@ -11,7 +11,7 @@ benchmarks are not rerun with Cuvée.
 ### Now (chosen Oct 27, 2026)
 
 In this order; each is checked on its tasks first, then by one cloud run of Arrays and Loops (no task lost). Open
-tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.16, Ryzen, 120 s, one core).
+tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s, one core).
 
 - [ ] **Strided stores** (array-tiling, 22 of 29 open: `pr2`-`pr5`, `mbpr2`-`mbpr5`, `pnr2`-`pnr5`, `nr2`-`nr5`,
       `tcpy`, ...). Three gaps, in this order:
@@ -45,10 +45,11 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.16, Ryzen, 120 s
       (`sum_selects_update`, restored in 0.52.16) decide the last iteration; multisets do not give the rest (the
       relation is pointwise, and the last write per key has no closed form); set aside by decision.
 - [ ] **Reducer commutativity** (reducercommutativity 28, array-crafted bAnd, bor, xor 15): the module `teq:multisets`
-      (ideas/multisets.md), optional; converting the folds of all lists proves the sums and averages but lost 34 tasks
-      (innermost rewriting preempts the rules around the folds); in progress (Oct 28): the twins of the lemmas of
-      teq:aggregation on the folds of multisets, which keep the conversion of all folds from preempting them; open:
-      sep (a count by a predicate of C's signed `%`), the bitwise reductions (no folds), the Lean model of multisets.
+      (doc/teq.md, "Multisets"), towards all aggregates over multisets; converting the folds of all lists proves the sums and averages but lost 34 tasks
+      (innermost rewriting preempts the rules around the folds); the twins of the lemmas of teq:aggregation on the
+      folds of multisets keep the conversion from preempting them (0.52.16, no task lost), and the module is part of
+      `-svcomp` since 0.52.17; open: sep (a count by a predicate of C's signed `%`), the bitwise reductions (no
+      folds), max (the maximum from the seed 0 as a fold of the multiset), the Lean model of multisets.
 - [ ] functions_1-2 (false, lost in 0.52.16): `forall Result?: List<int> :: length(Result?) != 134217728` needs that a
       list of a given length exists, which neither the rules nor z3 decide. A predicate `haslength(n, xs)` that the
       engine drops when `xs` occurs nowhere else was considered and dropped by decision (Oct 28): one task, and a
@@ -88,9 +89,9 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.16, Ryzen, 120 s
 
 - Verify trace lemmas in Dafny; performance of the simplifier; thread `Config` through more code; error messages
   with a printer instead of the internal syntax (also the parse errors of `fuse`).
-- SV-COMP: the archive of 0.50.18 is on Zenodo (10.5281/zenodo.23607469), fm-tools passes `-svcomp -fallback -z3
-  -timeout 900000` (branch `cuvee-0.50.18` of gernst/fm-tools, the merge request is open); the DOI of doc/paper is
-  still that of an earlier archive; keep `cuvee.py` in sync with sosy-lab/benchexec#1327.
+- SV-COMP: the archive of 0.52.17 is on Zenodo (10.5281/zenodo.23713558), fm-tools passes `-svcomp -fallback -z3
+  -timeout 900000` (branch `cuvee-0.52.17` of gernst/fm-tools, on the main of fm-tools of Oct 28, the merge request
+  to be opened); the DOI of doc/paper is still that of an earlier archive; keep `cuvee.py` in sync with sosy-lab/benchexec#1327.
 - Witnesses with invariants ([ideas/witnesses.md](ideas/witnesses.md)): `-slice` attaches the trace equation systems of
   loops as invariants over the program variables; open: lowering the traces and `invs` that simplification
   keeps (e.g. a trace whose update is a constant, `invs` of a loop with `break`), printing them as `annotate-tag`

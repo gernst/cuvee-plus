@@ -106,10 +106,22 @@ modules are injected after it by `-include teq:<concept>`:
 | `sorted` | `sorted`, `perm`, `partitioned`, `swap`, the partition points `lower`, `upper` |
 | `arrays` | stores at a counter and at distinct keys, conditional stores, resets, reads along a trace, rows of two-dimensional arrays, copies from both ends |
 | `counters` | phases, flags, catching up, merged cases, constant, increasing and bounded values |
-| `strides` | strided stores and stores ahead (MonoCera) |
+| `strides` | strided stores and stores ahead (MonoCera), and the conditional stores of a stride `s` as shapes with one case per residue (`s` from 2 to 5) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |
 | `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, geometric `series`; after `aggregation`, `arithmetic` |
-| `multisets` | the multiset of a list (`elems`, the multisets of the core) and the folds that do not depend on the order as folds of it (`msum`, `mparity`, `mmax`, `mmin`, the multiplicities); the sums and parities of reads at keys converted to them; swap, shift and rotation of arrays preserve the multiset; after `aggregation`, in `-svcomp` since 0.52.17; each lemma of `aggregation` that consumes a fold of a list has its twin on the fold of the multiset here (ideas/multisets.md) |
+| `multisets` | the multiset of a list (`elems`, the multisets of the core) and the folds that do not depend on the order as folds of it (`msum`, `mparity`, `mmax`, `mmin`, the multiplicities); the sums and parities of reads at keys converted to them; swap, shift and rotation of arrays preserve the multiset; after `aggregation`, in `-svcomp` since 0.52.17; each lemma of `aggregation` that consumes a fold of a list has its twin on the fold of the multiset here ("Multisets" below) |
+
+**Multisets.** A fold that does not depend on the order of a list (sum, parity, count, maximum, minimum, the
+bitwise reductions) is a function of the multiset of its values, and a permutation of an array (a swap, a rotation)
+preserves that multiset, so one lemma per kind of permutation serves all folds, instead of one per fold and
+permutation. The aim is to state all aggregates over multisets eventually, with the lemmas of `aggregation` on the
+folds of multisets only. Until then, `multisets` converts the folds of lists after the fact and doubles the lemmas
+that consume them (the twins): rewriting is innermost, so the conversion of an inner fold would otherwise preempt the
+rules on the comparison around it (without the twins, Arrays lost 7 tasks and Loops 27, Oct 27, 2026). Open: the
+maximum from a seed (reducercommutativity max), sep (a count by C's signed `%`, no `parity`), the bitwise folds, the
+forward lemmas of `aggregation` (no twins), and a Lean model, the multiset as the quotient of `List` by `List.Perm` of
+core Lean with each fold lifted by `Quotient.lift`. Not taken: splitting lists at positions (by decision), and `perm`
+of `sorted` (a fact the goal does not contain, without the direction towards the original array).
 
 Rules are tried in the order of the modules and of the files, so the order decides which abstraction a fragment
 gets; a rule whose pattern subsumes another comes after it. Within a module, the function declarations come first,

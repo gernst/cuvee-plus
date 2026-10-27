@@ -66,39 +66,44 @@ target than their speed.
 
 ### A2. Tasks lost since 0.52.4 (Oct 28, 2026)
 
-The tasks that ffb2ad81 (0.52.16 with teq:multisets, cloud, Ryzen, 120 s, one core) does not solve, but at least one of
-the runs of Oct 26 to 28 solved (the runs of the comparison of TODO.md; "last solved by" in their order).
+The tasks that at least one of the runs of Oct 26 to 28 solved (the runs of the comparison of TODO.md; "last solved
+by" in their order), but ffb2ad81 (0.52.16 with teq:multisets, cloud, Ryzen, 120 s, one core) did not. The column "0.52.17"
+is the run of fa09ee89 under the same configuration.
 
-| Task | Verdict | Last solved by | Time there | Now | Runs that solved it |
-|---|---|---|---|---|---|
-| array-fpi/brs2 | true | 0.52.4 | 24 s | unknown, 21 s | 1 |
-| array-fpi/brs3 | true | 0.52.4 | 25 s | unknown, 25 s | 1 |
-| array-fpi/brs4 | true | 0.52.4 | 26 s | unknown, 24 s | 1 |
-| array-fpi/brs5 | true | 0.52.4 | 28 s | unknown, 31 s | 1 |
-| array-fpi/mods | true | the merge of conditional stores (withdrawn) | 21 s | unknown, 25 s | 2 |
-| array-fpi/modsf | false | the merge of conditional stores (withdrawn) | 22 s | unknown, 32 s | 2 |
-| array-multidimensional/diff-2-n-u | true | 0.52.15 | 93 s | timeout | 1 |
-| array-tiling/pr3 | true | the merge of conditional stores (withdrawn) | 40 s | unknown, 56 s | 1 |
-| loop-acceleration/functions_1-2 | false | the choices as arrays (branch) | 16 s | unknown, 14 s | 15 |
-| loop-simple/nested_4 | true | 0.52.16 | 112 s | timeout | 5 |
-| loops-crafted-1/nested3-1_abstracted | true | 0.52.13 without the forward memo | 106 s | timeout | 2 |
-| nla-digbench-scaling/divbin2_unwindbound1 | true | the conversion of all folds to multisets | 103 s | timeout | 13 |
-| nla-digbench-scaling/divbin_unwindbound1 | true | the conversion of all folds to multisets | 103 s | timeout | 11 |
-| nla-digbench-scaling/ps2-ll_valuebound1 | true | 0.52.8 | 17 s | unknown, 17 s | 2 |
-| nla-digbench-scaling/ps3-ll_valuebound1 | true | 0.52.8 | 23 s | unknown, 18 s | 2 |
-| nla-digbench-scaling/ps4-ll_valuebound1 | true | 0.52.8 | 26 s | unknown, 19 s | 2 |
-| nla-digbench-scaling/ps5-ll_valuebound1 | true | 0.52.8 | 34 s | unknown, 20 s | 2 |
-| nla-digbench-scaling/ps6-ll_valuebound1 | true | 0.52.8 | 39 s | unknown, 20 s | 2 |
+| Task | Verdict | Last solved by | Time there | 0.52.17 |
+|---|---|---|---|---|
+| array-fpi/brs2 | true | 0.52.4 | 24 s | recovered |
+| array-fpi/brs3 | true | 0.52.4 | 25 s | recovered |
+| array-fpi/brs4 | true | 0.52.4 | 26 s | recovered |
+| array-fpi/brs5 | true | 0.52.4 | 28 s | recovered |
+| array-tiling/pr3 | true | the merge of conditional stores (withdrawn) | 40 s | recovered |
+| nla-digbench-scaling/ps2-ll_valuebound1 | true | 0.52.8 | 17 s | recovered |
+| nla-digbench-scaling/ps3-ll_valuebound1 | true | 0.52.8 | 23 s | recovered |
+| nla-digbench-scaling/ps4-ll_valuebound1 | true | 0.52.8 | 26 s | recovered |
+| nla-digbench-scaling/ps5-ll_valuebound1 | true | 0.52.8 | 34 s | recovered |
+| nla-digbench-scaling/ps6-ll_valuebound1 | true | 0.52.8 | 39 s | recovered |
+| array-fpi/mods | true | the merge of conditional stores (withdrawn) | 21 s | unknown |
+| array-fpi/modsf | false | the merge of conditional stores (withdrawn) | 22 s | unknown |
+| array-multidimensional/diff-2-n-u | true | 0.52.15 | 93 s | timeout |
+| loop-acceleration/functions_1-2 | false | the choices as arrays (branch) | 16 s | unknown |
+| loop-simple/nested_4 | true | 0.52.16 | 112 s | timeout |
+| loops-crafted-1/nested3-1_abstracted | true | 0.52.13 without the forward memo | 106 s | timeout |
+| nla-digbench-scaling/divbin2_unwindbound1 | true | the conversion of all folds to multisets | 103 s | timeout |
+| nla-digbench-scaling/divbin_unwindbound1 | true | the conversion of all folds to multisets | 103 s | timeout |
 
-- At the limit (93 to 112 s when solved, alternating between runs): diff-2-n-u, nested_4, nested3-1_abstracted, divbin,
-  divbin2.
-- Regressions of the engine before Oct 27, recovered in 0.52.17: brs2-brs5 (the lifting of conditionals into cases of
-  0.52.7 split the addition of the reset-add loop; `select_current_trace_reset_add_keep`) and the valuebound1 variants
-  of ps2-ps6 (a residue of higher degree in a variable of two values; `square_eq_self` and the case split on
-  two-element intervals).
-- Only with the withdrawn merge of conditional stores: mods, modsf, pr3 (strided stores, step 3); pr3 recovered by its
-  shape lemma in 0.52.17.
-- Lost with the lengths of the lists of choices (0.52.16): functions_1-2 (a list of a given length must exist).
+New in 0.52.17, not lost before: array-tiling/pnr2, nla-digbench-scaling/cohencu_valuebound1; array-tiling/pr4 and
+pr5 are true locally in 88 s and on the cloud in 485 s (15 min).
+
+- Recovered in 0.52.17: brs2-brs5 (the lifting of conditionals into cases of 0.52.7 split the addition of the
+  reset-add loop; `select_current_trace_reset_add_keep`), the valuebound1 variants of ps2-ps6 (a residue of higher
+  degree in a variable of two values; `square_eq_self` and the case split on two-element intervals), pr3 (its shape
+  lemma, strided stores step 3).
+- Left, at the limit (93 to 112 s when solved, alternating between runs): diff-2-n-u, nested_4,
+  nested3-1_abstracted, divbin, divbin2; they need speed, not lemmas.
+- Left, only with the withdrawn merge of conditional stores: mods, modsf (strided stores, step 3, without a fixed
+  number of cases).
+- Left, lost with the lengths of the lists of choices (0.52.16): functions_1-2 (a list of a given length must exist);
+  z3 does not show that either, left as it is.
 
 ### B. Bounded unrolling for counterexamples and bounded proofs
 
