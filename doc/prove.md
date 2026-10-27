@@ -150,7 +150,10 @@ by the simplifier in the context.
 - **Side conditions** are taken in order: a closed one is decided, an open one is matched against the facts, which
   binds the variables that occur only in conditions; so conjuncts that bind variables come first in a lemma. A closed
   condition is first looked up among the facts modulo the classes and the canonical forms of binders
-  (`Rewrite.known`).
+  (`Rewrite.known`). A condition that does not simplify to true is simplified once more with its choices lifted out of
+  its atoms, `A[eps(cᵢ => vᵢ)]` as the conjunction of `cᵢ ==> A[vᵢ]` (`Normalize.choices`, like `Normalize.lift` for
+  `ite`): the choices appear once a higher-order variable of the rule, instantiated by an update, is beta-reduced and
+  read; the cases stay as guards, nothing is merged.
 - **Suspension** (`Context.active`): a rule is suspended while its left-hand side is matched and its conditions are
   evaluated, so a condition that mentions the rule's own term is not rewritten by it
   ([reentrant.dfy](../examples/dafny/prove/reentrant.dfy)); the components whose views are being computed are
@@ -204,7 +207,11 @@ Their costs are in teq.md ("What a forward lemma costs"). `-debug forward` print
   (e.g. the `_cases` rules of `teq:unsigned`); an atom of a guard of an update whose variables are free in the goal
   ([diamond.dfy](../examples/dafny/teq/diamond.dfy)); a remainder `x % m` by a literal `2 <= m <= 4`; the equation
   `i == j` of a read after a write `a[i := v][j]`. The split on a remainder is on that of the polynomial without its
-  constant, which decides those of `p + c` as well (see "Remainders"). Other splits are left to `-split`.
+  constant, which decides those of `p + c` as well (see "Remainders"). Last, the cases `x == l` and `x == l + 1` of an
+  integer variable that the premises bound to two values (`Prove.interval`): a lower bound `l` from a premise in which
+  `x` has coefficient 1, the upper bound `x <= l + 1` decided in the context of the premises; it evaluates the
+  polynomials of higher degree that remain, e.g. `c * c * c == c` for `0 <= c <= k <= 1` (ps2-ps6). Other splits are
+  left to `-split`.
 - **Counterexamples** (`Eval.counterexample`): a remaining goal over at most four integer or boolean variables,
   without traces, lists, or other functions than those of arithmetic and logic, is refuted if it evaluates to false
   at small values or the literals of the goal plus or minus 1; it becomes `false`, answered `incorrect` unless the

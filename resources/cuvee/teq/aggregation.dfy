@@ -386,6 +386,15 @@ lemma {:rw} {:teq} select_current_trace_reset_add(a0: array<int, int>, j: int, n
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a[j := a[j] + G(k)]))[j]
       == if n <= 0 then a0[j] else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0))
 
+// the same where the addition is split by a guard P, whose other case adds 0 and keeps the array, the form that the
+// conditional of the value takes once lifted into cases (Simplify.choices, since 0.52.7), e.g. sum[0] + (i % 2 == 0 ?
+// 2 : 0); the sum is that of sum_cases_below
+// (from MonoCera: brs2-brs5)
+lemma {:rw} {:teq} select_current_trace_reset_add_keep(a0: array<int, int>, j: int, n: int, c: int, P: (int) -> bool, G: (int) -> int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k && P(k) => a[j := a[j] + G(k)] case 0 < k && !P(k) => a))[j]
+      == if n <= 0 then a0[j] else c + sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then (if P(k) then G(k) else 0) else 0))
+
 // an array filled by a recurrence at the positions 1, ..., n, each element from its predecessor plus G of the position
 // of the predecessor, is the initial element plus the sum of G over the positions before
 // (from eqn1, eqn1f, nsqm, nsqmf, pcomp, pcompf, sqm)

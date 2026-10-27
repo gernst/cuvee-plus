@@ -10,6 +10,11 @@ function {:teq} pow(c: int, n: int): int
 
 // a positive number divides itself
 // (from modn, modnf; used on SV-COMP by modn, modp, mods only)
+// a square equal to its root is 0 or 1, c * (c - 1) == 0, a nonlinear atom as linear ones
+// (from nla-digbench-scaling: ps2-ll_valuebound1 to ps6-ll_valuebound1)
+lemma {:rw} {:teq} square_eq_self(c: int)
+  ensures (c * c == c) <==> (c == 0 || c == 1)
+
 lemma {:rw} {:teq} mod_self(x: int)
   requires 0 < x
   ensures x % x == 0

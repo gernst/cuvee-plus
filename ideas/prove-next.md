@@ -64,6 +64,42 @@ The tasks that time out at 120 s mostly do not finish: with 15 min, 103 of Loops
 the rewrite steps ("rewriting does not terminate"), i.e. their rounds do not settle (item 4), which is the larger
 target than their speed.
 
+### A2. Tasks lost since 0.52.4 (Oct 28, 2026)
+
+The tasks that ffb2ad81 (0.52.16 with teq:multisets, cloud, Ryzen, 120 s, one core) does not solve, but at least one of
+the runs of Oct 26 to 28 solved (the runs of the comparison of TODO.md; "last solved by" in their order).
+
+| Task | Verdict | Last solved by | Time there | Now | Runs that solved it |
+|---|---|---|---|---|---|
+| array-fpi/brs2 | true | 0.52.4 | 24 s | unknown, 21 s | 1 |
+| array-fpi/brs3 | true | 0.52.4 | 25 s | unknown, 25 s | 1 |
+| array-fpi/brs4 | true | 0.52.4 | 26 s | unknown, 24 s | 1 |
+| array-fpi/brs5 | true | 0.52.4 | 28 s | unknown, 31 s | 1 |
+| array-fpi/mods | true | the merge of conditional stores (withdrawn) | 21 s | unknown, 25 s | 2 |
+| array-fpi/modsf | false | the merge of conditional stores (withdrawn) | 22 s | unknown, 32 s | 2 |
+| array-multidimensional/diff-2-n-u | true | 0.52.15 | 93 s | timeout | 1 |
+| array-tiling/pr3 | true | the merge of conditional stores (withdrawn) | 40 s | unknown, 56 s | 1 |
+| loop-acceleration/functions_1-2 | false | the choices as arrays (branch) | 16 s | unknown, 14 s | 15 |
+| loop-simple/nested_4 | true | 0.52.16 | 112 s | timeout | 5 |
+| loops-crafted-1/nested3-1_abstracted | true | 0.52.13 without the forward memo | 106 s | timeout | 2 |
+| nla-digbench-scaling/divbin2_unwindbound1 | true | the conversion of all folds to multisets | 103 s | timeout | 13 |
+| nla-digbench-scaling/divbin_unwindbound1 | true | the conversion of all folds to multisets | 103 s | timeout | 11 |
+| nla-digbench-scaling/ps2-ll_valuebound1 | true | 0.52.8 | 17 s | unknown, 17 s | 2 |
+| nla-digbench-scaling/ps3-ll_valuebound1 | true | 0.52.8 | 23 s | unknown, 18 s | 2 |
+| nla-digbench-scaling/ps4-ll_valuebound1 | true | 0.52.8 | 26 s | unknown, 19 s | 2 |
+| nla-digbench-scaling/ps5-ll_valuebound1 | true | 0.52.8 | 34 s | unknown, 20 s | 2 |
+| nla-digbench-scaling/ps6-ll_valuebound1 | true | 0.52.8 | 39 s | unknown, 20 s | 2 |
+
+- At the limit (93 to 112 s when solved, alternating between runs): diff-2-n-u, nested_4, nested3-1_abstracted, divbin,
+  divbin2.
+- Regressions of the engine before Oct 27, recovered in 0.52.17: brs2-brs5 (the lifting of conditionals into cases of
+  0.52.7 split the addition of the reset-add loop; `select_current_trace_reset_add_keep`) and the valuebound1 variants
+  of ps2-ps6 (a residue of higher degree in a variable of two values; `square_eq_self` and the case split on
+  two-element intervals).
+- Only with the withdrawn merge of conditional stores: mods, modsf, pr3 (strided stores, step 3); pr3 recovered by its
+  shape lemma in 0.52.17.
+- Lost with the lengths of the lists of choices (0.52.16): functions_1-2 (a list of a given length must exist).
+
 ### B. Bounded unrolling for counterexamples and bounded proofs
 
 **Symptom.** Cuvée finds a counterexample only by evaluating a remaining goal of pure arithmetic at small values

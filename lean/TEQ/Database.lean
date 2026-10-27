@@ -669,6 +669,30 @@ def Stmt.select_current_trace_reset_add : Prop :=
                   (butlast (counter 0 1 n))
                   (fun k => if 0 < k then G k else 0)))
 
+def Stmt.select_current_trace_reset_add_keep : Prop :=
+  ∀ (a0 : Int → Int) (j : Int) (n : Int) (c : Int) (P : Int → Prop) (G : Int → Int),
+    current
+      (trace
+         a0
+         (butlast (counter 0 1 n))
+         (fun a k =>
+            if k = 0 then
+              fun j1 => if j1 = j then c else a j1
+            else
+              if 0 < k ∧ P k then
+                fun j1 => if j1 = j then a j + G k else a j1
+              else
+                if 0 < k ∧ ¬P k then a else unspecified))
+      j
+      = (if n ≤ 0 then
+           a0 j
+         else
+           c
+             + sum
+               (maps
+                  (butlast (counter 0 1 n))
+                  (fun k => if 0 < k then if P k then G k else 0 else 0)))
+
 def Stmt.select_current_trace_prefix_sums : Prop :=
   ∀ (b0 : Int → Int) (n : Int) (j : Int) (G : Int → Int),
     current
@@ -719,6 +743,10 @@ noncomputable def pow (c : Int) (n : Int) : Int :=
   if n ≤ 0 then 1 else c * pow c (n - 1)
 termination_by n.toNat
 decreasing_by all_goals omega
+
+def Stmt.square_eq_self : Prop :=
+  ∀ (c : Int),
+    c * c = c ↔ c = 0 ∨ c = 1
 
 def Stmt.mod_self : Prop :=
   ∀ (x : Int),
@@ -1445,6 +1473,474 @@ def Stmt.select_current_trace_stride2_cases : Prop :=
                if P then Y1 else if Q then Y2 else Y3
            else
              a0 j)
+
+def Stmt.select_current_trace_stride3_cases4 : Prop :=
+  ∀ (a0 : Int → Int) (n : Int) (P1 : Prop) (P2 : Prop) (P3 : Prop) (P4 : Prop) (X1_0 : Int) (X1_1 : Int) (X1_2 : Int) (X2_0 : Int) (X2_1 : Int) (X2_2 : Int) (X3_0 : Int) (X3_1 : Int) (X3_2 : Int) (X4_0 : Int) (X4_1 : Int) (X4_2 : Int) (j : Int),
+    (P4 ↔ ¬P1 ∧ ¬P2 ∧ ¬P3)
+      → current
+        (trace
+           a0
+           (butlast (counter 0 1 n))
+           (fun a k =>
+              if P1 then
+                fun j =>
+                  if j = 3 * k + 2 then
+                    X1_2
+                  else
+                    (fun j =>
+                       if j = 3 * k + 1 then
+                         X1_1
+                       else
+                         (fun j => if j = 3 * k then X1_0 else a j) j)
+                      j
+              else
+                if P2 then
+                  fun j =>
+                    if j = 3 * k + 2 then
+                      X2_2
+                    else
+                      (fun j =>
+                         if j = 3 * k + 1 then
+                           X2_1
+                         else
+                           (fun j => if j = 3 * k then X2_0 else a j) j)
+                        j
+                else
+                  if P3 then
+                    fun j =>
+                      if j = 3 * k + 2 then
+                        X3_2
+                      else
+                        (fun j =>
+                           if j = 3 * k + 1 then
+                             X3_1
+                           else
+                             (fun j => if j = 3 * k then X3_0 else a j) j)
+                          j
+                  else
+                    if P4 then
+                      fun j =>
+                        if j = 3 * k + 2 then
+                          X4_2
+                        else
+                          (fun j =>
+                             if j = 3 * k + 1 then
+                               X4_1
+                             else
+                               (fun j => if j = 3 * k then X4_0 else a j) j)
+                            j
+                    else
+                      unspecified))
+        j
+        = (if 0 ≤ j ∧ j < 3 * n then
+             if j % 3 = 0 then
+               if P1 then X1_0 else if P2 then X2_0 else if P3 then X3_0 else X4_0
+             else
+               if j % 3 = 1 then
+                 if P1 then
+                   X1_1
+                 else
+                   if P2 then X2_1 else if P3 then X3_1 else X4_1
+               else
+                 if P1 then
+                   X1_2
+                 else
+                   if P2 then X2_2 else if P3 then X3_2 else X4_2
+           else
+             a0 j)
+
+def Stmt.select_current_trace_stride4_cases5 : Prop :=
+  ∀ (a0 : Int → Int) (n : Int) (P1 : Prop) (P2 : Prop) (P3 : Prop) (P4 : Prop) (P5 : Prop) (X1_0 : Int) (X1_1 : Int) (X1_2 : Int) (X1_3 : Int) (X2_0 : Int) (X2_1 : Int) (X2_2 : Int) (X2_3 : Int) (X3_0 : Int) (X3_1 : Int) (X3_2 : Int) (X3_3 : Int) (X4_0 : Int) (X4_1 : Int) (X4_2 : Int) (X4_3 : Int) (X5_0 : Int) (X5_1 : Int) (X5_2 : Int) (X5_3 : Int) (j : Int),
+    (P5 ↔ ¬P1 ∧ ¬P2 ∧ ¬P3 ∧ ¬P4)
+      → current
+        (trace
+           a0
+           (butlast (counter 0 1 n))
+           (fun a k =>
+              if P1 then
+                fun j =>
+                  if j = 4 * k + 3 then
+                    X1_3
+                  else
+                    (fun j =>
+                       if j = 4 * k + 2 then
+                         X1_2
+                       else
+                         (fun j =>
+                            if j = 4 * k + 1 then
+                              X1_1
+                            else
+                              (fun j => if j = 4 * k then X1_0 else a j) j)
+                           j)
+                      j
+              else
+                if P2 then
+                  fun j =>
+                    if j = 4 * k + 3 then
+                      X2_3
+                    else
+                      (fun j =>
+                         if j = 4 * k + 2 then
+                           X2_2
+                         else
+                           (fun j =>
+                              if j = 4 * k + 1 then
+                                X2_1
+                              else
+                                (fun j => if j = 4 * k then X2_0 else a j) j)
+                             j)
+                        j
+                else
+                  if P3 then
+                    fun j =>
+                      if j = 4 * k + 3 then
+                        X3_3
+                      else
+                        (fun j =>
+                           if j = 4 * k + 2 then
+                             X3_2
+                           else
+                             (fun j =>
+                                if j = 4 * k + 1 then
+                                  X3_1
+                                else
+                                  (fun j => if j = 4 * k then X3_0 else a j) j)
+                               j)
+                          j
+                  else
+                    if P4 then
+                      fun j =>
+                        if j = 4 * k + 3 then
+                          X4_3
+                        else
+                          (fun j =>
+                             if j = 4 * k + 2 then
+                               X4_2
+                             else
+                               (fun j =>
+                                  if j = 4 * k + 1 then
+                                    X4_1
+                                  else
+                                    (fun j => if j = 4 * k then X4_0 else a j) j)
+                                 j)
+                            j
+                    else
+                      if P5 then
+                        fun j =>
+                          if j = 4 * k + 3 then
+                            X5_3
+                          else
+                            (fun j =>
+                               if j = 4 * k + 2 then
+                                 X5_2
+                               else
+                                 (fun j =>
+                                    if j = 4 * k + 1 then
+                                      X5_1
+                                    else
+                                      (fun j => if j = 4 * k then X5_0 else a j)
+                                        j)
+                                   j)
+                              j
+                      else
+                        unspecified))
+        j
+        = (if 0 ≤ j ∧ j < 4 * n then
+             if j % 4 = 0 then
+               if P1 then
+                 X1_0
+               else
+                 if P2 then
+                   X2_0
+                 else
+                   if P3 then X3_0 else if P4 then X4_0 else X5_0
+             else
+               if j % 4 = 1 then
+                 if P1 then
+                   X1_1
+                 else
+                   if P2 then
+                     X2_1
+                   else
+                     if P3 then X3_1 else if P4 then X4_1 else X5_1
+               else
+                 if j % 4 = 2 then
+                   if P1 then
+                     X1_2
+                   else
+                     if P2 then
+                       X2_2
+                     else
+                       if P3 then X3_2 else if P4 then X4_2 else X5_2
+                 else
+                   if P1 then
+                     X1_3
+                   else
+                     if P2 then
+                       X2_3
+                     else
+                       if P3 then X3_3 else if P4 then X4_3 else X5_3
+           else
+             a0 j)
+
+def Stmt.select_current_trace_stride5_cases6 : Prop :=
+  ∀ (a0 : Int → Int) (n : Int) (P1 : Prop) (P2 : Prop) (P3 : Prop) (P4 : Prop) (P5 : Prop) (P6 : Prop) (X1_0 : Int) (X1_1 : Int) (X1_2 : Int) (X1_3 : Int) (X1_4 : Int) (X2_0 : Int) (X2_1 : Int) (X2_2 : Int) (X2_3 : Int) (X2_4 : Int) (X3_0 : Int) (X3_1 : Int) (X3_2 : Int) (X3_3 : Int) (X3_4 : Int) (X4_0 : Int) (X4_1 : Int) (X4_2 : Int) (X4_3 : Int) (X4_4 : Int) (X5_0 : Int) (X5_1 : Int) (X5_2 : Int) (X5_3 : Int) (X5_4 : Int) (X6_0 : Int) (X6_1 : Int) (X6_2 : Int) (X6_3 : Int) (X6_4 : Int) (j : Int),
+    (P6 ↔ ¬P1 ∧ ¬P2 ∧ ¬P3 ∧ ¬P4 ∧ ¬P5)
+      → current
+        (trace
+           a0
+           (butlast (counter 0 1 n))
+           (fun a k =>
+              if P1 then
+                fun j =>
+                  if j = 5 * k + 4 then
+                    X1_4
+                  else
+                    (fun j =>
+                       if j = 5 * k + 3 then
+                         X1_3
+                       else
+                         (fun j =>
+                            if j = 5 * k + 2 then
+                              X1_2
+                            else
+                              (fun j =>
+                                 if j = 5 * k + 1 then
+                                   X1_1
+                                 else
+                                   (fun j => if j = 5 * k then X1_0 else a j) j)
+                                j)
+                           j)
+                      j
+              else
+                if P2 then
+                  fun j =>
+                    if j = 5 * k + 4 then
+                      X2_4
+                    else
+                      (fun j =>
+                         if j = 5 * k + 3 then
+                           X2_3
+                         else
+                           (fun j =>
+                              if j = 5 * k + 2 then
+                                X2_2
+                              else
+                                (fun j =>
+                                   if j = 5 * k + 1 then
+                                     X2_1
+                                   else
+                                     (fun j => if j = 5 * k then X2_0 else a j) j)
+                                  j)
+                             j)
+                        j
+                else
+                  if P3 then
+                    fun j =>
+                      if j = 5 * k + 4 then
+                        X3_4
+                      else
+                        (fun j =>
+                           if j = 5 * k + 3 then
+                             X3_3
+                           else
+                             (fun j =>
+                                if j = 5 * k + 2 then
+                                  X3_2
+                                else
+                                  (fun j =>
+                                     if j = 5 * k + 1 then
+                                       X3_1
+                                     else
+                                       (fun j => if j = 5 * k then X3_0 else a j)
+                                         j)
+                                    j)
+                               j)
+                          j
+                  else
+                    if P4 then
+                      fun j =>
+                        if j = 5 * k + 4 then
+                          X4_4
+                        else
+                          (fun j =>
+                             if j = 5 * k + 3 then
+                               X4_3
+                             else
+                               (fun j =>
+                                  if j = 5 * k + 2 then
+                                    X4_2
+                                  else
+                                    (fun j =>
+                                       if j = 5 * k + 1 then
+                                         X4_1
+                                       else
+                                         (fun j =>
+                                            if j = 5 * k then X4_0 else a j)
+                                           j)
+                                      j)
+                                 j)
+                            j
+                    else
+                      if P5 then
+                        fun j =>
+                          if j = 5 * k + 4 then
+                            X5_4
+                          else
+                            (fun j =>
+                               if j = 5 * k + 3 then
+                                 X5_3
+                               else
+                                 (fun j =>
+                                    if j = 5 * k + 2 then
+                                      X5_2
+                                    else
+                                      (fun j =>
+                                         if j = 5 * k + 1 then
+                                           X5_1
+                                         else
+                                           (fun j =>
+                                              if j = 5 * k then X5_0 else a j)
+                                             j)
+                                        j)
+                                   j)
+                              j
+                      else
+                        if P6 then
+                          fun j =>
+                            if j = 5 * k + 4 then
+                              X6_4
+                            else
+                              (fun j =>
+                                 if j = 5 * k + 3 then
+                                   X6_3
+                                 else
+                                   (fun j =>
+                                      if j = 5 * k + 2 then
+                                        X6_2
+                                      else
+                                        (fun j =>
+                                           if j = 5 * k + 1 then
+                                             X6_1
+                                           else
+                                             (fun j =>
+                                                if j = 5 * k then X6_0 else a j)
+                                               j)
+                                          j)
+                                     j)
+                                j
+                        else
+                          unspecified))
+        j
+        = (if 0 ≤ j ∧ j < 5 * n then
+             if j % 5 = 0 then
+               if P1 then
+                 X1_0
+               else
+                 if P2 then
+                   X2_0
+                 else
+                   if P3 then
+                     X3_0
+                   else
+                     if P4 then X4_0 else if P5 then X5_0 else X6_0
+             else
+               if j % 5 = 1 then
+                 if P1 then
+                   X1_1
+                 else
+                   if P2 then
+                     X2_1
+                   else
+                     if P3 then
+                       X3_1
+                     else
+                       if P4 then X4_1 else if P5 then X5_1 else X6_1
+               else
+                 if j % 5 = 2 then
+                   if P1 then
+                     X1_2
+                   else
+                     if P2 then
+                       X2_2
+                     else
+                       if P3 then
+                         X3_2
+                       else
+                         if P4 then X4_2 else if P5 then X5_2 else X6_2
+                 else
+                   if j % 5 = 3 then
+                     if P1 then
+                       X1_3
+                     else
+                       if P2 then
+                         X2_3
+                       else
+                         if P3 then
+                           X3_3
+                         else
+                           if P4 then X4_3 else if P5 then X5_3 else X6_3
+                   else
+                     if P1 then
+                       X1_4
+                     else
+                       if P2 then
+                         X2_4
+                       else
+                         if P3 then
+                           X3_4
+                         else
+                           if P4 then X4_4 else if P5 then X5_4 else X6_4
+           else
+             a0 j)
+
+def Stmt.select_current_trace_stride2_defaults : Prop :=
+  ∀ (a0 : Int → Int) (n : Int) (c : Int) (d : Int) (xs : List Int) (ys : List Int) (zs : List Int) (j : Int) (hxs : length xs = n) (hys : length ys = n) (hzs : length zs = n),
+    current
+      (trace
+         a0
+         (List.zip (butlast (counter 0 1 n)) (List.zip xs (List.zip ys zs)))
+         (fun a ⟨k, x, y, z⟩ =>
+            if x ≠ c ∧ y ≠ c then
+              fun j =>
+                if j = 2 * k + 1 then
+                  y
+                else
+                  (fun j => if j = 2 * k then x else a j) j
+            else
+              if x ≠ c ∧ y = c then
+                fun j =>
+                  if j = 2 * k + 1 then
+                    d
+                  else
+                    (fun j => if j = 2 * k then x else a j) j
+              else
+                if x = c ∧ z ≠ c then
+                  fun j =>
+                    if j = 2 * k + 1 then
+                      z
+                    else
+                      (fun j => if j = 2 * k then d else a j) j
+                else
+                  if x = c ∧ z = c then
+                    fun j =>
+                      if j = 2 * k + 1 then
+                        d
+                      else
+                        (fun j => if j = 2 * k then d else a j) j
+                  else
+                    unspecified))
+      j
+      = (if 0 ≤ j ∧ j < 2 * n then
+           if j % 2 = 0 then
+             if earlier (j / 2) xs ≠ c then earlier (j / 2) xs else d
+           else
+             if earlier (j / 2) xs ≠ c then
+               if earlier (j / 2) ys ≠ c then earlier (j / 2) ys else d
+             else
+               if earlier (j / 2) zs ≠ c then earlier (j / 2) zs else d
+         else
+           a0 j)
 
 def Stmt.select_current_trace_ahead : Prop :=
   ∀ (a0 : Int → Int) (n : Int) (m : Int) (F : Int → Int) (G : Int → Int) (j : Int),

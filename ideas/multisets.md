@@ -2,7 +2,7 @@
 
 A design over the multisets of the core (cvc5's bags), implemented in part (Oct 27, 2026) as the module `teq:multisets`
 (resources/cuvee/teq/multisets.dfy; doc/teq.md): `elems`, `msum`, `mparity`, `mmax`, `mmin`, the multiplicities, the
-conversions of the sums and parities of reads at keys, swap and shift of arrays; optional, not in `-svcomp`.
+conversions of the sums and parities of reads at keys, swap and shift of arrays; in `-svcomp` since 0.52.17.
 Measured (cloud, Oct 27, with the lengths of the choice lists of 0.52.16): converting the folds of all lists
 (`sum(xs) == msum(elems(xs))`, `count`, `current(maxs(...))`) proves the 10 sums and averages of reducercommutativity and
 mapsum, mapavg (+18 on Arrays), but loses 7 of Arrays (the maxima of standard_maxInArray_ground, ms2-ms5) and 27 of Loops

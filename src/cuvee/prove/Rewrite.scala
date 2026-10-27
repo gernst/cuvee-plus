@@ -129,9 +129,16 @@ object Rewrite:
 
   // side conditions and the guards of updates are decided by the simplifier in the context,
   // whose applications of rules count only if the condition holds (see Context.applied)
+  // a condition that does not simplify to true is simplified again with its choices lifted out of its atoms (see
+  // Normalize.choices), which appear once the higher-order variables of the rule are beta-reduced
   def holds(config: Config, state: State, ctx: Context, phi: Expr): Boolean =
     val applied = ctx.applied.value
-    val result = phi == True || Simplify.simplify(config, state, ctx.neutral, phi) == True
+    val result =
+      phi == True || {
+        val phi_ = Simplify.simplify(config, state, ctx.neutral, phi)
+        val lifted = Normalize.choices(phi_)
+        phi_ == True || lifted != phi_ && Simplify.simplify(config, state, ctx.neutral, lifted) == True
+      }
     if !result then ctx.applied := applied
     result
 

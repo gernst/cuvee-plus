@@ -109,7 +109,7 @@ modules are injected after it by `-include teq:<concept>`:
 | `strides` | strided stores and stores ahead (MonoCera) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |
 | `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, geometric `series`; after `aggregation`, `arithmetic` |
-| `multisets` | the multiset of a list (`elems`, the multisets of the core) and the folds that do not depend on the order as folds of it (`msum`, `mparity`, `mmax`, `mmin`, the multiplicities); the sums and parities of reads at keys converted to them; swap, shift and rotation of arrays preserve the multiset; after `aggregation`, not in `-svcomp`; each lemma of `aggregation` that consumes a fold of a list has its twin on the fold of the multiset here (ideas/multisets.md) |
+| `multisets` | the multiset of a list (`elems`, the multisets of the core) and the folds that do not depend on the order as folds of it (`msum`, `mparity`, `mmax`, `mmin`, the multiplicities); the sums and parities of reads at keys converted to them; swap, shift and rotation of arrays preserve the multiset; after `aggregation`, in `-svcomp` since 0.52.17; each lemma of `aggregation` that consumes a fold of a list has its twin on the fold of the multiset here (ideas/multisets.md) |
 
 Rules are tried in the order of the modules and of the files, so the order decides which abstraction a fragment
 gets; a rule whose pattern subsumes another comes after it. Within a module, the function declarations come first,

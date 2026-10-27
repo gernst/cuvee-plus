@@ -19,9 +19,10 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.16, Ryzen, 120 s
          `p % m` (pr2, mbpr2-mbpr4);
       2. done (0.52.15): the definition of div and mod in the simplex (tcpy, diff-2-n-u); no forward lemmas for
          division;
-      3. open: the 2^s cases of s conditional stores (pr3-pr5, pnr2-pnr5). Merging them into stores of conditional
-         values was tried and rejected by decision: only cases with equal results are merged, the case distinction of
-         updates stays (ideas/conditional-stores.md); another route is open;
+      3. the 2^s cases of s conditional stores: shape lemmas per number of cases (strides.dfy, Oct 28), pr3 and pnr2
+         proved; pr4 at the limit of 120 s (88 s locally), pr5 in 485 s (within the 15 min of the competition);
+         pnr3-pnr5 open. Merging the cases was
+         rejected by decision, the generic lemma over the window is too general (ideas/conditional-stores.md);
       4. open: nr2-nr5, whose inner loop over two positions leaves cases that store at `2 * k` and `2 * k + 1`, the
          iteration variable written as the literal it equals in each case (ideas/engine-gaps.md, gap 3); no evaluation
          of concrete traces, by decision.
@@ -55,6 +56,10 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.16, Ryzen, 120 s
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
+- [ ] Tasks lost since 0.52.4 (ideas/prove-next.md, A2, the table of Oct 28): brs2-brs5
+      (`select_current_trace_reset_add_keep`) and ps2-ps6 valuebound1 (`square_eq_self`, the case split on
+      two-element intervals) recovered in 0.52.17, pr3 by its shape; open: mods, modsf, functions_1-2, and those at
+      the limit.
 - [ ] Regressions since 0.51.4 (ideas/prove-next.md, plan A, with a table per task): rewnifrev, linear_sea.ch, geo1,
       prodbin, cohendiv-ll, max20-1 (array_2-*-simple and theatreSquare work again, Oct 26). Few rewrite steps; the
       profile in plan A (side conditions of rules, hashes of terms, the simplex, `Context.fix`) suggests speedups are

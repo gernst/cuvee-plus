@@ -612,6 +612,35 @@ theorem select_current_trace_reset_add : Stmt.select_current_trace_reset_add := 
   rw [counter_N, N.select_current_trace_reset_add]
   exact ite_iff (by show n.toNat = 0 ↔ _; omega) _ _
 
+-- the reset and the guarded additions: after the reset at the iteration 0, each later iteration adds G k where P k holds
+-- and keeps the array otherwise
+theorem reset_add_keep_later (j c : Int) (P : Int → Prop) (G : Int → Int) (m : Nat) : ∀ (s : Int) (x : Int → Int), 1 ≤ s →
+    current (trace x (butlast (N.counter s 1 m))
+      (fun a k =>
+        if k = 0 then fun j1 => if j1 = j then c else a j1
+        else if 0 < k ∧ P k then fun j1 => if j1 = j then a j + G k else a j1
+        else if 0 < k ∧ ¬P k then a else unspecified)) j
+      = x j + sum (maps (butlast (N.counter s 1 m)) (fun k => if 0 < k then if P k then G k else 0 else 0)) := by
+  induction m with
+  | zero => intro s x hs; simp [N.counter, butlast, trace, current, maps, sum]
+  | succ m ih =>
+    intro s x hs
+    rw [N.butlast_counter_succ, N.trace_cons, N.current_step_eq, ih (s + 1) _ (by omega)]
+    simp only [maps, sum, if_neg (show ¬s = 0 by omega), if_pos (show 0 < s by omega)]
+    by_cases hp : P s
+    · simp only [hp, and_true, not_true_eq_false, and_false, if_pos (show 0 < s by omega), ↓reduceIte, eq_self]; omega
+    · simp only [hp, and_true, not_false_eq_true, and_false, if_pos (show 0 < s by omega), ↓reduceIte]; omega
+
+theorem select_current_trace_reset_add_keep : Stmt.select_current_trace_reset_add_keep := by
+  intro a0 j n c P G
+  rw [counter_N]
+  by_cases hn : n ≤ 0
+  · rw [if_pos hn, show n.toNat = 0 by omega]; rfl
+  · rw [if_neg hn, show n.toNat = n.toNat - 1 + 1 by omega, N.butlast_counter_succ, N.trace_cons, N.current_step_eq,
+      reset_add_keep_later j c P G _ (0 + 1) _ (by omega)]
+    simp only [maps, sum, ↓reduceIte, Int.lt_irrefl]
+    omega
+
 theorem select_current_trace_prefix_sums : Stmt.select_current_trace_prefix_sums := by
   intro b0 n j G
   rw [counter_N, counter_N, N.select_current_trace_prefix_sums, N.integer_cast, N.natural_eq, counter_N]
@@ -651,6 +680,14 @@ theorem triangle_even : Stmt.triangle_even := N.triangle_even
 theorem triangle_even_below : Stmt.triangle_even_below := N.triangle_even_below
 theorem triangle_even_scaled : Stmt.triangle_even_scaled := N.triangle_even_scaled
 theorem triangle_even_below_scaled : Stmt.triangle_even_below_scaled := N.triangle_even_below_scaled
+
+theorem square_eq_self : Stmt.square_eq_self := by
+  intro c
+  constructor
+  · intro h
+    have e : c * (c - 1) = 0 := by rw [Int.mul_sub, h]; omega
+    rcases Int.mul_eq_zero.mp e with e | e <;> omega
+  · rintro (e | e) <;> subst e <;> rfl
 
 -- the lemmas of search.dfy
 
@@ -976,6 +1013,194 @@ theorem select_current_trace_stride2_cases : Stmt.select_current_trace_stride2_c
   exact ite_iff (by omega) _ _
 
 -- no steps leave the array as it is, where neither condition holds
+-- strides of s positions per iteration, with values V d r at the offset r of the iteration of the dependency d: the
+-- read at j is that of the iteration j / s at the offset j % s, by induction over the remaining iterations from t
+
+theorem emod_of_block (s t j : Int) (h1 : s * t ≤ j) (h2 : j < s * t + s) : j % s = j - s * t := by
+  have e : j = (j - s * t) + s * t := by omega
+  rw [e, Int.add_mul_emod_self_left, Int.emod_eq_of_lt (by omega) (by omega)]; omega
+
+theorem ediv_of_block (s t j : Int) (hs : 0 < s) (h1 : s * t ≤ j) (h2 : j < s * t + s) : j / s = t := by
+  have e : j = (j - s * t) + s * t := by omega
+  rw [e, Int.add_mul_ediv_left _ _ (by omega), Int.ediv_eq_zero_of_lt (by omega) (by omega)]; omega
+
+theorem stride_from {β : Type} [Inhabited β] (s : Int) (hs : 0 < s) (V : β → Int → Int)
+    (U : (Int → Int) → Int × β → Int → Int)
+    (hU : ∀ a k d i, U a (k, d) i = if s * k ≤ i ∧ i < s * k + s then V d (i - s * k) else a i) (j : Int) (r : Nat) :
+    ∀ (b : Int → Int) (t : Int) (ds : List β), ds.length = r →
+    current (trace b (List.zip (butlast (N.counter t 1 r)) ds) U) j
+      = if s * t ≤ j ∧ j < s * t + s * r then V (N.earlier (j / s - t).toNat ds) (j % s) else b j := by
+  induction r with
+  | zero => intro b t ds hds; simp only [N.counter, butlast, List.zip_nil_left, N.current_trace_nil]; rw [if_neg (by omega)]
+  | succ r ih =>
+    intro b t ds hds
+    cases ds with
+    | nil => simp at hds
+    | cons d ds =>
+      rw [N.butlast_counter_succ, List.zip_cons_cons, N.trace_cons, N.current_step_eq, ih _ _ ds (by simp at hds; omega),
+        hU]
+      have hm : s * (t + 1) = s * t + s := by rw [Int.mul_add, Int.mul_one]
+      have hr2 : s * ((r + 1 : Nat) : Int) = s * r + s := by rw [Int.natCast_add, Int.mul_add]; simp
+      rw [hr2]
+      have hsr : 0 ≤ s * (r : Int) := Int.mul_nonneg (by omega) (by omega)
+      by_cases h1 : s * (t + 1) ≤ j ∧ j < s * (t + 1) + s * r
+      · have hq : j / s - t = ((j / s - (t + 1)).toNat + 1 : Nat) := by
+          have : t + 1 ≤ j / s := by
+            have := Int.le_ediv_of_mul_le hs (show (t + 1) * s ≤ j by rw [Int.mul_comm]; omega)
+            exact this
+          omega
+        rw [if_pos h1, if_pos (by omega), hq, Int.toNat_natCast]; rfl
+      · rw [if_neg h1]
+        by_cases h2 : s * t ≤ j ∧ j < s * t + s
+        · rw [if_pos h2, if_pos (by omega), emod_of_block s t j h2.1 h2.2, ediv_of_block s t j hs h2.1 h2.2,
+            Int.sub_self, show (0 : Int).toNat = 0 from rfl]; rfl
+        · rw [if_neg h2, if_neg (by omega)]
+
+theorem stride_read {β : Type} [Inhabited β] (s : Int) (hs : 0 < s) (V : β → Int → Int)
+    (U : (Int → Int) → Int × β → Int → Int)
+    (hU : ∀ a k d i, U a (k, d) i = if s * k ≤ i ∧ i < s * k + s then V d (i - s * k) else a i)
+    (a0 : Int → Int) (n j : Int) (ds : List β) (hds : ds.length = n) :
+    current (trace a0 (List.zip (butlast (counter 0 1 n)) ds) U) j
+      = if 0 ≤ j ∧ j < s * n then V (earlier (j / s) ds) (j % s) else a0 j := by
+  rw [counter_N, stride_from s hs V U hU j n.toNat a0 0 ds (by omega), Int.mul_zero, Int.zero_add,
+    Int.toNat_of_nonneg (by omega : (0 : Int) ≤ n), Int.sub_zero]
+  by_cases h : 0 ≤ j ∧ j < s * n
+  · rw [if_pos h, if_pos h, earlier_N_nonneg _ _ (Int.ediv_nonneg h.1 (by omega))]
+  · rw [if_neg h, if_neg h]
+
+-- the version over the counter alone, whose values are the dependency
+theorem stride_read_counter (s : Int) (hs : 0 < s) (V : Int → Int)
+    (U : (Int → Int) → Int → Int → Int)
+    (hU : ∀ a k i, U a k i = if s * k ≤ i ∧ i < s * k + s then V (i - s * k) else a i)
+    (a0 : Int → Int) (n j : Int) :
+    current (trace a0 (butlast (counter 0 1 n)) U) j = if 0 ≤ j ∧ j < s * n then V (j % s) else a0 j := by
+  by_cases hn : n ≤ 0
+  · rw [counter_N, show n.toNat = 0 by omega]; simp only [N.counter, butlast, N.current_trace_nil]
+    rw [if_neg]; intro h; have : s * n ≤ 0 := Int.mul_nonpos_of_nonneg_of_nonpos (by omega) hn; omega
+  · have h := stride_read s hs (fun (_ : Int) r => V r) (fun a kd => U a kd.1) (fun a k d i => hU a k i) a0 n j
+      (butlast (counter 0 1 n)) (by rw [counter_N, N.length_butlast_counter]; omega)
+    rw [counter_N, N.trace_zip_self] at h
+    rw [counter_N]; exact h
+
+-- the blocks of the strides 3, 4, 5: the nested stores of an iteration (blk) as one read by the offset (off)
+def blk3 (X0 X1 X2 : Int) (a : Int → Int) (k : Int) : Int → Int :=
+  fun j => if j = 3 * k + 2 then X2 else (fun j => if j = 3 * k + 1 then X1 else
+    (fun j => if j = 3 * k then X0 else a j) j) j
+
+def off3 (X0 X1 X2 : Int) (r : Int) : Int := if r = 0 then X0 else if r = 1 then X1 else X2
+
+theorem stride3_block (X0 X1 X2 : Int) : ∀ (a : Int → Int) (k i : Int),
+    blk3 X0 X1 X2 a k i = if 3 * k ≤ i ∧ i < 3 * k + 3 then off3 X0 X1 X2 (i - 3 * k) else a i := by
+  intro a k i; simp only [blk3, off3]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+def blk4 (X0 X1 X2 X3 : Int) (a : Int → Int) (k : Int) : Int → Int :=
+  fun j => if j = 4 * k + 3 then X3 else (fun j => if j = 4 * k + 2 then X2 else (fun j => if j = 4 * k + 1 then X1
+    else (fun j => if j = 4 * k then X0 else a j) j) j) j
+
+def off4 (X0 X1 X2 X3 : Int) (r : Int) : Int := if r = 0 then X0 else if r = 1 then X1 else if r = 2 then X2 else X3
+
+theorem stride4_block (X0 X1 X2 X3 : Int) : ∀ (a : Int → Int) (k i : Int),
+    blk4 X0 X1 X2 X3 a k i = if 4 * k ≤ i ∧ i < 4 * k + 4 then off4 X0 X1 X2 X3 (i - 4 * k) else a i := by
+  intro a k i; simp only [blk4, off4]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+def blk5 (X0 X1 X2 X3 X4 : Int) (a : Int → Int) (k : Int) : Int → Int :=
+  fun j => if j = 5 * k + 4 then X4 else (fun j => if j = 5 * k + 3 then X3 else (fun j => if j = 5 * k + 2 then X2
+    else (fun j => if j = 5 * k + 1 then X1 else (fun j => if j = 5 * k then X0 else a j) j) j) j) j
+
+def off5 (X0 X1 X2 X3 X4 : Int) (r : Int) : Int :=
+  if r = 0 then X0 else if r = 1 then X1 else if r = 2 then X2 else if r = 3 then X3 else X4
+
+theorem stride5_block (X0 X1 X2 X3 X4 : Int) : ∀ (a : Int → Int) (k i : Int),
+    blk5 X0 X1 X2 X3 X4 a k i = if 5 * k ≤ i ∧ i < 5 * k + 5 then off5 X0 X1 X2 X3 X4 (i - 5 * k) else a i := by
+  intro a k i; simp only [blk5, off5]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+
+-- the cases are conditions on the context, not on the iteration: in each, the update is one block
+theorem select_current_trace_stride3_cases4 : Stmt.select_current_trace_stride3_cases4 := by
+  intro a0 n P1 P2 P3 P4 X1_0 X1_1 X1_2 X2_0 X2_1 X2_2 X3_0 X3_1 X3_2 X4_0 X4_1 X4_2 j hP
+  by_cases h1 : P1
+  · simp only [h1, ↓reduceIte]; exact stride_read_counter 3 (by decide) (off3 X1_0 X1_1 X1_2) (blk3 X1_0 X1_1 X1_2) (stride3_block X1_0 X1_1 X1_2) a0 n j
+  by_cases h2 : P2
+  · simp only [h1, h2, ↓reduceIte]; exact stride_read_counter 3 (by decide) (off3 X2_0 X2_1 X2_2) (blk3 X2_0 X2_1 X2_2) (stride3_block X2_0 X2_1 X2_2) a0 n j
+  by_cases h3 : P3
+  · simp only [h1, h2, h3, ↓reduceIte]
+    exact stride_read_counter 3 (by decide) (off3 X3_0 X3_1 X3_2) (blk3 X3_0 X3_1 X3_2) (stride3_block X3_0 X3_1 X3_2) a0 n j
+  have h4 : P4 := hP.2 ⟨h1, h2, h3⟩
+  simp only [h1, h2, h3, h4, ↓reduceIte]
+  exact stride_read_counter 3 (by decide) (off3 X4_0 X4_1 X4_2) (blk3 X4_0 X4_1 X4_2) (stride3_block X4_0 X4_1 X4_2) a0 n j
+
+theorem select_current_trace_stride4_cases5 : Stmt.select_current_trace_stride4_cases5 := by
+  intro a0 n P1 P2 P3 P4 P5 X1_0 X1_1 X1_2 X1_3 X2_0 X2_1 X2_2 X2_3 X3_0 X3_1 X3_2 X3_3 X4_0 X4_1 X4_2 X4_3
+    X5_0 X5_1 X5_2 X5_3 j hP
+  by_cases h1 : P1
+  · simp only [h1, ↓reduceIte]
+    exact stride_read_counter 4 (by decide) (off4 X1_0 X1_1 X1_2 X1_3) (blk4 X1_0 X1_1 X1_2 X1_3) (stride4_block X1_0 X1_1 X1_2 X1_3) a0 n j
+  by_cases h2 : P2
+  · simp only [h1, h2, ↓reduceIte]
+    exact stride_read_counter 4 (by decide) (off4 X2_0 X2_1 X2_2 X2_3) (blk4 X2_0 X2_1 X2_2 X2_3) (stride4_block X2_0 X2_1 X2_2 X2_3) a0 n j
+  by_cases h3 : P3
+  · simp only [h1, h2, h3, ↓reduceIte]
+    exact stride_read_counter 4 (by decide) (off4 X3_0 X3_1 X3_2 X3_3) (blk4 X3_0 X3_1 X3_2 X3_3) (stride4_block X3_0 X3_1 X3_2 X3_3) a0 n j
+  by_cases h4 : P4
+  · simp only [h1, h2, h3, h4, ↓reduceIte]
+    exact stride_read_counter 4 (by decide) (off4 X4_0 X4_1 X4_2 X4_3) (blk4 X4_0 X4_1 X4_2 X4_3) (stride4_block X4_0 X4_1 X4_2 X4_3) a0 n j
+  have h5 : P5 := hP.2 ⟨h1, h2, h3, h4⟩
+  simp only [h1, h2, h3, h4, h5, ↓reduceIte]
+  exact stride_read_counter 4 (by decide) (off4 X5_0 X5_1 X5_2 X5_3) (blk4 X5_0 X5_1 X5_2 X5_3) (stride4_block X5_0 X5_1 X5_2 X5_3) a0 n j
+
+theorem select_current_trace_stride5_cases6 : Stmt.select_current_trace_stride5_cases6 := by
+  intro a0 n P1 P2 P3 P4 P5 P6 X1_0 X1_1 X1_2 X1_3 X1_4 X2_0 X2_1 X2_2 X2_3 X2_4 X3_0 X3_1 X3_2 X3_3 X3_4
+    X4_0 X4_1 X4_2 X4_3 X4_4 X5_0 X5_1 X5_2 X5_3 X5_4 X6_0 X6_1 X6_2 X6_3 X6_4 j hP
+  by_cases h1 : P1
+  · simp only [h1, ↓reduceIte]
+    exact stride_read_counter 5 (by decide) (off5 X1_0 X1_1 X1_2 X1_3 X1_4) (blk5 X1_0 X1_1 X1_2 X1_3 X1_4) (stride5_block X1_0 X1_1 X1_2 X1_3 X1_4) a0 n j
+  by_cases h2 : P2
+  · simp only [h1, h2, ↓reduceIte]
+    exact stride_read_counter 5 (by decide) (off5 X2_0 X2_1 X2_2 X2_3 X2_4) (blk5 X2_0 X2_1 X2_2 X2_3 X2_4) (stride5_block X2_0 X2_1 X2_2 X2_3 X2_4) a0 n j
+  by_cases h3 : P3
+  · simp only [h1, h2, h3, ↓reduceIte]
+    exact stride_read_counter 5 (by decide) (off5 X3_0 X3_1 X3_2 X3_3 X3_4) (blk5 X3_0 X3_1 X3_2 X3_3 X3_4) (stride5_block X3_0 X3_1 X3_2 X3_3 X3_4) a0 n j
+  by_cases h4 : P4
+  · simp only [h1, h2, h3, h4, ↓reduceIte]
+    exact stride_read_counter 5 (by decide) (off5 X4_0 X4_1 X4_2 X4_3 X4_4) (blk5 X4_0 X4_1 X4_2 X4_3 X4_4) (stride5_block X4_0 X4_1 X4_2 X4_3 X4_4) a0 n j
+  by_cases h5 : P5
+  · simp only [h1, h2, h3, h4, h5, ↓reduceIte]
+    exact stride_read_counter 5 (by decide) (off5 X5_0 X5_1 X5_2 X5_3 X5_4) (blk5 X5_0 X5_1 X5_2 X5_3 X5_4) (stride5_block X5_0 X5_1 X5_2 X5_3 X5_4) a0 n j
+  have h6 : P6 := hP.2 ⟨h1, h2, h3, h4, h5⟩
+  simp only [h1, h2, h3, h4, h5, h6, ↓reduceIte]
+  exact stride_read_counter 5 (by decide) (off5 X6_0 X6_1 X6_2 X6_3 X6_4) (blk5 X6_0 X6_1 X6_2 X6_3 X6_4) (stride5_block X6_0 X6_1 X6_2 X6_3 X6_4) a0 n j
+
+-- the reads of a zip are the pairs of the reads, within the lists
+theorem earlier_zip {α β : Type} [Inhabited α] [Inhabited β] (xs : List α) (ys : List β) :
+    ∀ (k : Int), 0 ≤ k → k < xs.length → xs.length = ys.length →
+      earlier k (List.zip xs ys) = (earlier k xs, earlier k ys) := by
+  induction xs generalizing ys with
+  | nil => intro k _ h; simp at h; omega
+  | cons x xs ih =>
+    intro k hk hkl hl
+    cases ys with
+    | nil => simp at hl
+    | cons y ys =>
+      simp only [List.zip_cons_cons, earlier, if_neg (show ¬k < 0 by omega)]
+      by_cases e : k = 0
+      · simp only [e, ↓reduceIte]
+      · simp only [e, ↓reduceIte]
+        exact ih ys (k - 1) (by omega) (by simp at hkl; omega) (by simp at hl; omega)
+
+-- the defaults: each iteration writes the positions 2 k and 2 k + 1 from its values x, y, z
+theorem select_current_trace_stride2_defaults : Stmt.select_current_trace_stride2_defaults := by
+  intro a0 n c d xs ys zs j hxs hys hzs
+  have hl : (List.zip xs (List.zip ys zs)).length = n := by
+    rw [N.length_zip_eq xs _ xs.length rfl (by rw [N.length_zip_eq ys zs ys.length rfl (by omega)]; omega)]; omega
+  rw [stride_read 2 (by decide)
+    (fun (t : Int × Int × Int) r => if r = 0 then (if t.1 ≠ c then t.1 else d)
+      else if t.1 ≠ c then (if t.2.1 ≠ c then t.2.1 else d) else (if t.2.2 ≠ c then t.2.2 else d))
+    _ (fun a k t i => by obtain ⟨x, y, z⟩ := t; dsimp only; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)) a0 n j _ hl]
+  by_cases h : 0 ≤ j ∧ j < 2 * n
+  · have hq : 0 ≤ j / 2 := Int.ediv_nonneg h.1 (by decide)
+    rw [if_pos h, if_pos h, earlier_zip xs _ (j / 2) hq (by omega) (by rw [N.length_zip_eq ys zs ys.length rfl (by omega)]; omega),
+      earlier_zip ys zs (j / 2) hq (by omega) (by omega)]
+  · rw [if_neg h, if_neg h]
+
 theorem select_current_trace_ahead : Stmt.select_current_trace_ahead := by
   intro a0 n m F G j h
   rw [counter_N]

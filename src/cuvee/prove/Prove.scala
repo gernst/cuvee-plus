@@ -5,6 +5,7 @@ import cuvee.Error
 import cuvee.sexpr
 import cuvee.pipe.Transform
 import cuvee.core._
+import util.Rational
 
 // the deduction engine of -prove (see doc/prove.md and doc/prove.md): the assertions and
 // lemmas with the attribute :rw so far are rewrite rules and those with :fw forward lemmas (see Forward), which are
@@ -38,7 +39,7 @@ object Prove extends Transform:
   def cases(config: Config, state: State, fresh: () => Context, cmd: Cmd, depth: Int): Cmd =
     cmd match
       case Assert(justify, params, phi, attrs) if depth > 0 =>
-        alternatives(phi) match
+        alternatives(fresh, phi) match
           case Some(phis) if phis.forall(phi_ => isTrivial(cases(config, state, fresh, Simplify.simplify(config, state, fresh(), Assert(justify, params, phi_, attrs)), depth - 1))) =>
             Assert(justify, params, True, attrs)
 
@@ -58,11 +59,13 @@ object Prove extends Transform:
   //   (see reads), e.g. a[3 := w][j] for an open j;
   // - the cases x % m == 0, ..., x % m == m - 1 of the first remainder by a literal 2 <= m <= 4 whose variables are
   //   free in the goal, which the simplex does not enumerate, since it is rational (see remainders), e.g. the goal
-  //   !(tmp % 2 == 0) ==> tmp % 2 == 1 of the odd case of diamond_1-1
-  def alternatives(phi: Expr): Option[List[Expr]] =
+  //   !(tmp % 2 == 0) ==> tmp % 2 == 1 of the odd case of diamond_1-1;
+  // - the cases x == l and x == l + 1 of the first integer variable of the goal that the premises bound to two values
+  //   (see interval), whose terms the simplex does not evaluate, e.g. c * c * c == c for 0 <= c <= k <= 1 (ps3-ll)
+  def alternatives(fresh: () => Context, phi: Expr): Option[List[Expr]] =
     phi match
       case All(xs, body) =>
-        alternatives(body).map(_.map(All(xs, _)))
+        alternatives(fresh, body).map(_.map(All(xs, _)))
 
       case _ =>
         val (premises, concl) =
@@ -82,11 +85,47 @@ object Prove extends Transform:
                     Some(List(Imp(And(premises :+ c), concl), Imp(And(premises :+ Not(c)), concl)))
 
                   case Nil =>
-                    for (r, m) <- remainders(phi, phi.free).headOption
-                    yield for i <- List.range(BigInt(0), m) yield Imp(And(premises :+ Eq(r, Ints.num(i))), concl)
+                    remainders(phi, phi.free).headOption match
+                      case Some((r, m)) =>
+                        Some(for i <- List.range(BigInt(0), m) yield Imp(And(premises :+ Eq(r, Ints.num(i))), concl))
+
+                      case None =>
+                        for (x, l) <- interval(fresh, premises, phi)
+                        yield for v <- List(l, (l + Poly.one).normalize) yield Imp(And(premises :+ Eq(x, v.toExpr(Ints.ring))), concl)
 
           case i =>
             Some(for disjunct <- Or.flatten(premises(i)) yield Imp(And(premises.patch(i, List(disjunct), 1)), concl))
+
+  // the first integer variable x of `phi` and a lower bound l of it such that the premises imply x <= l + 1, i.e., x
+  // has two values; the candidates of l are the bounds of the premises in which x has coefficient 1, a term without x,
+  // e.g. 0 of 0 <= c, and the upper bound is decided in the context of the premises, e.g. c <= k <= 1
+  def interval(fresh: () => Context, premises: List[Expr], phi: Expr): Option[(Var, Poly)] =
+    val ctx = fresh().assume(premises, Nil)
+    if ctx.inconsistent
+    then None
+    else
+      val found =
+        for
+          x <- phi.free.toList.sortBy(_.toString) if x.typ == Sort.int
+          premise <- premises
+          l <- lower(premise, x)
+          if ctx.implied(Ints.le(Poly.atom(x).toExpr(Ints.ring), (l + Poly.one).normalize.toExpr(Ints.ring)))
+        yield (x, l)
+      found.headOption
+
+  // the lower bound of x that a comparison states, if x has coefficient 1 in it: 0 <= x + p gives -p
+  def lower(premise: Expr, x: Var): Option[Poly] =
+    val diff =
+      premise match
+        case Ints.le(a, b) => Some(Arith.toPoly(Ints.ring, b) - Arith.toPoly(Ints.ring, a))
+        case Ints.lt(a, b) => Some(Arith.toPoly(Ints.ring, b) - Arith.toPoly(Ints.ring, a) - Poly.one)
+        case _             => None
+    for
+      d <- diff.map(_.normalize)
+      mono <- d.monos.find(m => m.atoms == List((x, BigInt(1))) && m.factor == Rational(1))
+      rest = (d - Poly(Rational(0), List(mono))).normalize
+      if !rest.monos.exists(_.atoms.exists((atom, _) => atom.free.contains(x)))
+    yield (Poly.zero - rest).normalize
 
   // the equations i == j of the indices of the reads after writes a[i := v][j] in `expr` whose variables are among
   // `outer`, which the simplifier did not decide (see Simplify.select): each case gives the read its value

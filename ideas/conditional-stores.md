@@ -1,6 +1,29 @@
 # Conditional stores instead of cases
 
-Current work, the third step of the strided stores (TODO.md, "Work queue: Now"). Rejected by decision (Oct 27,
+Current work, the third step of the strided stores (TODO.md, "Work queue: Now").
+
+**A generic lemma over the window of an iteration (Oct 28, 2026, measured, not adopted).** A loop whose iteration k
+changes only the cells of its window, with values that do not depend on the array, by any number of cases, leaves at
+j the value that the iteration j / s stores there; the update is a higher-order variable `U`, the window a quantified
+side condition:
+
+```
+lemma {:rw} {:teq} select_current_trace_window2(a0: array<int, int>, n: int, j: int, U: (array<int, int>, int) -> array<int, int>)
+  requires forall b: array<int, int>, k: int, i: int :: i != 2 * k && i != 2 * k + 1 ==> U(b, k)[i] == b[i]
+  requires forall b: array<int, int>, c: array<int, int>, k: int :: U(b, k)[2 * k] == U(c, k)[2 * k] && U(b, k)[2 * k + 1] == U(c, k)[2 * k + 1]
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: U(a, k)))[j]
+    == if 0 <= j < 2 * n then U(a0, j / 2)[j] else a0[j]
+```
+
+It needs one engine step to decide its conditions, either a read of a choice as the choice of the reads
+(`Simplify.select`) or the choices lifted out of the atoms like `ite` (`Normalize.choices`, applied in `Rewrite.holds`
+after simplification); both keep the cases. It works in principle: a goal of the shape of pr2 in isolation in 3 s, pr2 in
+46 s (10 s with the shape lemma). But its pattern matches every trace of an array over a counter, whose quantified
+conditions are then evaluated at every read; pr3 and nr2 do not finish in 90 s. A cheap first condition that recognizes
+an update writing only its window, decided from its shape, would make it the principled form; by decision (Oct 28), the
+module takes shapes per number of cases instead (`select_current_trace_stride3_cases4` to `stride5_cases6`,
+`select_current_trace_stride2_defaults`): pr3 (55 s) and pnr2 (73 s) proved on the cloud at 120 s, pr4 at the limit of
+120 s, pr5 in 485 s (within the 15 min of the competition). Rejected by decision (Oct 27,
 2026): merging the cases in the simplifier (`Simplify.eps`), even restricted to chains of stores at the same indices
 whose values do not read the array; only cases with equal results are merged, since the case distinction of an update
 is what the lemmas match. Measured before the decision: pr3 proved, rew and ms2 lost (a store of a choice of arrays,

@@ -133,6 +133,40 @@ object Normalize:
           case _ =>
             phi
 
+  // a choice is lifted out of the terms of the atoms to the level of formulas, like ite: A[eps(cᵢ => vᵢ)] is the
+  // conjunction of cᵢ ==> A[vᵢ], since the guards of a choice are disjoint and those of an update exhaustive; the
+  // cases are kept as guards of formulas, nothing is merged; for the side conditions of rules whose higher-order
+  // variables are instantiated by an update, read at a position (Rewrite.holds)
+  def choices(phi: Expr): Expr =
+    phi match
+      case True | False         => phi
+      case Not(psi)             => Not(choices(psi))
+      case And(phis)            => And(phis.map(choices))
+      case Or(phis)             => Or(phis.map(choices))
+      case Imp(psi, chi)        => Imp(choices(psi), choices(chi))
+      case Bind(quant, xs, psi) => Bind(quant, xs, choices(psi))
+
+      case Eps(updates) if phi.typ == Sort.bool =>
+        And(updates.map(upd => Imp(upd.cond, choices(upd.rhs))))
+
+      case _ =>
+        eps(phi) match
+          case Some(choice @ Eps(updates)) =>
+            And(updates.map(upd => Imp(upd.cond, choices(replace(phi, choice, upd.rhs)))))
+
+          case _ =>
+            phi
+
+  // the outermost leftmost choice in `expr` that is not below a binder, a derivative, or old
+  def eps(expr: Expr): Option[Expr] =
+    expr match
+      case Eps(_)             => Some(expr)
+      case App(_, _, _, args) => args.view.flatMap(eps).headOption
+      case Distinct(exprs)    => exprs.view.flatMap(eps).headOption
+      case Is(arg, _)         => eps(arg)
+      case As(arg, _)         => eps(arg)
+      case _                  => None
+
   // the outermost leftmost ite in `expr` that is not below a binder, a derivative, or old
   def ite(expr: Expr): Option[Expr] =
     expr match
