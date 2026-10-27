@@ -36,7 +36,8 @@ benchmarks are not rerun with Cuvée.
 - [ ] Reducer commutativity (reducercommutativity, array-crafted bAnd/bor/xor; plan in ideas/array-lemmas.md): one
       fold per operator (`bitands`, `bitors`, `bitxors`, max and min as folds with their symmetric variants), swap and
       rotation lemmas per operator, the value lists as slices.
-- [ ] Deferred: the cost of `-prove` (forward instances simplified at every firing); the rest of nla-digbench (geo1,
+- [ ] Deferred: the cost of `-prove` (forward instances are simplified at every firing; a memo of them was measured
+      and costs more, Oct 27, so the remedy is fewer forward lemmas: rules on the atoms of the goals); the rest of nla-digbench (geo1,
       geo3, cohencu); the non-terminations at the bound on the steps (fermat1, egcd2, mannadiv); equalities from the
       simplex to the classes (ideas/prove-next.md).
 - [ ] Last: integrate the results into doc/paper/cuvee.tex (`scripts/paper.py`), `scripts/out/experiments.pdf`,
@@ -98,9 +99,9 @@ Cleanup, none of it a bug.
   - The ordering of expressions is by `toString`; `Justify` is mapped to its keyword in four places.
 - The engine of `-prove`: `(config, state, ctx)` threaded everywhere (→ a class); the matchers of `Rewrite` take
   12 to 15 parameters (→ a matcher per rule); three matchers on types, two on patterns; `Subst.rename` with
-  `ctx.bind` ten times (→ `Context.enter`); `Simplify.integers` is clumsy; the counter of iterations extracted
-  three times; polynomial code spread over `Arith`, `Simplify`, `Rewrite` (`Arith.normalize` unused); sequent
-  decomposition three times (`Split`, `Normalize`, `Context.assume`); `Context.not` and `Simplify.not` share a name.
+  `ctx.bind` ten times (→ `Context.enter`); the matcher's signed summands beside `Poly` (kept on purpose, see
+  ideas/engine-consolidation.md, step 2); sequent decomposition three times (`Split`, `Normalize`,
+  `Context.assume`, kept by decision, step 8).
 - Transforms: abstractness from two sources (`VCGen.abstracts`, the solver's closure in the order of the stream,
   which misses mutual recursion; mark the functions in the `State` instead); `VCGen`, `TEQ`, `Horn` repeat the
   setup of a procedure and pass the four exits separately; `Monomorph` replays the prefix on every flush.

@@ -155,17 +155,13 @@ object Simplify:
         val left_ = simplify(config, state, ctx.neutral, x)
         val inits_ = simplify(config, state, ctx.neutral, inits)
         val deps_ = simplify(config, state, ctx.neutral, deps)
-        val (vars_, re) = Subst.rename(accs ++ bound, ctx.free)
-        val (accs_, bound_) = vars_.splitAt(accs.length)
-        val inner = combinator(config, state, ctx.bind(accs_).copy(self = Views.selfOf(x, accs_)), deps_, bound_)
-        val ranges = if accs.length == 1 then wrapped(config, state, ctx, inner, inits_.head, accs_.head, re(results.head)) else Nil
-        val inner_ = inner.assume(ranges, Nil)
-        if inner_.inconsistent && accs.length == 1
-        then eq_(config, state, ctx, left_, Traces.stop(inits_.head))
-        else
-          val results_ = results.map(result => simplify(config, state, inner_, re(result)))
-          val right_ = trace(config, state, ctx.neutral, inits_, deps_, accs_, bound_, results_)
-          eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
+        update(config, state, ctx, Some(x), inits_, deps_, accs, bound, results) match
+          case None =>
+            eq_(config, state, ctx, left_, Traces.stop(inits_.head))
+
+          case Some((accs_, bound_, results_)) =>
+            val right_ = trace(config, state, ctx.neutral, inits_, deps_, accs_, bound_, results_)
+            eq_(config, state, ctx, left_, rewrite(config, state, ctx.neutral, right_, Some(x)))
 
       case Eq(y: Var, Maps(deps, bound, update)) =>
         val left_ = simplify(config, state, ctx.neutral, y)
@@ -348,36 +344,18 @@ object Simplify:
       case Trace(inits, deps, accs, bound, results) =>
         val inits_ = simplify(config, state, ctx.neutral, inits)
         val deps_ = simplify(config, state, ctx.neutral, deps)
-        val (vars_, re) = Subst.rename(accs ++ bound, ctx.free)
-        val (accs_, bound_) = vars_.splitAt(accs.length)
-        val self_ =
-          Views.relation(deps_, accs_.head) match
-            case Nil if accs.length == 1 => ctx.self
-            case Nil                     => Nil
-            case pairs                   => pairs
-        val inner = combinator(config, state, ctx.bind(accs_).copy(self = self_), deps_, bound_)
-        val ranges = if accs.length == 1 then wrapped(config, state, ctx, inner, inits_.head, accs_.head, re(results.head)) else Nil
-        val inner_ = inner.assume(ranges, Nil)
-        if inner_.inconsistent && accs.length == 1
-        then Traces.stop(inits_.head)
-        else
-          val results_ = results.map(result => simplify(config, state, inner_, re(result)))
-          trace(config, state, ctx, inits_, deps_, accs_, bound_, results_)
+        update(config, state, ctx, None, inits_, deps_, accs, bound, results) match
+          case None                            => Traces.stop(inits_.head)
+          case Some((accs_, bound_, results_)) => trace(config, state, ctx, inits_, deps_, accs_, bound_, results_)
 
       // the reads of the components of a trace of several accumulators are markers, replaced by their views once these
       // read no component any more (see Views), e.g. the counter of a loop by its value; otherwise they stay, and the
       // matcher matches them modulo their views (see Rewrite.matchesExpr)
       case Component(s, i) =>
-        val expr_ = Component(simplify(config, state, ctx.neutral, s), i)
-        Views.projected(config, state, ctx, expr_) match
-          case Some(e) if Views.closed(Views.traceOf(ctx, s).map(_._1).getOrElse(s), e) => e
-          case _                                                                          => expr_
+        view(config, state, ctx, s, Component(simplify(config, state, ctx.neutral, s), i))
 
       case History(s, i) =>
-        val expr_ = History(simplify(config, state, ctx.neutral, s), i)
-        Views.projected(config, state, ctx, expr_) match
-          case Some(e) if Views.closed(Views.traceOf(ctx, s).map(_._1).getOrElse(s), e) => e
-          case _                                                                          => expr_
+        view(config, state, ctx, s, History(simplify(config, state, ctx.neutral, s), i))
 
       case Maps(deps, bound, update) =>
         val deps_ = simplify(config, state, ctx.neutral, deps)
@@ -417,6 +395,36 @@ object Simplify:
         if inner.inconsistent
         then True
         else invs(config, state, ctx, deps_, bound_, simplify(config, state, inner, re(body)))
+
+  // the results of a trace simplified in the context of its update (see combinator), with the accumulators and the
+  // bound variables renamed apart from the context, and the self of the position (see Views.self), which `self`
+  // defines if given; the update of a single accumulator assumes the range of its remainders (see wrapped); none if
+  // the context of the update of a single accumulator is inconsistent, i.e., the trace has no iterations
+  def update(
+      config: Config,
+      state: State,
+      ctx: Context,
+      self: Option[Var],
+      inits: List[Expr],
+      deps: List[Expr],
+      accs: List[Var],
+      bound: List[Var],
+      results: List[Expr]
+  ): Option[(List[Var], List[Var], List[Expr])] =
+    val (vars_, re) = Subst.rename(accs ++ bound, ctx.free)
+    val (accs_, bound_) = vars_.splitAt(accs.length)
+    val inner = combinator(config, state, ctx.bind(accs_).copy(self = Views.self(ctx, self, deps, accs_)), deps, bound_)
+    val ranges = if accs.length == 1 then wrapped(config, state, ctx, inner, inits.head, accs_.head, re(results.head)) else Nil
+    val inner_ = inner.assume(ranges, Nil)
+    if inner_.inconsistent && accs.length == 1
+    then None
+    else Some((accs_, bound_, results.map(result => simplify(config, state, inner_, re(result)))))
+
+  // a read of a component of the trace `s`, replaced by its view once that reads no component any more (see Views)
+  def view(config: Config, state: State, ctx: Context, s: Expr, expr: Expr): Expr =
+    Views.projected(config, state, ctx, expr) match
+      case Some(e) if Views.closed(Views.traceOf(ctx, s).map(_._1).getOrElse(s), e) => e
+      case _                                                                          => expr
 
   // the context of the updates and bodies of combinators, which binds the variables for the dependencies,
   // and which assumes the invariants of the context over the same dependencies and the iterations of loops;
@@ -483,9 +491,8 @@ object Simplify:
   // normalized again, through every such rule, which exhausts the steps (see Context.active)
   def iterations(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var]): List[Expr] =
     ctx.memo("reads", deps, bound):
-      (deps, bound) match
-        case (dep :: deps_, k :: bound_) if Rewrite.counter(ctx, dep).isDefined =>
-          val n = Rewrite.counter(ctx, dep).get
+      (deps, bound, deps.headOption.flatMap(Rewrite.counter(ctx, _))) match
+        case (_ :: deps_, k :: bound_, Some(n)) =>
           val ctx_ = ctx.neutral.bind(bound).copy(rules = ctx.rules.filter(Rule.plain))
           val bounds = List(Ints.le(Ints.zero, k), Ints.lt(k, n))
           val range = simplify(config, state, ctx_, bounds)
@@ -528,19 +535,17 @@ object Simplify:
   // terms of other types, e.g. of defined sorts, are simplified only
   def arith(config: Config, state: State, ctx: Context, expr: Expr): Expr =
     Ring(expr.typ) match
-      case Some(ring) => 
-        val poly_ = poly(config, state, ctx, ring, expr)
-        val norm_ = poly_.normalize
-        val expr_ = norm_.toExpr(ring)
-        expr_
-
-      case None       => 
-        simplify(config, state, ctx, expr)
+      case Some(ring) => poly(config, state, ctx, ring, expr).normalize.toExpr(ring)
+      case None       => simplify(config, state, ctx, expr)
 
   // an integer- or real-valued term as a polynomial (not normalized), its leaves simplified (see Arith.toPoly), the
   // solved variables among them replaced by their solutions (see Classes.substitute)
   def poly(config: Config, state: State, ctx: Context, ring: Ring, expr: Expr): Poly =
-    Arith.toPoly(ring, expr, leaf => ctx.classes.value(simplify(config, state, ctx, leaf)))
+    Arith.toPoly(ring, expr, leaf(config, state, ctx, _))
+
+  // a leaf of arithmetic simplified, as its solution if it has one (see Classes.value)
+  def leaf(config: Config, state: State, ctx: Context, expr: Expr): Expr =
+    ctx.classes.value(simplify(config, state, ctx, expr))
 
   // a variable is replaced by the root of its class (see Classes.normalize): its literal, or the variable of the
   // outermost scope (see Classes.Order); its solution only inside arithmetic (see poly), while the matcher still tries
@@ -806,7 +811,9 @@ object Simplify:
 
   // `poly` with its atoms e % k replaced by e where n divides k, which is equal modulo n; also variables whose definition
   // in the context is such a remainder, e.g. the final value x of a loop with x == current(X) after rewriting, unless
-  // the definition refers to the variable itself
+  // the definition refers to the variable itself; and variables whose definition is a polynomial that is constant modulo
+  // n, e.g. zz % 2 with zz == 2 * count(...), not those that only reduce to other atoms, which may be variables whose
+  // definitions lead back (x == y + 2, y == x - 2)
   def remainders(ctx: Context, n: BigInt, poly: Poly): Poly =
     def atom(expr: Expr): Poly =
       (expr, expr) match
@@ -814,6 +821,9 @@ object Simplify:
           Poly.atom(expr)
         case (_, ctx.↑(Ints.mod(e, Lit(k: BigInt, _)))) if k != 0 && k % n == 0 =>
           Arith.toPoly(Ints.ring, e)
+        case (x: Var, ctx.↑(e)) if x.typ == Sort.int =>
+          val reduced = Arith.toPoly(Ints.ring, e).modulo(n)
+          if reduced.monos.isEmpty then reduced else Poly.atom(expr)
         case _ =>
           Poly.atom(expr)
 
@@ -895,7 +905,7 @@ object Simplify:
   // the difference right - left of the sides of a comparison as a normalized polynomial,
   // whose sign is all that matters, hence with integral coefficients without a common divisor
   def difference(config: Config, state: State, ctx: Context, ring: Ring, left: Expr, right: Expr): Poly =
-    Arith.difference(ring, left, right, leaf = leaf => ctx.classes.value(simplify(config, state, ctx, leaf))).primitive
+    Arith.difference(ring, left, right, leaf = leaf(config, state, ctx, _)).primitive
 
   // comparisons 0 < p and 0 <= p on Int or Real, built by `op`, are constants if p is,
   // otherwise they are re-arranged so that both sides have positive coefficients only,
@@ -977,11 +987,10 @@ object Simplify:
         Subst.from(bound, args_)(body)
 
       // the component of a constructor application is its argument, also of a term defined by one (see Context.↑)
-      case expr @ App(sel, _, _, List(arg)) if selector(state, sel).isDefined =>
-        val Some((constr, i)) = selector(state, sel): @unchecked
-        arg match
-          case ctx.↑(App(`constr`, _, _, args)) => args(i)
-          case _                                 => expr
+      case expr @ App(sel, _, _, List(arg)) =>
+        (selector(state, sel), arg) match
+          case (Some((constr, i)), ctx.↑(App(fun, _, _, args))) if fun == constr => args(i)
+          case _                                                                => expr
 
       case expr =>
         expr

@@ -22,6 +22,12 @@ example : ¬ («prefix» 1 (butlast (consts 0 (0 : Int))) = butlast (consts 1 0)
 example : ¬ (maps (butlast (counter 0 1 0)) (fun k => earlier k [(1 : Int)]) = [1]) :=
   by simp [maps, counter, butlast]
 
+-- earlier_eq_not_occurs_prefix for a list shorter than the prefix, whose read beyond its end is unspecified, which
+-- may be the value that does not occur in the prefix
+example : ¬ (¬occurs (unspecified : Int) («prefix» 1 ([] : List Int)) ∧ (0 : Int) ≤ 0 ∧ (0 : Int) < 1
+    → (earlier 0 ([] : List Int) = unspecified ↔ False)) :=
+  by simp [occurs, «prefix», earlier]
+
 -- the following hold only for dependencies of equal length (see bugs.md), here a further dependency that is shorter
 -- than the iterations, which zip truncates
 

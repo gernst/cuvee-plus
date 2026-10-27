@@ -155,10 +155,6 @@ object Poly:
 //
 // example: (x + 1) * (x - 1)  ~>  x*x + -1
 object Arith:
-  // the normal form of an arithmetic expression whose subterms are canonical already (see Classes.normalize)
-  def normalize(ring: Ring, expr: Expr): Expr =
-    toPoly(ring, expr).normalize.toExpr(ring)
-
   // the difference right - left of the sides of a comparison as a normalized polynomial, minus an offset (1 for a strict
   // comparison on Int, which is the non-strict one of the successor), with the leaves mapped by `leaf`; the one
   // conversion of comparisons, used by the simplifier (with the leaves simplified in the context, see

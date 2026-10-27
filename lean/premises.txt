@@ -21,5 +21,5 @@ current_mins_prefix_earlier: (hxs : k < length xs) -- the list is read at the it
 prefix_counter: k ≤ n -- the prefixes of a counter are cut at the iterations of its loop
 
 # lengths that lean.Printer.lengths does not see, since the list is no dependency of a combinator
-earlier_not_occurs_prefix: (hxs : length xs = n) -- xs is a list of the loop of n iterations
+earlier_eq_not_occurs_prefix: (hxs : n ≤ length xs) -- xs is a list of the loop of n iterations, read at its iterations
 earlier_above_iterations: (hn : n1 = n) -- ts is a list of the loop of n iterations, the dependency of the fold above_iterations

@@ -125,9 +125,11 @@ decides these conditions. Lemmas that hold for all integers by the clamping have
   function (`stores`, `sums`, `selects`, `mods`, ...), standing among the lemmas at the position of its rule. A fold
   need not be a trace: `swap(a, p, q)` folds `a[p := a[q]][q := a[p]]`. A lemma `<name>_def` remains where a function
   cannot be its own fold (`counter_def`, `consts_def`).
-- Auxiliary predicates abstract iteration constraints (`agree_prefix`, `above_iterations`, `not_occurs_prefix`), as
-  folds of their constraints; an iteration constraint is never a side condition, since deciding it builds the
-  contexts of the `invs` facts, whose reads would match the rule again.
+- Iteration constraints are abstracted by folds of their constraints (`above_iterations`) or rewritten into atoms
+  (`not_occurs_prefix`, `invs_agree_prefix`: the equation of prefixes); an iteration constraint is never a side
+  condition, since deciding it builds the contexts of the `invs` facts, whose reads would match the rule again. The
+  facts at the reads are rules on the comparisons of the reads with the abstractions as side conditions
+  (`earlier_eq_prefix`, `earlier_above_iterations`, `select_eq_not_occurs_selects`).
 - Names: lemmas about an accessor of a function after both (`current_sums`, `earlier_prefix`), others after what they
   state (`counts_true`, `sum_add`); trace-producing functions plural (`sums`), their scalar counterparts singular.
   A lemma that at most three proved SV-COMP tasks use says so in its `(from ...)` line (`scripts/rules.py`).
@@ -135,10 +137,12 @@ decides these conditions. Lemmas that hold for all integers by the clamping have
 
 **Rewrite rules or forward lemmas.**
 - Rewrite rules: trace introductions and folds that name a trace, equations that compute a value
-  (`current(counter(i, c, n))`), atoms that occur in goals as they are (`sorted_short`), the rules on `invs`.
+  (`current(counter(i, c, n))`, `current_trace_step_or_keep`), atoms that occur in goals as they are
+  (`sorted_short`), the rules on `invs`, and facts at reads as rules on the comparison of the read
+  (`earlier_eq_prefix`), whose other variables are bound by the side conditions; a rule is tried only at its atom,
+  a forward lemma at every term of every assumed fact.
 - Forward lemmas: facts about a term whose atom rarely occurs, but which the arithmetic or the classes need where the
-  term occurs: bounds of traces or named values (`bisection_lo`, the triangles), facts at reads
-  (`earlier_above_iterations`).
+  term occurs: bounds of traces or named values (`bisection_lo`, the triangles).
 - Both only where an example needs the atom decided where no fact was assumed.
 
 **What a forward lemma costs.** A trigger is tried at every matching term of every assumed fact, also where it never
@@ -149,7 +153,8 @@ yields an instance, so:
 - no variables bound by conditions alone: such a variable is matched against every member of a class, one instance
   each; state the fact in the term itself;
 - degenerate arguments of folds get a rule that evaluates them (`squares_zero`).
-- no facts that no rule normalizes: an instance is simplified again at every firing, and one that the simplifier
+- no facts that no rule normalizes: an instance is simplified again at every firing (a memo of the instances was
+  tried and costs more, doc/prove.md), and one that the simplifier
   cannot reduce, e.g. a disjunction with an occurrence in the values of a store, comes back unchanged at every read
   of every store. The removed `store_occurs_selects` (`occurs(x, selects(a[j := x], ⌊counter(0, 1, n)⌋)) || n <= j`,
   triggered at the reads of stores, for standard_sentinel-2) used up the steps of the reducers of array-crafted and

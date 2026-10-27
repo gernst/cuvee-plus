@@ -142,8 +142,10 @@ theorem invs_counter_congr (s : Int) (m : Nat) (f g : Int → Prop) (h : ∀ k, 
     simp only [N.butlast_counter_succ, invs]
     rw [ih (s + 1) (fun k hk => h k (by omega)), h s (Int.le_refl s)]
 
-theorem agree_prefix_N (n : Int) (xs ys : List Int) : agree_prefix n xs ys ↔ N.agree_prefix n.toNat xs ys := by
-  simp only [agree_prefix, N.agree_prefix, counter_N]
+-- the iteration constraint that lists agree at the iterations of a loop, over integers and over naturals
+theorem agree_prefix_N (n : Int) (xs ys : List Int) :
+    invs (butlast (counter 0 1 n)) (fun k => earlier k xs = earlier k ys) ↔ N.agree_prefix n.toNat xs ys := by
+  simp only [N.agree_prefix, counter_N]
   exact invs_counter_congr 0 n.toNat _ _ (fun k hk => by
     rw [earlier_N_nonneg k xs hk, earlier_N_nonneg k ys hk, N.natural_eq])
 
@@ -300,6 +302,11 @@ theorem counts_false : Stmt.counts_false := by
 
 theorem counts_true : Stmt.counts_true := by
   intro x bs n hbs; exact N.counts_true x bs bs.length rfl
+
+theorem current_trace_step_or_keep : Stmt.current_trace_step_or_keep := by
+  intro x0 n a xs C hxs
+  rw [counter_N]
+  exact N.current_trace_step_or_keep_gen a C _ xs x0 (by rw [N.length_butlast_counter]; omega)
 
 theorem current_trace_add_at : Stmt.current_trace_add_at := by
   intro α _ a k values n hvalues; exact N.current_trace_add_at a k values values.length rfl
@@ -528,24 +535,26 @@ theorem not_occurs_prefix : Stmt.not_occurs_prefix := by
     (fun k hk => by rw [earlier_N_nonneg k xs hk, N.natural_eq])]
   exact N.not_occurs_prefix n.toNat e xs (by rw [N.integer_cast, N.integer_cast]; omega)
 
-theorem earlier_agree_prefix : Stmt.earlier_agree_prefix := by
-  intro n j xs ys ⟨h, hjn⟩
-  by_cases hj : j < 0
-  · rw [earlier_N, earlier_N, if_pos hj, if_pos hj]
-  · rw [earlier_N_nonneg j xs (by omega), earlier_N_nonneg j ys (by omega)]
-    rw [agree_prefix_N] at h
-    exact N.earlier_agree_prefix n.toNat j.toNat xs ys ⟨h, by rw [N.integer_cast, N.integer_cast]; omega⟩
+theorem invs_agree_prefix : Stmt.invs_agree_prefix := by
+  intro n xs ys hxs hys
+  rw [agree_prefix_N, N.agree_prefix_forall, prefix_N, prefix_N, N.prefix_eq_forall n.toNat xs ys (by omega) (by omega)]
 
-theorem earlier_not_occurs_prefix : Stmt.earlier_not_occurs_prefix := by
-  intro n j e xs hxs ⟨h, hj, hjn⟩
+theorem earlier_eq_prefix : Stmt.earlier_eq_prefix := by
+  intro j n xs ys ⟨h, hj, hjn⟩
+  rw [prefix_N, prefix_N] at h
+  rw [earlier_N_nonneg j xs hj, earlier_N_nonneg j ys hj, iff_true]
+  exact N.earlier_eq_prefix j.toNat n.toNat xs ys h (by omega)
+
+theorem earlier_eq_not_occurs_prefix : Stmt.earlier_eq_not_occurs_prefix := by
+  intro j n e xs hxs ⟨h, hj, hjn⟩
   rw [prefix_N] at h
-  rw [earlier_N_nonneg j xs hj]
+  rw [earlier_N_nonneg j xs hj, iff_false]
   exact N.earlier_not_occurs_prefix n.toNat j.toNat e xs (by omega) ⟨h, by rw [N.integer_cast, N.integer_cast]; omega⟩
 
 theorem earlier_above_iterations : Stmt.earlier_above_iterations := by
-  intro n j ts n1 hts hn ⟨h, hj, hjn⟩
+  intro j n ts n1 hts hn ⟨h, hj, hjn⟩
   rw [above_iterations_N] at h
-  rw [earlier_N_nonneg j ts hj]
+  rw [earlier_N_nonneg j ts hj, iff_true]
   have := N.earlier_above_iterations n.toNat j.toNat ts n.toNat (by omega) rfl
     ⟨h, by rw [N.integer_cast, N.integer_cast]; omega⟩
   rw [N.integer_cast, Int.toNat_of_nonneg hj] at this
@@ -570,9 +579,10 @@ theorem invs_select_store_ne : Stmt.invs_select_store_ne := by
 theorem not_occurs_selects : Stmt.not_occurs_selects := by
   intro a x i n; rw [counter_N]; exact N.not_occurs_selects a x i n.toNat
 
-theorem select_not_occurs_selects : Stmt.select_not_occurs_selects := by
-  intro a x i n k ⟨h, h1, h2⟩
+theorem select_eq_not_occurs_selects : Stmt.select_eq_not_occurs_selects := by
+  intro k a x i n ⟨h, h1, h2⟩
   rw [counter_N] at h
+  rw [iff_false]
   exact N.select_not_occurs_selects a x i n.toNat k ⟨h, h1, by rw [N.integer_cast]; omega⟩
 
 theorem bisection_lo : Stmt.bisection_lo := by
@@ -784,9 +794,6 @@ theorem current_trace_increasing : Stmt.current_trace_increasing := by
 theorem current_trace_bounded : Stmt.current_trace_bounded := by
   intro x0 n lo hi C1 C2 C3 F1 F2 F3 h
   rw [counter_N]; exact N.current_trace_bounded x0 n.toNat lo hi C1 C2 C3 F1 F2 F3 h
-
-theorem current_trace_step_or_keep_mod : Stmt.current_trace_step_or_keep_mod := by
-  intro x0 n a xs C hxs; rw [counter_N]; exact N.current_trace_step_or_keep_mod x0 n.toNat a xs C (by omega)
 
 -- the lemmas of strides.dfy
 

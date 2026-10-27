@@ -1,16 +1,21 @@
 // searching: the abstractions of the iteration constraints of linear searches (agreeing prefixes, no occurrence in a
 // prefix or among the values read at a counter, values above the iterations) with their facts at the reads, and the
 // bisection of an interval with a probe, whose bounds are the cuts of its guards (cut, declared in teq.dfy); an
-// optional module over teq.dfy (-include teq:search); the facts at the reads are forward lemmas, triggered by the
-// read, earlier(j, xs) or a[k], whose other variables are matched against the facts of the abstractions
+// optional module over teq.dfy (-include teq:search); the facts at the reads are rules on the comparisons of the
+// reads that the goals contain, whose other variables are bound by the facts of the abstractions (side conditions
+// looked up among the facts), not forward lemmas, which would fire at every read
 
-// the first n values of xs and ys agree: folded from the iteration constraint that they are equal at the iterations
-// 0, ..., n - 1
+// the first n values of xs and ys agree: the iteration constraint that they are equal at the iterations 0, ..., n - 1 is
+// the equation of their prefixes
 // (from standard_compare_ground)
-function {:teq} {:fold} agree_prefix(n: int, xs: List<int>, ys: List<int>): bool
-{
-  invs(for ⌊counter(0, 1, n)⌋ check k :: earlier(k, xs) == earlier(k, ys))
-}
+lemma {:rw} {:teq} invs_agree_prefix(n: int, xs: List<int>, ys: List<int>)
+  ensures invs(for ⌊counter(0, 1, n)⌋ check k :: earlier(k, xs) == earlier(k, ys)) <==> prefix(n, xs) == prefix(n, ys)
+
+// lists whose prefixes of length n are equal agree at each position below n, a rule on the comparison of the reads
+// (from standard_compare_ground)
+lemma {:rw} {:teq} earlier_eq_prefix(j: int, n: int, xs: List<int>, ys: List<int>)
+  requires prefix(n, xs) == prefix(n, ys) && 0 <= j < n
+  ensures (earlier(j, xs) == earlier(j, ys)) <==> true
 
 // a search: the elements before the exit n differ from e, i.e., e does not occur in the prefix of length n
 // (from standard_find_ground-1)
@@ -25,23 +30,17 @@ function {:teq} {:fold} above_iterations(n: int, ts: List<int>): bool
   invs(for ⌊counter(0, 1, n)⌋, ts check k, t :: k < t)
 }
 
-// agreeing sequences are equal at each position in the range, a fact at the reads
-// (from standard_compare_ground)
-lemma {:fw} {:teq} earlier_agree_prefix(n: int, j: int, xs: List<int>, ys: List<int>)
-  requires agree_prefix(n, xs, ys) && j < n
-  ensures earlier(j, xs) == earlier(j, ys)
-
-// which is instantiated at the positions j in that range
+// a value that does not occur in the prefix of length n differs from the reads at the positions in that range
 // (from standard_find_ground-1, the only task of SV-COMP that uses it)
-lemma {:fw} {:teq} earlier_not_occurs_prefix(n: int, j: int, e: int, xs: List<int>)
-  requires !occurs(e, prefix(n, xs)) && 0 <= j && j < n
-  ensures earlier(j, xs) != e
+lemma {:rw} {:teq} earlier_eq_not_occurs_prefix(j: int, n: int, e: int, xs: List<int>)
+  requires !occurs(e, prefix(n, xs)) && 0 <= j < n
+  ensures (earlier(j, xs) == e) <==> false
 
-// which is instantiated at the positions j in the range
-// (from simple_array_index_value_2; unused on SV-COMP; the fact at the reads of above_iterations)
-lemma {:fw} {:teq} earlier_above_iterations(n: int, j: int, ts: List<int>)
-  requires above_iterations(n, ts) && 0 <= j && j < n
-  ensures j < earlier(j, ts)
+// the reads at the positions in the range exceed the positions
+// (from simple_array_index_value_2; unused on SV-COMP)
+lemma {:rw} {:teq} earlier_above_iterations(j: int, n: int, ts: List<int>)
+  requires above_iterations(n, ts) && 0 <= j < n
+  ensures (j < earlier(j, ts)) <==> true
 
 // a sentinel: the reads of an array where x is stored at j differ from x at the positions i, ..., i + n - 1 exactly if
 // j is not among them and the reads of the array before differ from x there; a rule on the iteration constraint of
@@ -54,10 +53,11 @@ lemma {:rw} {:teq} invs_select_store_ne(x: int, a: array<int, int>, j: int, i: i
 lemma {:rw} {:teq} not_occurs_selects(a: array<int, int>, x: int, i: int, n: int)
   ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x) <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
 
+// a value that does not occur among the reads of a counter differs from the reads at the positions in its range
 // (used on SV-COMP by n.c40, str_cpy only)
-lemma {:fw} {:teq} select_not_occurs_selects(a: array<int, int>, x: int, i: int, n: int, k: int)
+lemma {:rw} {:teq} select_eq_not_occurs_selects(k: int, a: array<int, int>, x: int, i: int, n: int)
   requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋)) && i <= k < i + n
-  ensures a[k] != x
+  ensures (a[k] == x) <==> false
 
 // a bisection of [l0, h0) with a probe M strictly inside the interval: while lo < hi, lo moves above the probe where
 // G holds and hi down to it where H holds; named by bisection, which keeps the probe and the guards (folded); the

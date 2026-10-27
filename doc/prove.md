@@ -3,7 +3,9 @@
 The package [prove/](../src/cuvee/prove) proves the goals of trace equation systems by rewriting with the lemma
 database. `-prove` takes the assertions and lemmas with `:rw` as rules and simplifies the other assertions under a
 context, dropping those that become `true`; procedures are simplified by symbolic execution (`Slice`, "Programs").
-Open changes are in [ideas/prove-next.md](../ideas/prove-next.md) and [ideas/canonical.md](../ideas/canonical.md).
+Open changes are in [ideas/prove-next.md](../ideas/prove-next.md), [ideas/canonical.md](../ideas/canonical.md),
+[ideas/engine-gaps.md](../ideas/engine-gaps.md), and the consolidation of the engine with what was tried and dropped in
+[ideas/engine-consolidation.md](../ideas/engine-consolidation.md).
 
 ## Design
 
@@ -51,14 +53,17 @@ rules, and the memos. Each assumed fact goes to all theories:
     match. Nothing else is substituted: equations of traces, reads of traces and arrays, and applications stay members
     of their classes.
   - **Canonical forms.** `Classes.normalize` writes arithmetic in its polynomial normal form with the solutions of its
-    atoms, a registered term by its root, and an equation of equal sides as `true`; `Simplify.var_` is `normalize` of
-    the variable. After a merge or a solution, the facts that mention a root it changed are renormalized
+    atoms, a registered term by its root, and an equation of equal sides as `true`. The simplifier, the context and
+    the matcher use this policy through four operations of `Classes` only: `term` (a variable as the root of its
+    class), `value` (a leaf of arithmetic with its solution), `fixed` (whether a variable has a literal value), and
+    `fact` (a fact in canonical form); a change of the order of roots or of the solutions is a change of `Classes`
+    alone. After a merge or a solution, the facts that mention a root it changed are renormalized
     (`Classes.retired`, `Context.renormalize`), the others are canonical already; a fact that becomes `true` keeps its
     form, since the facts are the keys of the memos (`Facts.map`). A solution that depends on its variable through
     the classes is not used (`Classes.acyclic`).
   - **Definitions.** The members of the class of a variable that are not variables and do not contain it
     (`Context.defs`) are its definitions, in both orientations and transitively; the matcher tries them when a pattern
-    does not match the variable itself (`Rewrite.matchesExpr`). A rewrite whose result contains its own term modulo
+    does not match the variable itself (`Rewrite.alternatives`). A rewrite whose result contains its own term modulo
     the classes, but not as it is, is not applied (`Classes.within`), since the matcher and the canonical forms would
     undo each other.
 - **Linear** ([`Linear`](../src/cuvee/prove/Linear.scala), [`Simplex`](../src/cuvee/prove/Simplex.scala)): the general
@@ -83,7 +88,7 @@ after each round. `Normalize.lift` lifts `ite` out of atoms, `A[ite(c, a, b)]` t
 binders, derivatives, and `old`; `Split` uses it.
 
 - **Traversal.** Each round simplifies the subterms first and dispatches on the built-in functions, then tries one
-  rewrite step at the top (`Rewrite.step`). All methods take `(config, state, ctx, ...)`. In an inconsistent
+  rewrite step at the top (`Rewrite.rewrite`). All methods take `(config, state, ctx, ...)`. In an inconsistent
   context, a formula is decided by its polarity.
 - **Unreachable positions** are dropped, by the context that the traversal builds for them anyway: a branch of
   `ite`, a case of `eps` or of `match` whose context is inconsistent, also when its test is not decided; a
@@ -101,10 +106,15 @@ binders, derivatives, and `old`; `Split` uses it.
   between binder and equation, which holds for `and`, `or`, `not`, `==>`, and binders; other positions are neutral
   (`Context.neutral`). Helpers used as decisions (`distinct`, `select`) pass `ctx.neutral`.
 - **Arithmetic.** Terms on `Int` and `Real` are polynomials (`Arith`, `Poly`) with their leaves simplified
-  (`Simplify.poly`); comparisons and equations become `0 < p`, `0 <= p`, `0 == p` with `p` primitive, printed with
-  positive coefficients on both sides (`Poly.sides`, `Poly.primitive`).
+  (`Simplify.poly`, `Simplify.leaf`); comparisons and equations become `0 < p`, `0 <= p`, `0 == p` with `p`
+  primitive, printed with positive coefficients on both sides (`Poly.sides`, `Poly.primitive`). The difference of the
+  sides of a comparison is one conversion (`Arith.difference`), for the simplifier with its leaves simplified in the
+  context and for the matcher without (`Rewrite.comparison`).
 - **Remainders** by a literal `k` take their coefficients modulo `k`, after remainders modulo multiples of `k` among
-  the atoms are replaced by their arguments: `(x % 2^32 + 1) % 2^32` is `(x + 1) % 2^32`. A remainder whose argument,
+  the atoms are replaced by their arguments: `(x % 2^32 + 1) % 2^32` is `(x + 1) % 2^32`; so are the variables
+  defined by such a remainder, and those defined by a polynomial that is constant modulo `k`, e.g. `zz % 2` with
+  `zz == 2 * count(...)` (`Simplify.remainders`); not those whose definition only reduces to other atoms, which may
+  be variables whose definitions lead back. A remainder whose argument,
   or its representative centered around 0, is known to be in `0, ..., k - 1` is that argument. A trace whose results
   are remainders modulo `k` or the accumulator, with an initial value in range, assumes the range of its accumulator
   (`wrapped`) ([remainders.dfy](../examples/dafny/prove/remainders.dfy), `examples/c/teq/unsigned_*.c`).
@@ -129,7 +139,10 @@ by the simplifier in the context.
   match by abstraction (Miller's fragment, or terms whose variables are instantiated); the simplifier beta-reduces
   the instantiated right-hand side. A guard `D(x, h) && φ` binds `D` to the whole guard of the expression, and the
   conjuncts of `φ` must follow from it (`Rewrite.guard`). Updates and bodies of combinators are matched in their
-  context (`Simplify.combinator`), assuming the invariants over their dependencies.
+  context (`Simplify.combinator`), assuming the invariants over their dependencies, with the same self as in the
+  traversal (`Views.self`). A term that a pattern does not match as it is, is matched by its alternatives, group by
+  group, lazily (`Rewrite.alternatives`): the definitions of a variable, the structural view of a component, and only
+  then its projected view, which costs a simplification.
 - **Side conditions** are taken in order: a closed one is decided, an open one is matched against the facts, which
   binds the variables that occur only in conditions; so conjuncts that bind variables come first in a lemma. A closed
   condition is first looked up among the facts modulo the classes and the canonical forms of binders
@@ -139,7 +152,7 @@ by the simplifier in the context.
   ([reentrant.dfy](../examples/dafny/prove/reentrant.dfy)); the components whose views are being computed are
   suspended by the same mechanism.
 - **Reads of combinator contexts**, the values of their bound variables (`Simplify.iterations`), are normalized by the
-  rules without `invs` conditions only (`Rule.plain`) and cached (`Context.reads`).
+  rules without `invs` conditions only (`Rule.plain`) and memoized (`Context.memo`).
 - **Rules of the per-variable form** (`Rewrite.combinator`): a pattern with more dependencies than the expression,
   e.g. the iterations and a loop variable both `⌊counter(0, 1, n)⌋`, takes repeated dependencies of the expression.
 - **Lemmas over whole cycles**: a pattern with several accumulators matches a trace of as many component by
@@ -162,7 +175,9 @@ simplified under the facts that mention its variables (`Context.restricted`) and
 [`Canon`](../src/cuvee/prove/Canon.scala) renames bound variables by depth and sorts dependencies, cases, conjuncts,
 disjuncts and the sides of equations, so alpha-variants and reorderings coincide; `eq_` decides terms with binders
 by it. The memos of views, reads and combinator contexts are keyed by the facts of the position under a renaming of
-its bound variables.
+its bound variables (`Context.memo`, `Canon.key`). Building such a key hashes the facts, so a memo pays off only where
+the key is built rarely and the computation is expensive, once per combinator; memoizing the instances of forward
+lemmas by it (0.52.13) doubled the cpu time of SV-COMP Arrays and was removed (ideas/engine-consolidation.md, step 4).
 
 ## Forward lemmas
 
@@ -171,7 +186,11 @@ matching its trigger occurs in an assumed fact (premises, denied conclusions, si
 and at a comparison or equation that is decided at a position with polarity (`Simplify.forward`). The trigger is the
 term of `φ` below its boolean, comparison and arithmetic structure with the most variables; it is matched like a left
 -hand side, and the instance names the term as it occurs, so it reaches the classes and the simplex. Instances fire no
-further triggers (generation 1), are simplified by the rules before they are assumed, and are skipped if known.
+further triggers (generation 1), are simplified by the rules before they are assumed, at every firing (they are not
+memoized, see "Canonical forms of binders"), and are skipped if known. Every trigger is tried at every term of every
+assumed fact, also without an instance, so a database with fewer forward lemmas is faster: a fact needed only at an
+atom of the goal is a rewrite rule on that atom, with the other variables bound by its side conditions (the reads of
+`teq:search`).
 Their costs are in teq.md ("What a forward lemma costs"). `-debug forward` prints the instances.
 
 ## Case splits and counterexamples

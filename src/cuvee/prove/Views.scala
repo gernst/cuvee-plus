@@ -103,6 +103,16 @@ object Views:
     then accs.zipWithIndex.map((acc, j) => (History(s, j), acc))
     else List((Butlast(s), accs.head))
 
+  // the self of the update of a trace with the accumulators `accs`, the same for the traversal and the matcher: the
+  // histories of the variable `self` that the trace defines (see selfOf), otherwise that of a projection (see
+  // relation), otherwise the self of the context for a single accumulator, which a trace inside the update of a map
+  // or trace shares, and none for several
+  def self(ctx: Context, self: Option[Var], deps: List[Expr], accs: List[Var]): List[(Expr, Expr)] =
+    (self, relation(deps, accs.head)) match
+      case (Some(x), _)                    => selfOf(x, accs)
+      case (None, Nil) if accs.length == 1 => ctx.self
+      case (None, pairs)                   => pairs
+
   // the self of a projection (see project) met by the traversal or the matcher, positionally: a single trace whose
   // dependencies are the histories ⌊S⌋.j of all components of some S but one, which its accumulator denotes; none
   // for other traces

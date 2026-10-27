@@ -29,7 +29,7 @@ import cuvee.core._
 // self: within the update of a combinator that defines a dependency, X == trace(...) or Y == maps(...), that
 // dependency and its value in the update, whose invariants the update assumes (see Simplify.invariants): ⌊X⌋ and the
 // accumulator, each history ⌊S⌋.j and its accumulator for a trace of several, and the history of the own component
-// and the accumulator of a projection (see Views.selfOf and Views.relation)
+// and the accumulator of a projection, the same for the traversal and the matcher (see Views.self)
 //
 // applied: the number of applications of each rule by its name, for -rules
 //
@@ -88,6 +88,8 @@ case class Context(
   // variables under the renaming of the bound variables, and the canonical facts of the position (see Canon), such
   // that positions that differ only by the names of their bound variables share them; `kind` separates the tables,
   // e.g. the facts of the context of a combinator and the reads of its iterations (see Simplify.combinator, iterations)
+  // the key hashes the canonical facts of the position (see Canon.key), which pays off only where the computation
+  // costs more and the key is built rarely, once per combinator; not per firing of a forward lemma (see Forward.fire)
   def memo(kind: String, deps: List[Expr], bound: List[Var])(compute: => List[Expr]): List[Expr] =
     val re = Canon.renaming(this.bound, bound)
     val key = (kind, deps.map(re(_)), bound.map(re(_)), Canon.key(this, re))

@@ -349,10 +349,7 @@ object Rewrite:
       // which is determined by the expression, e.g. guards follow from the test of the loop
       // a projection of a trace of several accumulators has the history of its component as self (see Views.relation)
       case (Trace.single(init, deps, acc, ys, update), Trace.single(init_, deps_, acc_, ys_, update_)) =>
-        val self_ = self.map(x => List((Butlast(x), acc_))).getOrElse(Views.relation(deps_, acc_) match
-          case Nil   => ctx.self
-          case pairs => pairs)
-        lazy val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)).copy(self = self_), deps_, ys_)
+        lazy val inner = Simplify.combinator(config, state, ctx.bind(List(acc_)).copy(self = Views.self(ctx, self, deps_, List(acc_))), deps_, ys_)
         for
           subst1 <- matchesExpr(config, state, ctx, params, vars, locals, init, self, bound, avoid, init_, subst)
           subst2 <- combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(acc -> acc_), subst1):
@@ -366,8 +363,7 @@ object Rewrite:
       // them holds there, e.g. lo < hi of the binary search
       case (Trace(inits, deps, accs, ys, results), Trace(inits_, deps_, accs_, ys_, results_))
           if accs.length >= 2 && accs.length == accs_.length =>
-        val self_ = self.map(x => Views.selfOf(x, accs_)).getOrElse(ctx.self)
-        lazy val inner = Simplify.combinator(config, state, ctx.bind(accs_).copy(self = self_), deps_, ys_)
+        lazy val inner = Simplify.combinator(config, state, ctx.bind(accs_).copy(self = Views.self(ctx, self, deps_, accs_)), deps_, ys_)
         for
           subst1 <- matchesExprs(config, state, ctx, params, vars, locals, inits, self, bound, avoid, inits_, subst)
           subst2 <- combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, (accs zip accs_).toMap, subst1):
@@ -695,8 +691,8 @@ object Rewrite:
     if direct.nonEmpty || deps_.length >= deps.length || deps_.isEmpty || zs.isEmpty
     then direct
     else
-      val front = (deps_ zip ys_).find((dep_, _) => counter(ctx, dep_).isDefined).getOrElse((deps_ zip ys_).head)
-      results(zs.map((_, y) => y -> front._2).toMap)
+      val (_, y_) = front(ctx, deps_ zip ys_)
+      results(zs.map((_, y) => y -> y_).toMap)
 
   // the pattern `tr` of a read of a component against the trace `s` that the read reads (see matches_)
   def component(
@@ -839,9 +835,8 @@ object Rewrite:
       accs: Set[Var],
       subst: Subst[Type, Expr]
   ): List[Subst[Type, Expr]] =
-    // the first counter of the iterations, and if there is none, the first dependency of the expression
     val pairs = deps_ zip ys_
-    val front = pairs.find((dep_, _) => counter(ctx, dep_).isDefined).getOrElse(pairs.head)
+    val front = Rewrite.front(ctx, pairs)
 
     zs match
       case Nil =>
@@ -910,6 +905,11 @@ object Rewrite:
           subst2 <- covered
           subst3 <- matchesCases(config, state, ctx, params, vars, locals, updates, self, bound, avoid, rest, subst2)
         yield subst3
+
+  // the dependency of an expression and its bound variable that the dependencies of a pattern without one of their own
+  // share (see combinator, instantiate): the first counter of the iterations, and if there is none, the first one
+  def front(ctx: Context, pairs: List[(Expr, Var)]): (Expr, Var) =
+    pairs.find((dep, _) => counter(ctx, dep).isDefined).getOrElse(pairs.head)
 
   // whether a dependency is the counter of the iterations of a loop, counter(0, 1, n),
   // also one defined by an assumption (see Context.↑)

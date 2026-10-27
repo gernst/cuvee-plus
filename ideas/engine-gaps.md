@@ -123,7 +123,7 @@ run of Arrays and Loops against 0.52.10.
   as the canonical variable of its class) is kept as a patch, not measured in the cloud; ideas/engine-consolidation.md
   proposes to put the policy of normal forms into one place first.
 
-## 4. Remainders and division
+## 4. Remainders and division ((a) done, Oct 27; (b) open)
 
 **Gaps.** (a) `Simplify.remainders` substitutes a variable inside `x % n` only if its definition is a remainder (the
 unsigned variables of C), not a polynomial over atoms: `zz == 2 * count(...)` does not reduce `zz % 2`
@@ -132,12 +132,14 @@ and `t mod k` are unrelated atoms of the simplex: `SIZE % 2 == 0`, `SIZE / 2 == 
 (array-tiling/tcpy).
 
 **Change.** (a) In `Simplify.remainders`, also variables whose definition in the context is a polynomial, excluding
-definitions that mention the variable (as now). (b) When an atom `t div k` or `t mod k` with a literal `k != 0` enters
+definitions that mention the variable (as now). Done in the restricted form: only definitions that are constant modulo
+`n`, since a general substitution may cycle (`x == y + 2`, `y == x - 2`: `x % 2` becomes `y % 2` and back);
+counters_phase_mod.dfy and mono-crafted_12 are proved with the rule, pr2 and mbpr2 stay open. (b) When an atom `t div k` or `t mod k` with a literal `k != 0` enters
 the arithmetic, its definition is assumed once: `t == k * (t div k) + t mod k`, `0 <= t mod k < |k|`.
 
 **Database.** `current_trace_step_or_keep` in aggregation.dfy (the value `x + a * count(true, bs)`, a rewrite rule)
-replaces the forward lemma `current_trace_step_or_keep_mod` of counters.dfy, whose trigger is a raw trace pattern;
-no forward lemmas for division.
+replaces the forward lemma `current_trace_step_or_keep_mod` of counters.dfy, whose trigger is a raw trace pattern
+(done, Oct 27); no forward lemmas for division.
 
 **Tests.** counters_phase_mod.dfy, mono-crafted_12 (7 s with the rewrite rule instead of 41 s), array-tiling/tcpy;
 pr2, mbpr2 need the parity of successors in addition (`(i + 1) % 2` against `i % 2`), left open.
@@ -156,12 +158,16 @@ debug line; until then the two lemmas stay.
 
 ## Database work (no change of the engine)
 
-- The four forward lemmas whose triggers are any read and whose other variables are bound by conditions alone
-  (search.dfy: `earlier_agree_prefix`, `earlier_not_occurs_prefix`, `earlier_above_iterations`,
-  `select_not_occurs_selects`) become rules on the atoms that the goals contain, as `invs_select_store_ne` for the
-  sentinel. Tried for `agree_prefix`: the fold replaced by the equation of prefixes (`invs_agree_prefix`) and a rule
-  on the comparison of the reads (`earlier_eq_prefix`, `n` bound from the facts) prove standard_compare_ground,
-  standard_copy1_ground-1 and standard_two_index_01 (local, Oct 26); the binding of `n` takes the first matching fact.
+- Done (Oct 27): the four forward lemmas whose triggers are any read and whose other variables are bound by
+  conditions alone (search.dfy: `earlier_agree_prefix`, `earlier_not_occurs_prefix`, `earlier_above_iterations`,
+  `select_not_occurs_selects`) are rules on the comparisons of the reads (`earlier_eq_prefix`,
+  `earlier_eq_not_occurs_prefix`, `earlier_above_iterations`, `select_eq_not_occurs_selects`), as
+  `invs_select_store_ne` for the sentinel, and the fold `agree_prefix` is the equation of prefixes
+  (`invs_agree_prefix`). With `current_trace_step_or_keep` and on 0.52.13, the VerifierCloud (Ryzen, 120 s) gains 5
+  tasks of Arrays and 5 of Loops and loses none. Caveats: the binding of `n` takes the first matching fact; a rule is
+  stated in the orientation of the atom as the goals contain it (`j < earlier(j, ts)`, not `earlier(j, ts) <= j`),
+  since negations are not normalized into the other comparison everywhere; `earlier_eq_not_occurs_prefix` needs
+  `n <= length xs` (Lean, lean/premises.txt), which the loop provides.
 - The comments of the review of Oct 26: usage annotations out of date (`current_maxs_earlier`, `current_mins_earlier`
   unused since the prefix variants; `count_consts`, `count_true_eq`, `counts`, `invs_not_or` no longer used by the
   tasks named), module headers.

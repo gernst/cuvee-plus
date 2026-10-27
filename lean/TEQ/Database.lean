@@ -304,6 +304,15 @@ def Stmt.counts_true : Prop :=
     trace x bs (fun y b => if b then y + 1 else if ¬b then y else unspecified)
       = counts x True bs
 
+def Stmt.current_trace_step_or_keep : Prop :=
+  ∀ (x0 : Int) (n : Int) (a : Int) (xs : List Int) (C : Int → Prop) (hxs : length xs = n),
+    current
+      (trace
+         x0
+         (List.zip (butlast (counter 0 1 n)) xs)
+         (fun z ⟨k, x⟩ => if C x then z + a else if ¬C x then z else unspecified))
+      = x0 + a * count True (maps xs (fun x => C x))
+
 def Stmt.current_trace_add_at : Prop :=
   ∀ {α : Type} [Inhabited α] (a : α → Int) (k : α) (values : List Int) (n : Int) (hvalues : length values = n),
     current (trace a values (fun b v => fun j => if j = k then b k + v else b j))
@@ -652,9 +661,15 @@ def Stmt.triangle_even_below_scaled : Prop :=
   ∀ (a : Int) (x : Int),
     2 * ((-a * x + a * x * x) / 2) = -a * x + a * x * x
 
-noncomputable def agree_prefix (n : Int) (xs : List Int)
-                               (ys : List Int) : Prop :=
-  invs (butlast (counter 0 1 n)) (fun k => earlier k xs = earlier k ys)
+def Stmt.invs_agree_prefix : Prop :=
+  ∀ (n : Int) (xs : List Int) (ys : List Int) (hxs : n ≤ length xs) (hys : n ≤ length ys),
+    invs (butlast (counter 0 1 n)) (fun k => earlier k xs = earlier k ys)
+      ↔ «prefix» n xs = «prefix» n ys
+
+def Stmt.earlier_eq_prefix : Prop :=
+  ∀ (j : Int) (n : Int) (xs : List Int) (ys : List Int),
+    «prefix» n xs = «prefix» n ys ∧ 0 ≤ j ∧ j < n
+      → (earlier j xs = earlier j ys ↔ True)
 
 def Stmt.not_occurs_prefix : Prop :=
   ∀ (n : Int) (e : Int) (xs : List Int) (hxs : n ≤ length xs),
@@ -664,17 +679,13 @@ def Stmt.not_occurs_prefix : Prop :=
 noncomputable def above_iterations (n : Int) (ts : List Int) : Prop :=
   invs (List.zip (butlast (counter 0 1 n)) ts) (fun ⟨k, t⟩ => k < t)
 
-def Stmt.earlier_agree_prefix : Prop :=
-  ∀ (n : Int) (j : Int) (xs : List Int) (ys : List Int),
-    agree_prefix n xs ys ∧ j < n → earlier j xs = earlier j ys
-
-def Stmt.earlier_not_occurs_prefix : Prop :=
-  ∀ (n : Int) (j : Int) (e : Int) (xs : List Int) (hxs : length xs = n),
-    ¬occurs e («prefix» n xs) ∧ 0 ≤ j ∧ j < n → earlier j xs ≠ e
+def Stmt.earlier_eq_not_occurs_prefix : Prop :=
+  ∀ (j : Int) (n : Int) (e : Int) (xs : List Int) (hxs : n ≤ length xs),
+    ¬occurs e («prefix» n xs) ∧ 0 ≤ j ∧ j < n → (earlier j xs = e ↔ False)
 
 def Stmt.earlier_above_iterations : Prop :=
-  ∀ (n : Int) (j : Int) (ts : List Int) (n1 : Int) (hts : length ts = n1) (hn : n1 = n),
-    above_iterations n ts ∧ 0 ≤ j ∧ j < n → j < earlier j ts
+  ∀ (j : Int) (n : Int) (ts : List Int) (n1 : Int) (hts : length ts = n1) (hn : n1 = n),
+    above_iterations n ts ∧ 0 ≤ j ∧ j < n → (j < earlier j ts ↔ True)
 
 def Stmt.invs_select_store_ne : Prop :=
   ∀ (x : Int) (a : Int → Int) (j : Int) (i : Int) (n : Int),
@@ -688,9 +699,10 @@ def Stmt.not_occurs_selects : Prop :=
     invs (butlast (counter i 1 n)) (fun k => a k ≠ x)
       ↔ ¬occurs x (selects a (butlast (counter i 1 n)))
 
-def Stmt.select_not_occurs_selects : Prop :=
-  ∀ (a : Int → Int) (x : Int) (i : Int) (n : Int) (k : Int),
-    ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + n → a k ≠ x
+def Stmt.select_eq_not_occurs_selects : Prop :=
+  ∀ (k : Int) (a : Int → Int) (x : Int) (i : Int) (n : Int),
+    ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + n
+      → (a k = x ↔ False)
 
 noncomputable def bisection (l0 : Int) (h0 : Int) (ks : List Int)
                             (M : Int → Int → Int) (G : Int → Prop)
@@ -1227,16 +1239,6 @@ def Stmt.current_trace_bounded : Prop :=
                          if ¬(C1 x ∨ C2 x ∨ C3 x) then x else unspecified))
              ≤ hi
            ↔ True)
-
-def Stmt.current_trace_step_or_keep_mod : Prop :=
-  ∀ (x0 : Int) (n : Int) (a : Int) (xs : List Int) (C : Int → Prop) (hxs : length xs = n),
-    current
-      (trace
-         x0
-         (List.zip (butlast (counter 0 1 n)) xs)
-         (fun z ⟨k, x⟩ => if C x then z + a else if ¬C x then z else unspecified))
-      % a
-      = x0 % a
 
 def Stmt.occurs_counter_step : Prop :=
   ∀ (i : Int) (d : Int) (n : Int) (j : Int),

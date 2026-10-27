@@ -64,11 +64,14 @@ the canonical forms of binders, the facts, the simplex) and a cache per context;
 decisions of the helpers (`select`, `distinct`, guards) call it. Today the same pair is often decided several times
 on one path, without a cache (TODO.md: guard decisions are repeated without a cache).
 
-## 4. One mechanism for facts derived on assumption (done in part, 0.52.13)
+## 4. One mechanism for facts derived on assumption (tried in 0.52.13, not worthwhile)
 
-Done: the instances of a forward lemma at a term are memoized by the lemma, the term and the canonical facts of the
-context (`Forward.fire`, `Context.memo`), so an instance is simplified once per context, not at every firing; the
-counts of `-rules` include the rules used inside a memoized instance once. Kept by decision: the forward lemmas fire
+Tried and removed: the instances of a forward lemma at a term memoized by the lemma, the term and the canonical facts
+of the context (`Forward.fire`, `Context.memo`). The key is built for every pair of a lemma and a term, most of which
+do not match, and hashes the canonical facts each time: on the VerifierCloud (Oct 27, Ryzen, 120 s) 0.52.13 doubled
+the cpu time of Arrays (median 18.5 s to 31.7 s on the tasks solved by all) and lost 20 tasks, 3 on Loops; the
+stacks of standard_init7_ground-1 were in `Canon.key`. The cost of forward lemmas is cut by fewer of them instead
+(rules on the atoms of the goals, ideas/engine-gaps.md). Kept by decision: the forward lemmas fire
 at the positions where the simplifier assumes facts (premises, siblings of `and`/`or`, the facts of `Slice`), not in
 every `Context.assume` (contexts of combinators, cases, branches), which would add instances; moving them into the
 context would need the simplifier there (step 6) and changes nothing else, since the rules from ground equations and
@@ -114,8 +117,8 @@ the term, the bound variables of the expression and the substitution. The same f
 
 ## 7. Memos (done, 0.52.13)
 
-Done: `Context.memo(kind, deps, bound)(compute)`, one table for the facts of combinator contexts, the reads of their
-iterations and the instances of forward lemmas; the views keep their own key (the facts that mention their
+Done: `Context.memo(kind, deps, bound)(compute)`, one table for the facts of combinator contexts and the reads of their
+iterations (not the instances of forward lemmas, see step 4); the views keep their own key (the facts that mention their
 variables).
 
 Now: the context keeps several memos keyed by `Canon.key` with the renaming of bound variables back and forth
@@ -142,7 +145,7 @@ directed test later, ideas/engine-gaps.md), lift (out of terms and atoms) and sp
 decomposition of sequents used by `Split`, `Normalize` and the context; `ideas/dnf-guards.md` would change only this
 module.
 
-## 9. Small duplications and names (done, 0.52.12, except `Context.not`)
+## 9. Small duplications and names (done, 0.52.12)
 
 Done: one `Normalize.replace` with a parameter `binders`; `Rewrite.counter(ctx, dep)` returning the bound of the
 counter of the iterations, used by `Rewrite` and `Simplify.iterations` (the test occurred twice, not five times;
@@ -154,12 +157,26 @@ counter of the iterations, used by `Rewrite` and `Simplify.iterations` (the test
   of a combinator context) share a name; the test for the counter `Butlast(ctx.↑(Counter(0, 1, _)))` occurs in
   `Rewrite.iterations`, `Simplify.iterations`, `Simplify.deps` and twice more (TODO.md: extracted three times): one
   helper `ctx.counter(dep): Option[Expr]` returning `n`.
-- `Simplify.cases` exists twice (cases of a `match`, and the lifting of conditionals into choices since 0.52.7);
-  `Context.not` and `Simplify.not` (TODO.md).
+- `Simplify.cases` exists twice (cases of a `match`, and the lifting of conditionals into choices since 0.52.7).
+- Not a duplication (correction of the review): `Context.not` is the syntactic negation, cheap on purpose since the
+  context does no proofs; `Simplify.not` strengthens it by proofs in the context (`k != 0` is `0 < k` if `0 <= k`)
+  and falls back to it.
+
+## 10. Cleanup after the cloud runs (Oct 27)
+
+- `Views.self`: the self of the update of a trace, one choice for the traversal (`Simplify.update`) and the matcher
+  (both trace cases of `Rewrite.matchesExpr_`), which differed for a trace of several accumulators that defines no
+  variable (the matcher took the self of the context, the traversal none);
+- `Simplify.update`: the context of the update of a trace, its ranges and its results, shared by `X == trace(...)`
+  and `trace(...)`; `Simplify.view`: the views of `Component` and `History`; `Simplify.leaf`: the leaves of
+  arithmetic, shared by `poly` and `difference`;
+- `Rewrite.front`: the dependency that the dependencies of a pattern without one of their own share, which
+  `combinator` and `instantiate` chose alike;
+- no recomputed guards (`Simplify.iterations`, `Simplify.app`), `Arith.normalize` (unused) removed.
 
 ## Order
 
-Done: 1, 2, 3, 4, 5, 7, 9 (in part where noted); not done by decision: 6, 8.
+Done: 1, 2, 3, 5, 7, 9 (in part where noted); not done by decision: 6, 8; tried and not worthwhile: 4.
 
 The original order: 1 and 3 first: they are where the experiments of Oct 26 failed, and they make the redesign of ideas/engine-gaps.md
 (3b) a change of one place. Then 4 (the cost of forward lemmas), 5 and 6 (they simplify each other), 8 together with

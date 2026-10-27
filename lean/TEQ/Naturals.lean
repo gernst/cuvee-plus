@@ -527,14 +527,6 @@ def Stmt.not_occurs_prefix : Prop :=
 noncomputable def above_iterations (n : Nat) (ts : List Int) : Prop :=
   invs (List.zip (butlast (counter 0 1 n)) ts) (fun ⟨k, t⟩ => k < t)
 
-def Stmt.earlier_agree_prefix : Prop :=
-  ∀ (n : Nat) (j : Nat) (xs : List Int) (ys : List Int),
-    agree_prefix n xs ys ∧ integer j < integer n → earlier j xs = earlier j ys
-
-def Stmt.earlier_not_occurs_prefix : Prop :=
-  ∀ (n : Nat) (j : Nat) (e : Int) (xs : List Int) (hxs : length xs = n),
-    ¬occurs e («prefix» n xs) ∧ integer j < integer n → earlier j xs ≠ e
-
 def Stmt.store_occurs_selects : Prop :=
   ∀ (n : Nat) (j : Int) (x : Int) (a : Int → Int),
     0 ≤ j
@@ -551,11 +543,6 @@ def Stmt.not_occurs_selects : Prop :=
   ∀ (a : Int → Int) (x : Int) (i : Int) (n : Nat),
     invs (butlast (counter i 1 n)) (fun k => a k ≠ x)
       ↔ ¬occurs x (selects a (butlast (counter i 1 n)))
-
-def Stmt.select_not_occurs_selects : Prop :=
-  ∀ (a : Int → Int) (x : Int) (i : Int) (n : Nat) (k : Int),
-    ¬occurs x (selects a (butlast (counter i 1 n))) ∧ i ≤ k ∧ k < i + integer n
-      → a k ≠ x
 
 def Stmt.bisection_lo : Prop :=
   ∀ (l0 : Int) (h0 : Int) (ks : List Int) (M : Int → Int → Int) (G : Int → Prop) (H : Int → Prop) (n : Nat) (hks : length ks = n),
@@ -998,16 +985,6 @@ def Stmt.current_trace_bounded : Prop :=
                          if ¬(C1 x ∨ C2 x ∨ C3 x) then x else unspecified))
              ≤ hi
            ↔ True)
-
-def Stmt.current_trace_step_or_keep_mod : Prop :=
-  ∀ (x0 : Int) (n : Nat) (a : Int) (xs : List Int) (C : Int → Prop) (hxs : length xs = n),
-    current
-      (trace
-         x0
-         (List.zip (butlast (counter 0 1 n)) xs)
-         (fun z ⟨k, x⟩ => if C x then z + a else if ¬C x then z else unspecified))
-      % a
-      = x0 % a
 
 def Stmt.occurs_counter_step : Prop :=
   ∀ (i : Int) (d : Int) (n : Nat) (j : Int),
@@ -1734,6 +1711,23 @@ theorem counts_true : Stmt.counts_true := by
   intro x bs n hbs
   simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
   exact counts_true_def_complete x bs n hbs
+
+-- adding a where C holds and keeping the value otherwise, over keys that cover the values: x0 plus a times the
+-- number of values where C holds
+-- (from loops-crafted-1: mono-crafted_12)
+theorem current_trace_step_or_keep_gen (a : Int) (C : Int → Prop) :
+    ∀ (ks : List Int) (xs : List Int) (z0 : Int), xs.length ≤ ks.length →
+      current (trace z0 (List.zip ks xs)
+        (fun z ⟨k, x⟩ => if C x then z + a else if ¬C x then z else unspecified))
+        = z0 + a * count True (maps xs (fun x => C x))
+  | _, [], z0, _ => by simp [trace, current, maps, count]
+  | [], _ :: _, z0, h => by simp at h
+  | k :: ks, x :: xs, z0, h => by
+    simp only [List.zip_cons_cons, trace, current, maps, count]
+    rw [current_trace_step_or_keep_gen a C ks xs _ (by simp at h; omega)]
+    by_cases hc : C x
+    · simp only [hc, if_true]; rw [Int.mul_add]; omega
+    · simp only [hc, if_false, not_false_eq_true, if_true, show (False = True) = False from by simp]; rw [Int.zero_add]
 
 -- two cases whose results agree under the guard of the second one, x == c, which the simplifier has substituted
 -- into it, are one; the second result is a variable d, since F(c) would be compared literally
@@ -2609,25 +2603,65 @@ theorem earlier_prefix {α : Type} [Inhabited α] (j : Nat) (k : Nat)
         | zero => simp [«prefix», earlier]
         | succ i => simp only [«prefix», earlier]; exact ih i m (by simp only [integer_cast] at h ⊢; omega)
 
--- agreeing sequences are equal at each position in the range; the atom is the left-hand side
+-- the prefixes of length n of lists that cover n positions are equal exactly if the lists agree at the positions
+-- below n
 -- (from standard_compare_ground)
-theorem earlier_agree_prefix (n : Nat) (j : Nat) (xs : List Int)
-                                   (ys : List Int) :
-  agree_prefix n xs ys ∧ integer j < integer n
-    → earlier j xs = earlier j ys :=
-  by
-    intro ⟨h, hj⟩
-    simp only [integer_cast] at hj
-    exact (agree_prefix_forall n xs ys).mp h j (by omega)
+theorem prefix_eq_forall (n : Nat) (xs ys : List Int) (hxs : n ≤ xs.length) (hys : n ≤ ys.length) :
+    «prefix» n xs = «prefix» n ys ↔ ∀ i : Nat, i < n → earlier i xs = earlier i ys := by
+  induction xs generalizing n ys with
+  | nil =>
+    have : n = 0 := by simpa using hxs
+    subst this
+    simp [«prefix»]
+  | cons x xs ih =>
+    cases n with
+    | zero => simp [«prefix»]
+    | succ m =>
+      cases ys with
+      | nil => simp at hys
+      | cons y ys =>
+        simp only [«prefix», List.cons.injEq]
+        rw [ih m ys (by simp at hxs; omega) (by simp at hys; omega)]
+        constructor
+        · intro ⟨hxy, h⟩ i hi
+          cases i with
+          | zero => simp [earlier, hxy]
+          | succ i => simp only [earlier]; exact h i (by omega)
+        · intro h
+          exact ⟨by simpa [earlier] using h 0 (by omega), fun i hi => by simpa [earlier] using h (i + 1) (by omega)⟩
 
--- which is instantiated at the positions j in that range
+-- lists whose prefixes of length n are equal agree at each position below n, also where they are shorter
+-- (from standard_compare_ground)
+theorem earlier_eq_prefix (j n : Nat) (xs ys : List Int) :
+    «prefix» n xs = «prefix» n ys → j < n → earlier j xs = earlier j ys := by
+  intro h hj
+  induction xs generalizing n j ys with
+  | nil =>
+    cases ys with
+    | nil => rfl
+    | cons y ys => cases n with
+      | zero => omega
+      | succ m => simp [«prefix»] at h
+  | cons x xs ih =>
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases ys with
+      | nil => simp [«prefix»] at h
+      | cons y ys =>
+        simp only [«prefix», List.cons.injEq] at h
+        cases j with
+        | zero => simp [earlier, h.1]
+        | succ i => simp only [earlier]; exact ih i m ys h.2 (by omega)
+
+-- a value that does not occur in the prefix of length n differs from the reads at the positions in that range
 -- (from standard_find_ground-1)
 theorem earlier_not_occurs_prefix (n : Nat) (j : Nat) (e : Int)
-                                        (xs : List Int) (hxs : length xs = n) :
+                                        (xs : List Int) (hxs : n ≤ length xs) :
   ¬occurs e («prefix» n xs) ∧ integer j < integer n → earlier j xs ≠ e :=
   by
     intro ⟨h1, h2⟩
-    rw [not_occurs_prefix_forall n xs e (by omega)] at h1
+    rw [not_occurs_prefix_forall n xs e hxs] at h1
     simp only [integer_cast] at h2
     exact h1 j (by omega)
 
@@ -4742,27 +4776,6 @@ theorem select_current_trace_recurrence (a0 : Int → Int) (n : Nat) (c : Int) (
     · by_cases hj : 1 ≤ j ∧ j < 1 + (m : Int)
       · rw [if_pos hj, if_pos (by omega), show (j - 1 + 1).toNat = j.toNat by omega]
       · rw [if_neg hj, if_neg e, if_neg (by omega)]
-
--- the phases of counters.dfy
-
--- adding a or keeping the value keeps the remainder modulo a, over any list of keys
-theorem current_trace_step_or_keep_mod_gen (a : Int) (C : Int → Prop) :
-    ∀ (ks : List Int) (xs : List Int) (z0 : Int),
-      current (trace z0 (List.zip ks xs)
-        (fun z ⟨k, x⟩ => if C x then z + a else if ¬C x then z else unspecified)) % a = z0 % a
-  | [], _, z0 => rfl
-  | _ :: _, [], z0 => rfl
-  | k :: ks, x :: xs, z0 => by
-    simp only [List.zip_cons_cons, trace, current]
-    by_cases hc : C x
-    · simp only [hc, if_true]
-      rw [current_trace_step_or_keep_mod_gen a C ks xs (z0 + a), Int.add_emod_right]
-    · simp only [hc, if_false, not_false_eq_true, if_true]
-      exact current_trace_step_or_keep_mod_gen a C ks xs z0
-
-theorem current_trace_step_or_keep_mod : Stmt.current_trace_step_or_keep_mod := by
-  intro x0 n a xs C hxs
-  exact current_trace_step_or_keep_mod_gen a C _ xs x0
 
 -- series.dfy: the sums of the powers of a counter and the geometric sequences and series
 

@@ -106,6 +106,13 @@ lemma {:rw} {:teq} counts_true(x: int, bs: List<bool>)
   ensures trace(x, for bs do y, b :: case b => y + 1 case !b => y)
     == counts(x, true, bs)
 
+// a value that adds a in the iterations where C holds and keeps its value otherwise, x0 plus a times the number of
+// those iterations
+// (from loops-crafted-1: mono-crafted_12)
+lemma {:rw} {:teq} current_trace_step_or_keep(x0: int, n: int, a: int, xs: List<int>, C: (int) -> bool)
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, xs do z, k, x :: case C(x) => z + a case !C(x) => z))
+    == x0 + a * count(true, maps(for xs yield x :: C(x)))
+
 lemma {:rw} {:teq} current_trace_add_at<a>(a: array<a, int>, k: a, values: List<int>)
   ensures current(trace(a, for values do b, v :: b[k := b[k] + v]))
     == a[k := a[k] + sum(values)]
