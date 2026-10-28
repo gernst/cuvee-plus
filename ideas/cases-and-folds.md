@@ -121,7 +121,10 @@ Patterns that match nearly any trace (a variable for the whole update): `perm_sw
   in its update; with `current_trace_reset_add_keep` (aggregation.dfy), the scalar version of
   `select_current_trace_reset_add_keep`, it is proved (examples/dafny/teq/sum_cases.dfy).
 
-## 9. Choices in terms: lifting by polarity (proposal, Oct 28, not implemented)
+## 9. Choices in terms: lifting by polarity (implemented Oct 28, doc/prove.md)
+
+**Status.** Implemented as proposed: bhmr2007, loopv1 recovered locally (5 s, both goals), brs2, sum_cases, strides
+unchanged; mbpr4 open (below); to be measured on the cloud.
 
 A choice `eps(cᵢ => vᵢ)` in a term is reasoned about only by a case analysis on its guards. Since 0.53.6 that analysis
 happens in the wrong form at some places and not at all at others:

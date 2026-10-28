@@ -136,11 +136,14 @@ binders, derivatives, and `old`; `Split` uses it.
   traces (`Simplify.maps`, `Simplify.choices`), so a map has one form whether its values come from conditionals or
   from the cases of an update; so are choices nested in a term of an update, `R[eps(cᵢ => vᵢ)]` as
   `case cᵢ => R[vᵢ]`, e.g. the read of a map with cases added to an accumulator. A choice in an atom, e.g. the
-  element `earlier(j, maps(...))` of a map with cases compared with a value, is lifted out of the atom into cases,
-  `A[eps(cᵢ => vᵢ)]` as the conjunction of
-  `cᵢ ==> A[vᵢ]` (`Simplify.atom`, `Normalize.choices`), e.g. `(e != c ==> e != c) && (e == c ==> d != c)`; a choice
-  inside a list or a trace stays, since it is the value of all elements, e.g. `consts(n, eps(...))` of guards that do
-  not depend on the iteration, whose equation defines a trace in the classes.
+  element `earlier(j, maps(...))` of a map with cases compared with a value, is lifted out of the atom by the
+  polarity of its position (`Simplify.atom`, `Normalize.cases`): in a goal or a neutral position, e.g. a side
+  condition or the body of `invs`, into the conjunction of `cᵢ ==> A[vᵢ]`; among the facts into the disjunction of
+  `cᵢ && A[vᵢ]`, which the case split of disjunctive facts and `-split` take apart, so that a definition
+  `a == t[eps(...)]` holds in each case; both with the case where no guard holds, `A[unspecified]`, which vanishes
+  for exhaustive guards. A choice inside a list or a trace stays, since it is the value of all elements, e.g.
+  `consts(n, eps(...))` of guards that do not depend on the iteration. `-split` lifts choices like conditionals
+  (`Normalize.lift`) and splits a choice of formulas by its cases.
 - **Conditionals in equations** are lifted over them, `ite(c, a, b) == d` is `ite(c, a == d, b == d)`, whose branches
   are decided under the test; they come from the conditionals of programs, while the right-hand sides of the lemmas of
   the database are choices (`if { case 0 <= j < n => ... case !(0 <= j < n) => a0[j] }`, whose guards are exhaustive

@@ -111,8 +111,9 @@ object Normalize:
             flatten(bound, Nil, phi_ :: neg)
 
   // ite is lifted out of the terms of the atoms to the level of formulas: A[ite(c, a, b)] is ite(c, A[a], A[b]),
-  // where the connectives, quantifiers, and ite on formulas are traversed;
-  // an ite below a binder of A is kept, since its test may refer to the bound variables,
+  // and so is a choice, A[eps(cᵢ => vᵢ)] is the choice of formulas eps(cᵢ => A[vᵢ]), which Split takes by its cases,
+  // where the connectives, quantifiers, ite and choices on formulas are traversed;
+  // an ite or a choice below a binder of A is kept, since its test may refer to the bound variables,
   // and so is one below a derivative, which depends on the whole term, and below old, whose test refers to the old state
   def lift(phi: Expr): Expr =
     phi match
@@ -127,13 +128,23 @@ object Normalize:
       case Ite(test, left, right) if phi.typ == Sort.bool =>
         Ite(lift(test), lift(left), lift(right))
 
+      case Eps(updates) if phi.typ == Sort.bool =>
+        Eps(updates.map(upd => Upd(lift(upd.cond), lift(upd.rhs))))
+
       case _ =>
         ite(phi) match
           case Some(it @ Ite(test, left, right)) =>
             lift(Ite(test, replace(phi, it, left), replace(phi, it, right)))
 
           case _ =>
-            phi
+            eps(phi) match
+              // with the case where no guard holds, A[unspecified], which vanishes for exhaustive guards
+              case Some(choice @ Eps(updates)) =>
+                val none = Upd(And(updates.map(upd => Not(upd.cond))), replace(phi, choice, Unspecified(choice.typ)))
+                lift(Eps(updates.map(upd => Upd(upd.cond, replace(phi, choice, upd.rhs))) :+ none))
+
+              case _ =>
+                phi
 
   // a choice is lifted out of the terms of the atoms to the level of formulas, like ite: A[eps(cᵢ => vᵢ)] is the
   // conjunction of cᵢ ==> A[vᵢ], since the guards of a choice are disjoint and those of an update exhaustive; the
@@ -158,6 +169,23 @@ object Normalize:
 
           case _ =>
             phi
+
+  // the cases of the outermost leftmost choice of an atom as a formula, in the form that fits the polarity of the atom
+  // (ideas/cases-and-folds.md, section 9): in a goal or a neutral position the conjunction of cᵢ ==> A[vᵢ], which the
+  // simplifier takes conjunct by conjunct, and among the facts the disjunction of cᵢ && A[vᵢ], which the case split
+  // of -prove and -split take apart, so that a definition a == t[eps(...)] holds in each case; both with the case
+  // where no guard holds, A[unspecified], which vanishes for exhaustive guards
+  def cases(phi: Expr, positive: Boolean): Expr =
+    eps(phi) match
+      case Some(choice @ Eps(updates)) =>
+        val none = And(updates.map(upd => Not(upd.cond)))
+        val unspecified = cases(replace(phi, choice, Unspecified(choice.typ)), positive)
+        if positive
+        then And(updates.map(upd => Imp(upd.cond, cases(replace(phi, choice, upd.rhs), positive))) :+ Imp(none, unspecified))
+        else Or(updates.map(upd => And(List(upd.cond, cases(replace(phi, choice, upd.rhs), positive)))) :+ And(List(none, unspecified)))
+
+      case _ =>
+        phi
 
   // the outermost leftmost choice in `expr` that is not below a binder, a derivative, or old
   def eps(expr: Expr): Option[Expr] =

@@ -64,7 +64,8 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
-- [ ] Tasks lost in 0.53.6 (cloud, Oct 28, against 0.53.5; ending in unknown, not timeouts): array-tiling/mbpr4
+- [ ] Tasks lost in 0.53.6 (cloud, Oct 28, against 0.53.5; ending in unknown, not timeouts; the lifting by polarity
+      of ideas/cases-and-folds.md, section 9, recovers bhmr2007 and loopv1 locally, mbpr4 open): array-tiling/mbpr4
       (Arrays and MonoCera), SV-LIB bhmr2007, loopv1, loopv3. The choices lifted out of atoms (`Simplify.atom`)
       turn definitions with a choice, e.g. `a == consts`-values of guards that do not depend on the iteration
       (`maps_const`, `sums_consts`), into conjunctions of implications `(c ==> a == n) && (!c ==> a == 2 * n)`,
