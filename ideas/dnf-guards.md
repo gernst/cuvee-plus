@@ -60,8 +60,8 @@ all.
   `bisection`) are to be checked against the new form; `scripts/missing.py` on a run before and after finds the
   rules that no longer apply.
 - Results that are equal only modulo the guard (`k != c => a[k := F(k)]`, `k == c => a[c := F(c)]`, copysome2-1)
-  are not merged by either form; the grouping of the matcher would compare the results after substituting the
-  equations of the guard.
+  are merged since 0.53.3 by `Simplify.eps` under guards with an equation (doc/prove.md); the grouping of the matcher
+  would do the same.
 
 ## Steps
 

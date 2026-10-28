@@ -1092,7 +1092,30 @@ object Simplify:
       Eps.flatten(updates).foldLeft(List.empty[Upd]): (merged, update) =>
         merged.indexWhere(other => eq_(config, state, ctx.neutral, other.rhs, update.rhs) == True) match
           case -1 =>
-            merged :+ update
+            // otherwise the results are equal under a guard: a result that equals the result of the other case under
+            // the guard of that case is the value of both, e.g. k of case k != c => k case k == c => c, since the
+            // results are simplified under their guards, which writes k as c under k == c; both are brought into the
+            // canonical form of the context of that guard (Classes.normalize, k + 1 is 6 under k == 5), since eq_
+            // expects its arguments in the canonical form of its context; only guards with an equation determine a
+            // value, so only those are tried
+            def covers(rhs: Expr, cond: Expr, rhs_ : Expr) =
+              And.flattenStrong(cond).exists { case Eq(_, _) => true; case _ => false } && {
+                val inner = ctx.neutral.assume(List(cond), Nil)
+                eq_(config, state, inner, inner.classes.normalize(rhs), inner.classes.normalize(rhs_)) == True }
+
+            merged.indexWhere(other => covers(other.rhs, update.cond, update.rhs)) match
+              case -1 =>
+                merged.indexWhere(other => covers(update.rhs, other.cond, other.rhs)) match
+                  case -1 =>
+                    merged :+ update
+
+                  case i =>
+                    val Upd(cond, _) = merged(i)
+                    merged.updated(i, Upd(or(config, state, ctx.neutral, List(cond, update.cond)), update.rhs))
+
+              case i =>
+                val Upd(cond, rhs) = merged(i)
+                merged.updated(i, Upd(or(config, state, ctx.neutral, List(cond, update.cond)), rhs))
 
           case i =>
             val Upd(cond, rhs) = merged(i)

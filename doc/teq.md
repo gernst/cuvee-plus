@@ -33,7 +33,8 @@ case class History(trace: Expr, index: Int)                   // ⌊S⌋.i
   lengths: the number of iterations is the `n` of the counter `K == counter(0, 1, n)`, an integer with `0 <= n`.
 - An update is a single result or guarded cases `Eps(List(Upd(φᵢ, eᵢ), ...))` with disjoint guards. Guards need not
   be complete (`break`); an update where no guard holds is `unspecified`. The simplifier flattens nested `Eps`, merges
-  cases with equal results, and replaces a single case by its result. Conditionals in the results of a trace that are
+  cases with equal results, also results equal under the guard of the other case (below), and replaces a single case
+  by its result. Conditionals in the results of a trace that are
   not below a binder are lifted into cases (`Simplify.cases`), e.g. `ret < a[i] ? a[i] : ret` of C into
   `case ret < v => v case v <= ret => ret`, the form of branching statements, which the patterns of the lemmas name
   (examples/c/teq/ite_cases.c).

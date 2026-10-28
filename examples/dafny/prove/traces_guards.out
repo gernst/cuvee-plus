@@ -1,0 +1,12 @@
+type Trace<a₀>
+
+type List<a₀>
+
+const J: List<int>
+
+axiom maps(for J yield j :: j) == J
+
+axiom maps(for J yield j :: case j != 5 => j case j == 5 => 6) == J
+
+axiom maps(for J yield j :: case j < 5 => j case 5 <= j => 5) == J
+

@@ -102,6 +102,12 @@ binders, derivatives, and `old`; `Split` uses it.
   `eq_`, `ite`, `trace`, `maps`, `invs`, ...). Each normalizes its own constructor in one step and builds with the
   other helpers; the outer loop iterates. `nary` simplifies each argument of `and` and `or` assuming the others;
   `and` extracts disjuncts common to all conjuncts, `or` dually.
+- **Cases with equal results** are merged (`Simplify.eps`), only these: two results equal as they are, or equal under
+  the guard of one of the cases, an equation, in whose context both are brought into canonical form
+  (`Classes.normalize`) and compared by `eq_`; the other result is then the value of both cases, e.g. `k` of
+  `case k != c => k case k == c => c`, since a result simplified under its guard `k == c` writes `k` as `c`
+  ([traces_guards.dfy](../examples/dafny/prove/traces_guards.dfy), copysome2-1). `eq_` expects its arguments in the
+  canonical form of its context; the merge is the one place that compares results from the context of another guard.
 - **One-point rule.** `eq_` turns `x == e` into `true` if `x` is existential at the position (bound by `exists`, or by
   `forall` below an odd number of negations and premises) and occurs nowhere else: not in `e`, not in the facts
   (`Context.used`), and `e` has no variables bound inside the scope of `x`. The context must record all siblings

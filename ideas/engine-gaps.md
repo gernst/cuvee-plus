@@ -117,8 +117,8 @@ run of Arrays and Loops against 0.52.10.
   update is open.
 - Rejected: merging in `Simplify.eps` by assuming the guards. Both guards are false together (disjoint), the
   disjunction is too weak (the results differ under the other guard).
-- Later: the directed test, `e₁` simplified under the guard of the other case equals `e₂` (then `e₁` covers both), and
-  the converse; it would merge copysome2-1.
+- Done (0.53.3): the directed test, `e₁` equal to `e₂` under the guard of the case of `e₂` (then `e₁` covers both),
+  and the converse, for guards with an equation; it merges copysome2-1 (doc/prove.md, "Cases with equal results").
 - The prototype of 3b (canonical variables in terms, values inside arithmetic, the constant of a polynomial written
   as the canonical variable of its class) is kept as a patch, not measured in the cloud; ideas/engine-consolidation.md
   proposes to put the policy of normal forms into one place first.
