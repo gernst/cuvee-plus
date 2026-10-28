@@ -4,8 +4,8 @@
 // up to n
 
 method recursion(xs: List<int>, x: int, n: int) returns (r: int)
-  ensures 0 <= sum(xs) || occurs(x, xs)
-  ensures count(x, xs) <= pow(2, n)
+  ensures 0 <= sum(elems(xs)) || occurs(x, xs)
+  ensures elems(xs)[x] <= pow(2, n)
 {
   r := 0;
 }

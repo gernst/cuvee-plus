@@ -26,7 +26,7 @@ function rank_table(c: array<int, int>, a: array<int, int>, n: int, kk: int): ar
 
 lemma {:rw} rank_table_def(c0: array<int, int>, a: array<int, int>, n: int, kk: int, hs: List<int>)
   ensures current(stores(c0, ⌊counter(0, 1, kk)⌋,
-      ⌊sums(0, maps(for ⌊counter(0, 1, kk)⌋, hs yield v, h :: count(v, selects(a, ⌊counter(0, 1, n)⌋))))⌋))
+      ⌊sums(0, maps(for ⌊counter(0, 1, kk)⌋, hs yield v, h :: elems(selects(a, ⌊counter(0, 1, n)⌋))[v]))⌋))
     == rank_table(c0, a, n, kk)
 
 // the scatter: each element a[k] is stored at its start position plus the number of equal elements before it, which
@@ -47,16 +47,16 @@ lemma {:rw} count_scatter(b0: array<int, int>, c2: array<int, int>, a: array<int
   requires keys_below(a, s, kb) && kb == kk
   requires Iv == counter(0, 1, n)
   requires hs3 == ⌊Iv⌋
-  ensures count(x, selects(current(stores(b0,
+  ensures elems(selects(current(stores(b0,
       maps(for ⌊counter(0, 1, n)⌋, ⌊trace(rank_table(c2, a, n, kk), for ⌊counter(0, 1, n)⌋, hs do c, k, h :: c[a[k] := c[a[k]] + 1])⌋, hs2 yield k, c, h :: c[a[k]]),
-      selects(a, hs3))), ⌊counter(0, 1, n)⌋))
-    == count(x, selects(a, ⌊counter(0, 1, n)⌋))
+      selects(a, hs3))), ⌊counter(0, 1, n)⌋))[x]
+    == elems(selects(a, ⌊counter(0, 1, n)⌋))[x]
 
 method main(a: array<int, int>, n: int, k: int) returns (b: array<int, int>)
   requires 0 <= n && 0 < k
   requires keys_below(a, n, k)
   ensures sorted(b, 0, n)
-  ensures forall x: int :: count(x, selects(b, ⌊counter(0, 1, n)⌋)) == count(x, selects(a, ⌊counter(0, 1, n)⌋))
+  ensures forall x: int :: elems(selects(b, ⌊counter(0, 1, n)⌋))[x] == elems(selects(a, ⌊counter(0, 1, n)⌋))[x]
 {
   var c: array<int, int>;
   var i: int;

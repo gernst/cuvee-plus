@@ -12,22 +12,22 @@
 // (from nla-digbench: ps3 to ps6; MonoCera: ncomp, pcomp)
 function {:teq} {:fold} squares(i: int, n: int): int
 {
-  sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k))
+  sum(elems(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k)))
 }
 
 function {:teq} {:fold} cubes(i: int, n: int): int
 {
-  sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k * k))
+  sum(elems(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k * k)))
 }
 
 function {:teq} {:fold} fourths(i: int, n: int): int
 {
-  sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k * k * k))
+  sum(elems(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k * k * k)))
 }
 
 function {:teq} {:fold} fifths(i: int, n: int): int
 {
-  sum(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k * k * k * k))
+  sum(elems(maps(for ⌊counter(i, 1, n)⌋ yield k :: k * k * k * k * k)))
 }
 
 // the sums over no iterations, e.g. in the case n <= 0 of a split, whose instances of the closed forms below would be

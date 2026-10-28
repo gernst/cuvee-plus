@@ -4,7 +4,7 @@
 
 function {:fold} squares_below(n: int): int
 {
-  sum(maps(for ⌊counter(0, 1, n)⌋ yield k :: k * k))
+  sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: k * k)))
 }
 
 method fold(m: int) returns (r: int)

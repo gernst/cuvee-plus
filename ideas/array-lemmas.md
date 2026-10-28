@@ -72,8 +72,8 @@ variants.
 
 ## Reducer commutativity
 
-Superseded by the multisets (doc/teq.md, "Multisets"; TODO.md, "Work queue: Now"): the module `teq:multisets` proves
-the sums and averages of reducercommutativity (0.52.16); max, sep and the bitwise reductions of array-crafted (bAnd,
+Superseded by the multisets (doc/teq.md, "Multisets"; TODO.md, "Work queue: Now"): the aggregates over multisets prove
+the sums and averages of reducercommutativity (0.52.16, over multisets only since 0.53.0); max, sep and the bitwise reductions of array-crafted (bAnd,
 bor, xor) are open. The plan of Oct 26 (one fold and one swap and rotation lemma per operator) was not taken.
 
 ## Not addressed

@@ -10,8 +10,8 @@ documented in `doc/`.
    variables of nr2-nr5 (engine-gaps.md, gap 3);
 2. equalities from the simplex to the classes ([prove-next.md](prove-next.md) section 1): set aside, no open task;
 3. array-patterns (TODO.md): set aside, the cancellation is a pointwise relation of two arrays;
-4. reducer commutativity (doc/teq.md, "Multisets"): the module `teq:multisets` with the twins of the lemmas on
-   folds (0.52.16, in `-svcomp` since 0.52.17); open sep, max, the bitwise reductions.
+4. reducer commutativity (doc/teq.md, "Multisets"): the aggregates over multisets (0.53.0); open sep, max, the
+   bitwise reductions.
 
 The other files below are not being worked on now.
 

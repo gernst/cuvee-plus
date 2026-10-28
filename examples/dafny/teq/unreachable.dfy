@@ -15,7 +15,7 @@ lemma butlast_stop_example(w: int)
 // the body g(q) + 1 is never evaluated
 lemma empty_map_example(m: int)
   requires m <= 0
-  ensures sum(maps(for ⌊counter(0, 1, m)⌋ yield q :: g(q) + 1)) == 0
+  ensures sum(elems(maps(for ⌊counter(0, 1, m)⌋ yield q :: g(q) + 1))) == 0
 {}
 
 // a loop whose test is false at the start

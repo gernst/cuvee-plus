@@ -28,7 +28,7 @@ lemma {:rw} maps_lomuto_read(a: array<int, int>, p: int, n: int, is: List<int>, 
 // conditions of the lemmas normalize to the same term (maps are compared literally, with their bound variables)
 function {:fold} below(a: array<int, int>, p: int, n: int, hs: List<int>): int
 {
-  count(true, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a[k] < p))
+  elems(maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a[k] < p))[true]
 }
 
 lemma {:rw} below_nonnegative(a: array<int, int>, p: int, n: int, hs: List<int>)

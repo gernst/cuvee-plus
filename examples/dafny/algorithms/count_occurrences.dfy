@@ -10,12 +10,12 @@
 // trace equation system normalize to the same term, since the counter I of the loop is not inlined into the facts
 function {:fold} occurrences(x: int, a: array<int, int>, i: int, n: int): int
 {
-  count(x, selects(a, ⌊counter(i, 1, n)⌋))
+  elems(selects(a, ⌊counter(i, 1, n)⌋))[x]
 }
 
 method main(a: array<int, int>, n: int, x: int) returns (c: int)
   requires 0 <= n
-  ensures c == count(x, selects(a, ⌊counter(0, 1, n)⌋))
+  ensures c == elems(selects(a, ⌊counter(0, 1, n)⌋))[x]
 {
   var i: int;
   c := 0;

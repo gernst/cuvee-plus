@@ -133,6 +133,206 @@ lemma {:rw} {:teq} select_current_trace_stride2_defaults(a0: array<int, int>, n:
                      else (if earlier(j / 2, zs) != c then earlier(j / 2, zs) else d)))
          else a0[j]
 
+// the same for stride 3, the 8 cases of the 3 conditionals, the value of each cell read from the
+// choice of its path of tests (from MonoCera: pnr3)
+lemma {:rw} {:teq} select_current_trace_stride3_defaults(a0: array<int, int>, n: int, c: int, d: int, vs: List<int>,
+  vs1: List<int>, vs0: List<int>, vs11: List<int>, vs10: List<int>, vs01: List<int>, vs00: List<int>, j: int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, vs, vs1, vs0, vs11, vs10, vs01, vs00 do a, k, v, v1, v0, v11, v10, v01,
+      v00 ::
+                  case v != c && v1 != c && v11 != c => a[3 * k := v][3 * k + 1 := v1][3 * k + 2 := v11]
+                  case v != c && v1 != c && v11 == c => a[3 * k := v][3 * k + 1 := v1][3 * k + 2 := d]
+                  case v != c && v1 == c && v10 != c => a[3 * k := v][3 * k + 1 := d][3 * k + 2 := v10]
+                  case v != c && v1 == c && v10 == c => a[3 * k := v][3 * k + 1 := d][3 * k + 2 := d]
+                  case v == c && v0 != c && v01 != c => a[3 * k := d][3 * k + 1 := v0][3 * k + 2 := v01]
+                  case v == c && v0 != c && v01 == c => a[3 * k := d][3 * k + 1 := v0][3 * k + 2 := d]
+                  case v == c && v0 == c && v00 != c => a[3 * k := d][3 * k + 1 := d][3 * k + 2 := v00]
+                  case v == c && v0 == c && v00 == c => a[3 * k := d][3 * k + 1 := d][3 * k + 2 := d]))[j]
+      == if 0 <= j && j < 3 * n
+         then
+           if j % 3 == 0 then (if earlier(j / 3, vs) != c then earlier(j / 3, vs) else d)
+           else if j % 3 == 1 then (if earlier(j / 3, vs) != c then (if earlier(j / 3, vs1) != c then
+             earlier(j / 3, vs1) else d) else (if earlier(j / 3, vs0) != c then earlier(j / 3, vs0) else d))
+           else (if earlier(j / 3, vs) != c then (if earlier(j / 3, vs1) != c then (if earlier(j / 3, vs11) != c then
+             earlier(j / 3, vs11) else d) else (if earlier(j / 3, vs10) != c then earlier(j / 3, vs10) else d)) else (if
+             earlier(j / 3, vs0) != c then (if earlier(j / 3, vs01) != c then earlier(j / 3, vs01) else d) else (if
+             earlier(j / 3, vs00) != c then earlier(j / 3, vs00) else d)))
+         else a0[j]
+
+// the same for stride 4, the 16 cases of the 4 conditionals, the value of each cell read from the
+// choice of its path of tests (from MonoCera: pnr4)
+lemma {:rw} {:teq} select_current_trace_stride4_defaults(a0: array<int, int>, n: int, c: int, d: int, vs: List<int>,
+  vs1: List<int>, vs0: List<int>, vs11: List<int>, vs10: List<int>, vs01: List<int>, vs00: List<int>, vs111: List<int>,
+  vs110: List<int>, vs101: List<int>, vs100: List<int>, vs011: List<int>, vs010: List<int>, vs001: List<int>,
+  vs000: List<int>, j: int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, vs, vs1, vs0, vs11, vs10, vs01, vs00, vs111, vs110, vs101, vs100, vs011,
+      vs010, vs001, vs000 do a, k, v, v1, v0, v11, v10, v01, v00, v111, v110, v101, v100, v011, v010, v001, v000 ::
+                  case v != c && v1 != c && v11 != c && v111 != c =>
+                    a[4 * k := v][4 * k + 1 := v1][4 * k + 2 := v11][4 * k + 3 := v111]
+                  case v != c && v1 != c && v11 != c && v111 == c =>
+                    a[4 * k := v][4 * k + 1 := v1][4 * k + 2 := v11][4 * k + 3 := d]
+                  case v != c && v1 != c && v11 == c && v110 != c =>
+                    a[4 * k := v][4 * k + 1 := v1][4 * k + 2 := d][4 * k + 3 := v110]
+                  case v != c && v1 != c && v11 == c && v110 == c =>
+                    a[4 * k := v][4 * k + 1 := v1][4 * k + 2 := d][4 * k + 3 := d]
+                  case v != c && v1 == c && v10 != c && v101 != c =>
+                    a[4 * k := v][4 * k + 1 := d][4 * k + 2 := v10][4 * k + 3 := v101]
+                  case v != c && v1 == c && v10 != c && v101 == c =>
+                    a[4 * k := v][4 * k + 1 := d][4 * k + 2 := v10][4 * k + 3 := d]
+                  case v != c && v1 == c && v10 == c && v100 != c =>
+                    a[4 * k := v][4 * k + 1 := d][4 * k + 2 := d][4 * k + 3 := v100]
+                  case v != c && v1 == c && v10 == c && v100 == c =>
+                    a[4 * k := v][4 * k + 1 := d][4 * k + 2 := d][4 * k + 3 := d]
+                  case v == c && v0 != c && v01 != c && v011 != c =>
+                    a[4 * k := d][4 * k + 1 := v0][4 * k + 2 := v01][4 * k + 3 := v011]
+                  case v == c && v0 != c && v01 != c && v011 == c =>
+                    a[4 * k := d][4 * k + 1 := v0][4 * k + 2 := v01][4 * k + 3 := d]
+                  case v == c && v0 != c && v01 == c && v010 != c =>
+                    a[4 * k := d][4 * k + 1 := v0][4 * k + 2 := d][4 * k + 3 := v010]
+                  case v == c && v0 != c && v01 == c && v010 == c =>
+                    a[4 * k := d][4 * k + 1 := v0][4 * k + 2 := d][4 * k + 3 := d]
+                  case v == c && v0 == c && v00 != c && v001 != c =>
+                    a[4 * k := d][4 * k + 1 := d][4 * k + 2 := v00][4 * k + 3 := v001]
+                  case v == c && v0 == c && v00 != c && v001 == c =>
+                    a[4 * k := d][4 * k + 1 := d][4 * k + 2 := v00][4 * k + 3 := d]
+                  case v == c && v0 == c && v00 == c && v000 != c =>
+                    a[4 * k := d][4 * k + 1 := d][4 * k + 2 := d][4 * k + 3 := v000]
+                  case v == c && v0 == c && v00 == c && v000 == c =>
+                    a[4 * k := d][4 * k + 1 := d][4 * k + 2 := d][4 * k + 3 := d]))[j]
+      == if 0 <= j && j < 4 * n
+         then
+           if j % 4 == 0 then (if earlier(j / 4, vs) != c then earlier(j / 4, vs) else d)
+           else if j % 4 == 1 then (if earlier(j / 4, vs) != c then (if earlier(j / 4, vs1) != c then
+             earlier(j / 4, vs1) else d) else (if earlier(j / 4, vs0) != c then earlier(j / 4, vs0) else d))
+           else if j % 4 == 2 then (if earlier(j / 4, vs) != c then (if earlier(j / 4, vs1) != c then (if
+             earlier(j / 4, vs11) != c then earlier(j / 4, vs11) else d) else (if earlier(j / 4, vs10) != c then
+             earlier(j / 4, vs10) else d)) else (if earlier(j / 4, vs0) != c then (if earlier(j / 4, vs01) != c then
+             earlier(j / 4, vs01) else d) else (if earlier(j / 4, vs00) != c then earlier(j / 4, vs00) else d)))
+           else (if earlier(j / 4, vs) != c then (if earlier(j / 4, vs1) != c then (if earlier(j / 4, vs11) != c then
+             (if earlier(j / 4, vs111) != c then earlier(j / 4, vs111) else d) else (if earlier(j / 4, vs110) != c then
+             earlier(j / 4, vs110) else d)) else (if earlier(j / 4, vs10) != c then (if earlier(j / 4, vs101) != c then
+             earlier(j / 4, vs101) else d) else (if earlier(j / 4, vs100) != c then earlier(j / 4, vs100) else d))) else
+             (if earlier(j / 4, vs0) != c then (if earlier(j / 4, vs01) != c then (if earlier(j / 4, vs011) != c then
+             earlier(j / 4, vs011) else d) else (if earlier(j / 4, vs010) != c then earlier(j / 4, vs010) else d)) else
+             (if earlier(j / 4, vs00) != c then (if earlier(j / 4, vs001) != c then earlier(j / 4, vs001) else d) else
+             (if earlier(j / 4, vs000) != c then earlier(j / 4, vs000) else d))))
+         else a0[j]
+
+// the same for stride 5, the 32 cases of the 5 conditionals, the value of each cell read from the
+// choice of its path of tests (from MonoCera: pnr5)
+lemma {:rw} {:teq} select_current_trace_stride5_defaults(a0: array<int, int>, n: int, c: int, d: int, vs: List<int>,
+  vs1: List<int>, vs0: List<int>, vs11: List<int>, vs10: List<int>, vs01: List<int>, vs00: List<int>, vs111: List<int>,
+  vs110: List<int>, vs101: List<int>, vs100: List<int>, vs011: List<int>, vs010: List<int>, vs001: List<int>,
+  vs000: List<int>, vs1111: List<int>, vs1110: List<int>, vs1101: List<int>, vs1100: List<int>, vs1011: List<int>,
+  vs1010: List<int>, vs1001: List<int>, vs1000: List<int>, vs0111: List<int>, vs0110: List<int>, vs0101: List<int>,
+  vs0100: List<int>, vs0011: List<int>, vs0010: List<int>, vs0001: List<int>, vs0000: List<int>, j: int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋, vs, vs1, vs0, vs11, vs10, vs01, vs00, vs111, vs110, vs101, vs100, vs011,
+      vs010, vs001, vs000, vs1111, vs1110, vs1101, vs1100, vs1011, vs1010, vs1001, vs1000, vs0111, vs0110, vs0101,
+      vs0100, vs0011, vs0010, vs0001, vs0000 do a, k, v, v1, v0, v11, v10, v01, v00, v111, v110, v101, v100, v011, v010,
+      v001, v000, v1111, v1110, v1101, v1100, v1011, v1010, v1001, v1000, v0111, v0110, v0101, v0100, v0011, v0010,
+      v0001, v0000 ::
+                  case v != c && v1 != c && v11 != c && v111 != c && v1111 != c =>
+                    a[5 * k := v][5 * k + 1 := v1][5 * k + 2 := v11][5 * k + 3 := v111][5 * k + 4 := v1111]
+                  case v != c && v1 != c && v11 != c && v111 != c && v1111 == c =>
+                    a[5 * k := v][5 * k + 1 := v1][5 * k + 2 := v11][5 * k + 3 := v111][5 * k + 4 := d]
+                  case v != c && v1 != c && v11 != c && v111 == c && v1110 != c =>
+                    a[5 * k := v][5 * k + 1 := v1][5 * k + 2 := v11][5 * k + 3 := d][5 * k + 4 := v1110]
+                  case v != c && v1 != c && v11 != c && v111 == c && v1110 == c =>
+                    a[5 * k := v][5 * k + 1 := v1][5 * k + 2 := v11][5 * k + 3 := d][5 * k + 4 := d]
+                  case v != c && v1 != c && v11 == c && v110 != c && v1101 != c =>
+                    a[5 * k := v][5 * k + 1 := v1][5 * k + 2 := d][5 * k + 3 := v110][5 * k + 4 := v1101]
+                  case v != c && v1 != c && v11 == c && v110 != c && v1101 == c =>
+                    a[5 * k := v][5 * k + 1 := v1][5 * k + 2 := d][5 * k + 3 := v110][5 * k + 4 := d]
+                  case v != c && v1 != c && v11 == c && v110 == c && v1100 != c =>
+                    a[5 * k := v][5 * k + 1 := v1][5 * k + 2 := d][5 * k + 3 := d][5 * k + 4 := v1100]
+                  case v != c && v1 != c && v11 == c && v110 == c && v1100 == c =>
+                    a[5 * k := v][5 * k + 1 := v1][5 * k + 2 := d][5 * k + 3 := d][5 * k + 4 := d]
+                  case v != c && v1 == c && v10 != c && v101 != c && v1011 != c =>
+                    a[5 * k := v][5 * k + 1 := d][5 * k + 2 := v10][5 * k + 3 := v101][5 * k + 4 := v1011]
+                  case v != c && v1 == c && v10 != c && v101 != c && v1011 == c =>
+                    a[5 * k := v][5 * k + 1 := d][5 * k + 2 := v10][5 * k + 3 := v101][5 * k + 4 := d]
+                  case v != c && v1 == c && v10 != c && v101 == c && v1010 != c =>
+                    a[5 * k := v][5 * k + 1 := d][5 * k + 2 := v10][5 * k + 3 := d][5 * k + 4 := v1010]
+                  case v != c && v1 == c && v10 != c && v101 == c && v1010 == c =>
+                    a[5 * k := v][5 * k + 1 := d][5 * k + 2 := v10][5 * k + 3 := d][5 * k + 4 := d]
+                  case v != c && v1 == c && v10 == c && v100 != c && v1001 != c =>
+                    a[5 * k := v][5 * k + 1 := d][5 * k + 2 := d][5 * k + 3 := v100][5 * k + 4 := v1001]
+                  case v != c && v1 == c && v10 == c && v100 != c && v1001 == c =>
+                    a[5 * k := v][5 * k + 1 := d][5 * k + 2 := d][5 * k + 3 := v100][5 * k + 4 := d]
+                  case v != c && v1 == c && v10 == c && v100 == c && v1000 != c =>
+                    a[5 * k := v][5 * k + 1 := d][5 * k + 2 := d][5 * k + 3 := d][5 * k + 4 := v1000]
+                  case v != c && v1 == c && v10 == c && v100 == c && v1000 == c =>
+                    a[5 * k := v][5 * k + 1 := d][5 * k + 2 := d][5 * k + 3 := d][5 * k + 4 := d]
+                  case v == c && v0 != c && v01 != c && v011 != c && v0111 != c =>
+                    a[5 * k := d][5 * k + 1 := v0][5 * k + 2 := v01][5 * k + 3 := v011][5 * k + 4 := v0111]
+                  case v == c && v0 != c && v01 != c && v011 != c && v0111 == c =>
+                    a[5 * k := d][5 * k + 1 := v0][5 * k + 2 := v01][5 * k + 3 := v011][5 * k + 4 := d]
+                  case v == c && v0 != c && v01 != c && v011 == c && v0110 != c =>
+                    a[5 * k := d][5 * k + 1 := v0][5 * k + 2 := v01][5 * k + 3 := d][5 * k + 4 := v0110]
+                  case v == c && v0 != c && v01 != c && v011 == c && v0110 == c =>
+                    a[5 * k := d][5 * k + 1 := v0][5 * k + 2 := v01][5 * k + 3 := d][5 * k + 4 := d]
+                  case v == c && v0 != c && v01 == c && v010 != c && v0101 != c =>
+                    a[5 * k := d][5 * k + 1 := v0][5 * k + 2 := d][5 * k + 3 := v010][5 * k + 4 := v0101]
+                  case v == c && v0 != c && v01 == c && v010 != c && v0101 == c =>
+                    a[5 * k := d][5 * k + 1 := v0][5 * k + 2 := d][5 * k + 3 := v010][5 * k + 4 := d]
+                  case v == c && v0 != c && v01 == c && v010 == c && v0100 != c =>
+                    a[5 * k := d][5 * k + 1 := v0][5 * k + 2 := d][5 * k + 3 := d][5 * k + 4 := v0100]
+                  case v == c && v0 != c && v01 == c && v010 == c && v0100 == c =>
+                    a[5 * k := d][5 * k + 1 := v0][5 * k + 2 := d][5 * k + 3 := d][5 * k + 4 := d]
+                  case v == c && v0 == c && v00 != c && v001 != c && v0011 != c =>
+                    a[5 * k := d][5 * k + 1 := d][5 * k + 2 := v00][5 * k + 3 := v001][5 * k + 4 := v0011]
+                  case v == c && v0 == c && v00 != c && v001 != c && v0011 == c =>
+                    a[5 * k := d][5 * k + 1 := d][5 * k + 2 := v00][5 * k + 3 := v001][5 * k + 4 := d]
+                  case v == c && v0 == c && v00 != c && v001 == c && v0010 != c =>
+                    a[5 * k := d][5 * k + 1 := d][5 * k + 2 := v00][5 * k + 3 := d][5 * k + 4 := v0010]
+                  case v == c && v0 == c && v00 != c && v001 == c && v0010 == c =>
+                    a[5 * k := d][5 * k + 1 := d][5 * k + 2 := v00][5 * k + 3 := d][5 * k + 4 := d]
+                  case v == c && v0 == c && v00 == c && v000 != c && v0001 != c =>
+                    a[5 * k := d][5 * k + 1 := d][5 * k + 2 := d][5 * k + 3 := v000][5 * k + 4 := v0001]
+                  case v == c && v0 == c && v00 == c && v000 != c && v0001 == c =>
+                    a[5 * k := d][5 * k + 1 := d][5 * k + 2 := d][5 * k + 3 := v000][5 * k + 4 := d]
+                  case v == c && v0 == c && v00 == c && v000 == c && v0000 != c =>
+                    a[5 * k := d][5 * k + 1 := d][5 * k + 2 := d][5 * k + 3 := d][5 * k + 4 := v0000]
+                  case v == c && v0 == c && v00 == c && v000 == c && v0000 == c =>
+                    a[5 * k := d][5 * k + 1 := d][5 * k + 2 := d][5 * k + 3 := d][5 * k + 4 := d]))[j]
+      == if 0 <= j && j < 5 * n
+         then
+           if j % 5 == 0 then (if earlier(j / 5, vs) != c then earlier(j / 5, vs) else d)
+           else if j % 5 == 1 then (if earlier(j / 5, vs) != c then (if earlier(j / 5, vs1) != c then
+             earlier(j / 5, vs1) else d) else (if earlier(j / 5, vs0) != c then earlier(j / 5, vs0) else d))
+           else if j % 5 == 2 then (if earlier(j / 5, vs) != c then (if earlier(j / 5, vs1) != c then (if
+             earlier(j / 5, vs11) != c then earlier(j / 5, vs11) else d) else (if earlier(j / 5, vs10) != c then
+             earlier(j / 5, vs10) else d)) else (if earlier(j / 5, vs0) != c then (if earlier(j / 5, vs01) != c then
+             earlier(j / 5, vs01) else d) else (if earlier(j / 5, vs00) != c then earlier(j / 5, vs00) else d)))
+           else if j % 5 == 3 then (if earlier(j / 5, vs) != c then (if earlier(j / 5, vs1) != c then (if
+             earlier(j / 5, vs11) != c then (if earlier(j / 5, vs111) != c then earlier(j / 5, vs111) else d) else (if
+             earlier(j / 5, vs110) != c then earlier(j / 5, vs110) else d)) else (if earlier(j / 5, vs10) != c then (if
+             earlier(j / 5, vs101) != c then earlier(j / 5, vs101) else d) else (if earlier(j / 5, vs100) != c then
+             earlier(j / 5, vs100) else d))) else (if earlier(j / 5, vs0) != c then (if earlier(j / 5, vs01) != c then
+             (if earlier(j / 5, vs011) != c then earlier(j / 5, vs011) else d) else (if earlier(j / 5, vs010) != c then
+             earlier(j / 5, vs010) else d)) else (if earlier(j / 5, vs00) != c then (if earlier(j / 5, vs001) != c then
+             earlier(j / 5, vs001) else d) else (if earlier(j / 5, vs000) != c then earlier(j / 5, vs000) else d))))
+           else (if earlier(j / 5, vs) != c then (if earlier(j / 5, vs1) != c then (if earlier(j / 5, vs11) != c then
+             (if earlier(j / 5, vs111) != c then (if earlier(j / 5, vs1111) != c then earlier(j / 5, vs1111) else d)
+             else (if earlier(j / 5, vs1110) != c then earlier(j / 5, vs1110) else d)) else (if earlier(j / 5, vs110)
+             != c then (if earlier(j / 5, vs1101) != c then earlier(j / 5, vs1101) else d) else (if
+             earlier(j / 5, vs1100) != c then earlier(j / 5, vs1100) else d))) else (if earlier(j / 5, vs10) != c then
+             (if earlier(j / 5, vs101) != c then (if earlier(j / 5, vs1011) != c then earlier(j / 5, vs1011) else d)
+             else (if earlier(j / 5, vs1010) != c then earlier(j / 5, vs1010) else d)) else (if earlier(j / 5, vs100)
+             != c then (if earlier(j / 5, vs1001) != c then earlier(j / 5, vs1001) else d) else (if
+             earlier(j / 5, vs1000) != c then earlier(j / 5, vs1000) else d)))) else (if earlier(j / 5, vs0) != c then
+             (if earlier(j / 5, vs01) != c then (if earlier(j / 5, vs011) != c then (if earlier(j / 5, vs0111) != c then
+             earlier(j / 5, vs0111) else d) else (if earlier(j / 5, vs0110) != c then earlier(j / 5, vs0110) else d))
+             else (if earlier(j / 5, vs010) != c then (if earlier(j / 5, vs0101) != c then earlier(j / 5, vs0101) else
+             d) else (if earlier(j / 5, vs0100) != c then earlier(j / 5, vs0100) else d))) else (if earlier(j / 5, vs00)
+             != c then (if earlier(j / 5, vs001) != c then (if earlier(j / 5, vs0011) != c then earlier(j / 5, vs0011)
+             else d) else (if earlier(j / 5, vs0010) != c then earlier(j / 5, vs0010) else d)) else (if
+             earlier(j / 5, vs000) != c then (if earlier(j / 5, vs0001) != c then earlier(j / 5, vs0001) else d) else
+             (if earlier(j / 5, vs0000) != c then earlier(j / 5, vs0000) else d)))))
+         else a0[j]
+
 // a loop whose iteration k stores F(k) at k + 1 and then G(k) at k, except in the last one, k + 1 == m, which stores
 // at k only, leaves G(j) at j < n, since the iteration j writes it last; at n, there is F(n - 1) if n < m, the guards
 // cover all iterations only for n <= m

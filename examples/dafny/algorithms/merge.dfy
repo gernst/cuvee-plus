@@ -48,15 +48,15 @@ lemma {:rw} selects_merge(a: array<int, int>, m: int, b: array<int, int>, n: int
 
 lemma {:rw} count_merged(a: array<int, int>, m: int, b: array<int, int>, n: int, x: int)
   requires 0 <= m && 0 <= n
-  ensures count(x, merged(a, m, b, n))
-    == count(x, selects(a, ⌊counter(0, 1, m)⌋)) + count(x, selects(b, ⌊counter(0, 1, n)⌋))
+  ensures elems(merged(a, m, b, n))[x]
+    == elems(selects(a, ⌊counter(0, 1, m)⌋))[x] + elems(selects(b, ⌊counter(0, 1, n)⌋))[x]
 
 method main(a: array<int, int>, m: int, b: array<int, int>, n: int) returns (c: array<int, int>)
   requires 0 <= m && 0 <= n
   requires sorted(a, 0, m) && sorted(b, 0, n)
   ensures sorted(c, 0, m + n)
-  ensures forall x: int :: count(x, selects(c, ⌊counter(0, 1, m + n)⌋))
-    == count(x, selects(a, ⌊counter(0, 1, m)⌋)) + count(x, selects(b, ⌊counter(0, 1, n)⌋))
+  ensures forall x: int :: elems(selects(c, ⌊counter(0, 1, m + n)⌋))[x]
+    == elems(selects(a, ⌊counter(0, 1, m)⌋))[x] + elems(selects(b, ⌊counter(0, 1, n)⌋))[x]
 {
   var i: int;
   var j: int;

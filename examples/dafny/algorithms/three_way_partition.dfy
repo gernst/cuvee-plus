@@ -37,11 +37,11 @@ lemma {:rw} maps_threeway_read_one(a: array<int, int>, p: int, n: int, es: List<
 // second keeps the counter of the loop as a further dependency hs
 function {:fold} below(a: array<int, int>, p: int, n: int): int
 {
-  count(true, maps(for ⌊counter(0, 1, n)⌋ yield k :: a[k] < p))
+  elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: a[k] < p))[true]
 }
 function {:fold} beloweq(a: array<int, int>, p: int, n: int, hs: List<int>): int
 {
-  count(true, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a[k] < p || a[k] == p))
+  elems(maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a[k] < p || a[k] == p))[true]
 }
 
 lemma {:rw} below_nonnegative(a: array<int, int>, p: int, n: int)

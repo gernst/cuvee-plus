@@ -44,12 +44,18 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s
       repeating keys, related pointwise (`array2[N - 1 - j] == -array1[j]`); the updates of sums of selects
       (`sum_selects_update`, restored in 0.52.16) decide the last iteration; multisets do not give the rest (the
       relation is pointwise, and the last write per key has no closed form); set aside by decision.
-- [ ] **Reducer commutativity** (reducercommutativity 28, array-crafted bAnd, bor, xor 15): the module `teq:multisets`
-      (doc/teq.md, "Multisets"), towards all aggregates over multisets; converting the folds of all lists proves the sums and averages but lost 34 tasks
-      (innermost rewriting preempts the rules around the folds); the twins of the lemmas of teq:aggregation on the
-      folds of multisets keep the conversion from preempting them (0.52.16, no task lost), and the module is part of
-      `-svcomp` since 0.52.17; open: sep (a count by a predicate of C's signed `%`), the bitwise reductions (no
-      folds), max (the maximum from the seed 0 as a fold of the multiset), the Lean model of multisets.
+- [ ] **Reducer commutativity** (reducercommutativity 28, array-crafted bAnd, bor, xor 15): the aggregates are over
+      multisets since 0.53.0 (doc/teq.md, "Multisets"), which replaced the module `teq:multisets` and its twins; sums
+      and averages proved; open: sep (a count by a predicate of C's signed `%`), the bitwise reductions (no folds),
+      max (the maximum from the seed 0).
+- [ ] **Multisets, after 0.53.0:** the Lean model (lean.Printer rejects multisets, so `generate.py` cannot print
+      aggregation and series, and the test `Lean.statements` fails until it exists): the multiset as the quotient of
+      `List` by `List.Perm`, the aggregates lifted by `Quotient.lift`, the proofs by a sub-agent; `-fallback` lowers an
+      aggregate of a multiset as an uninterpreted function (examples/dafny/teq/fallback_fold.dfy,
+      fallback_recursion.dfy), where it unfolded the sum of a list; the cloud run of 0.53.0 (120 s) lost
+      standard_partial_init_ground and SV-LIB array_2-1 at the bound on the rewrite steps.
+- [ ] Strided stores: consolidate the shape lemmas of strides.dfy (the cases per stride, the defaults per stride, 3
+      to 5 generated), later.
 - [ ] functions_1-2 (false, lost in 0.52.16): `forall Result?: List<int> :: length(Result?) != 134217728` needs that a
       list of a given length exists, which neither the rules nor z3 decide. A predicate `haslength(n, xs)` that the
       engine drops when `xs` occurs nowhere else was considered and dropped by decision (Oct 28): one task, and a

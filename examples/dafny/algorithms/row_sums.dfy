@@ -4,7 +4,7 @@
 
 method main(A: array<int, array<int, int>>, m: int, n: int) returns (s: array<int, int>)
   requires 0 <= m && 0 <= n
-  ensures forall i: int :: 0 <= i < m ==> s[i] == sum(selects(A[i], ⌊counter(0, 1, natural(n))⌋))
+  ensures forall i: int :: 0 <= i < m ==> s[i] == sum(elems(selects(A[i], ⌊counter(0, 1, natural(n))⌋)))
 {
   var i: int;
   var j: int;
