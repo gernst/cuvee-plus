@@ -316,8 +316,29 @@ object Rewrite:
         // e.g. sum_add on sum(maps(for xs yield v :: -v)), whose result contains the same sum again
         if arg.typ == ring.typ
         then
+          val pats = summands(ring, pat)
           val args = summands(ring, arg)
-          matchesSummands(config, state, ctx, params, vars, locals, ring, summands(ring, pat), self, bound, avoid, args, arg.isSum && args.length > 1, subst)
+          val sum = arg.isSum && args.length > 1
+          val direct = matchesSummands(config, state, ctx, params, vars, locals, ring, pats, self, bound, avoid, args, sum, subst)
+
+          // otherwise modulo the integer constants, where the constant c of the pattern is cancelled against the
+          // constant d of the expression if c lies between 0 and d, such that the rest d - c has the sign of d, e.g.
+          // p + 1 matches 3 * k + 2 with p = 3 * k + 1, also if p is instantiated already (the second of the stores
+          // at p and p + 1); not for other constants, otherwise k + 1 would match every j with k = j - 1
+          val c = constant(pats)
+          val d = constant(args)
+          if direct.nonEmpty || !((0 < c && c <= d) || (d <= c && c < 0))
+          then direct
+          else
+            val pats_ = pats.filterNot(literal)
+            val args_ = args.filterNot(literal) ++ (if c == d then Nil else List((c < d, Ints.num((d - c).abs))))
+            pats_ match
+              // a single summand takes the rest as a whole, which an instantiated variable must equal
+              case List((true, pat_)) if args_.nonEmpty =>
+                matchesExpr(config, state, ctx, params, vars, locals, pat_, self, bound, avoid, Rewrite.sum(ring, args_), subst)
+
+              case _ =>
+                matchesSummands(config, state, ctx, params, vars, locals, ring, pats_, self, bound, avoid, args_, sum, subst)
         else unmatched
 
       // products position by position as other applications, and only if that fails modulo associativity,
@@ -361,7 +382,7 @@ object Rewrite:
           subst1 <- matchesExpr(config, state, ctx, params, vars, locals, init, self, bound, avoid, init_, subst)
           subst2 <- combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(acc -> acc_), subst1):
             (locals_, bound_, avoid_, subst) =>
-              matchesExpr(config, state, inner, params, vars, locals_, update, None, bound_, avoid_, update_, subst)
+              this.update(config, state, inner, params, vars, locals_, locals_ -- locals, update, bound_, avoid_, update_, subst)
         yield subst2
 
       // a trace of several accumulators, component by component (a lemma over a whole cycle, package O of the plan):
@@ -397,7 +418,7 @@ object Rewrite:
         lazy val inner = Simplify.combinator(config, state, ctx.copy(self = self_), deps_, ys_)
         combinator(config, state, ctx, params, vars, locals, deps, ys, self, bound, avoid, deps_, ys_, Map(), subst):
           (locals_, bound_, avoid_, subst) =>
-            matchesExpr(config, state, inner, params, vars, locals_, update, None, bound_, avoid_, update_, subst)
+            this.update(config, state, inner, params, vars, locals_, locals_ -- locals, update, bound_, avoid_, update_, subst)
 
       case (Invs(deps, ys, body), Invs(deps_, ys_, body_)) =>
         lazy val inner = Simplify.combinator(config, state, ctx, deps_, ys_)
@@ -700,6 +721,76 @@ object Rewrite:
     else
       val (_, y_) = front(ctx, deps_ zip ys_)
       results(zs.map((_, y) => y -> y_).toMap)
+
+  // the update of a combinator, as a whole, and otherwise a pattern without cases against the cases of the expression
+  // case by case, where the bound variables of the dependencies that are variables of the rule and that this combinator
+  // binds (`fresh`) take a value per case, and their instance is the choice of these values under the guards of the
+  // expression, from which instantiate synthesizes the dependency as a map with these cases, e.g. x of b[k := x] against
+  // case P => a[k := 7] case !P => a[k := 0] is case P => 7 case !P => 0; the other variables are instantiated alike in
+  // all cases, and a guard that reads the accumulator excludes the map like a value (see instantiate)
+  def update(
+      config: Config,
+      state: State,
+      ctx: Context,
+      params: Set[Param],
+      vars: Set[Var],
+      locals: Set[Var],
+      fresh: Set[Var],
+      pat: Expr,
+      bound: Map[Var, Var],
+      avoid: Set[Var],
+      arg: Expr,
+      subst: Subst[Type, Expr]
+  ): List[Subst[Type, Expr]] =
+    val direct = matchesExpr(config, state, ctx, params, vars, locals, pat, None, bound, avoid, arg, subst)
+
+    // the matches of the cases in order, each from the instances of the others without those of `fresh`, with the
+    // instances of `fresh` per case
+    def each(updates: List[Upd], subst: Subst[Type, Expr]): List[(Subst[Type, Expr], List[Map[Var, Expr]])] =
+      updates match
+        case Nil =>
+          List((subst, Nil))
+
+        case Upd(_, rhs) :: rest =>
+          for
+            subst1 <- matchesExpr(config, state, ctx, params, vars, locals, pat, None, bound, avoid, rhs, subst)
+            (subst2, values) <- each(rest, Subst(subst1.params, subst1.vars -- fresh))
+          yield (subst2, subst1.vars.filter((x, _) => fresh.contains(x)) :: values)
+
+    def choose(xs: List[Var], updates: List[Upd], values: List[Map[Var, Expr]], subst: Subst[Type, Expr]): List[Subst[Type, Expr]] =
+      xs match
+        case Nil =>
+          List(subst)
+
+        case x :: rest =>
+          val results = values.map(_.get(x))
+          if results.forall(_.isEmpty)
+          then choose(rest, updates, values, subst)
+          else if results.exists(_.isEmpty)
+          then unmatched
+          else
+            val instances = results.flatten
+            val instance =
+              if instances.distinct.length == 1
+              then instances.head
+              else Eps((updates zip instances).map((upd, inst) => Upd(upd.cond, inst)))
+            for
+              subst1 <- bind(state, params, x, instance, subst)
+              subst2 <- choose(rest, updates, values, subst1)
+            yield subst2
+
+    (pat, arg) match
+      case (_: Eps, _) =>
+        direct
+
+      case (_, Eps(updates)) if direct.isEmpty && fresh.nonEmpty =>
+        for
+          (subst1, values) <- each(updates, subst)
+          subst2 <- choose(fresh.toList, updates, values, subst1)
+        yield subst2
+
+      case _ =>
+        direct
 
   // the pattern `tr` of a read of a component against the trace `s` that the read reads (see matches_)
   def component(
@@ -1077,6 +1168,15 @@ object Rewrite:
       case ring.minus(left, right) => summands(ring, left) ++ negate(summands(ring, right))
       case ring.uminus(arg)        => negate(summands(ring, arg))
       case _                       => List((true, expr))
+
+  // the integer constant of summands, 0 if there is none
+  def constant(summands: List[(Boolean, Expr)]): BigInt =
+    summands.collect { case (sign, Ints.num(value: BigInt)) => if sign then value else -value }.sum
+
+  def literal(summand: (Boolean, Expr)): Boolean =
+    summand match
+      case (_, Ints.num(_)) => true
+      case _                => false
 
   def negate(summands: List[(Boolean, Expr)]): List[(Boolean, Expr)] =
     for (sign, expr) <- summands

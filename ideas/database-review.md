@@ -34,7 +34,7 @@ is closed.
 | Gap | Lemmas |
 |---|---|
 | a higher-order instance must contain the term it abstracts: no constant functions | `stores_cases` (its first case stores a constant), the conditional-store family below |
-| no join of guarded stores into a store of a conditional value | `stores_cases`, `stores_index_cases`, `select_current_trace_conditional_store(_deps)`, `select_current_trace_cap`, `select_current_trace_reset_keep`, `select_current_trace_stride2_cases` ([conditional-stores.md](conditional-stores.md)) |
+| no join of guarded stores into a store of a conditional value | `stores_cases`, `stores_index_cases`, `select_current_trace_conditional_store(_deps)`, `select_current_trace_cap`, `select_current_trace_reset_keep` (values per case in the synthesized maps since Oct 28, not yet measured; [conditional-stores.md](conditional-stores.md)) |
 | a sum pattern `a + b * v` gives no variable the empty sum 0 | `maps_counter_scale` beside `maps_counter_affine` |
 | a higher-order summand takes a single summand | `select_current_trace_prefix_sums_add` beside `select_current_trace_prefix_sums` |
 | literals in patterns: `-1` is not matched, nor a coefficient by a variable | `select_current_trace_ahead_down`, `mul_lt_cancel`, reverse.dfy (step as a variable) |
@@ -46,7 +46,7 @@ is closed.
 | an equation of integers as a lemma rewrites its left-hand side as a term | `double_eq_half` (an equivalence of atoms) |
 | complete guards are an obligation of the proofs | the complementary last case of `current_trace_increasing`, `current_trace_bounded`, `bisection` |
 | the engine does not check reads within the loop or lengths | the premises of [lean/premises.txt](../lean/premises.txt) |
-| a pattern of nested stores has a fixed number of stores | the stride lemmas (2, 3, the cases of pr2) |
+| a pattern of nested stores has a fixed number of stores | the folds `strides₂` to `strides₅` (one per number of adjacent cells; the number of cases is free since Oct 28) |
 | a pattern has a fixed number of dependencies, one bound variable each, and a polymorphic higher-order side condition is not matched | one lemma per number of dependencies: `perm_steps`, `perm_steps_two`, `perm_steps_three`, which Lean proves from one lemma over any list of dependencies (`perm_steps_general`); kept specific by decision |
 
 ## Rejected lemmas

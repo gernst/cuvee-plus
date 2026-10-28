@@ -1,0 +1,12 @@
+// ./Cuvee.sh examples/dafny/language/traces_subscripts.dfy
+// bound variables of the combinators with subscripts, which are indices as for the binders of quantifiers,
+// e.g. x₀ of a fold with one list of values per cell
+type Trace<a>
+type List<a₀>
+
+function f(a: array<int, int>, K: List<int>, xs₀: List<int>, xs₁: List<int>): bool
+{
+  trace(a, for K, xs₀, xs₁ do b₀, p₀, x₀, x₁ :: b₀[p₀ := x₀][p₀ + 1 := x₁])
+    == trace(a, for K, xs₀, xs₁ do b₀, p₀, x₀, x₁ :: b₀[p₀ + 1 := x₁][p₀ := x₀])
+  && invs(for K, maps(for xs₀ yield x₀ :: x₀ + 1) check k₀, y₀ :: k₀ < y₀)
+}

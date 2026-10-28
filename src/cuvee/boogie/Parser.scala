@@ -334,25 +334,26 @@ class Parser(var state: State):
 
       // the combinators of trace equation systems, whose bound variables are typed by the dependencies
       // the first bound variables of a trace are its accumulators, as many as it has initial values, with one result
-      // each (as in Dafny)
+      // each (as in Dafny); the names are converted like those of other binders, such that an index x$0 (a subscript
+      // x₀ in the input) is one
       case Combinator("trace", inits, deps, ids, updates) =>
         Error.report("mismatching initial values and results of a trace", expr):
           require(inits.length == updates.length && ids.length > inits.length)
         val (accs, bound) = ids.splitAt(inits.length)
         val inits_ = inits.map(resolve(scope, _))
         val deps_ = deps.map(resolve(scope, _))
-        state.exprs.trace(inits_, deps_, accs.map(util.Name(_, None)), bound.map(util.Name(_, None))): (accs_, bound_) =>
+        state.exprs.trace(inits_, deps_, accs.map(name => name: Name), bound.map(name => name: Name)): (accs_, bound_) =>
           val scope_ = scope ++ (accs_ ++ bound_)
           updates.map(update => cases(scope_, update))
 
       case Combinator("map", Nil, deps, bound, List(update)) =>
         val deps_ = deps.map(resolve(scope, _))
-        state.exprs.map(deps_, bound.map(util.Name(_, None))): bound_ =>
+        state.exprs.map(deps_, bound.map(name => name: Name)): bound_ =>
           cases(scope ++ bound_, update)
 
       case Combinator("all", Nil, deps, bound, List(List((_, body)))) =>
         val deps_ = deps.map(resolve(scope, _))
-        state.exprs.all(deps_, bound.map(util.Name(_, None))): bound_ =>
+        state.exprs.all(deps_, bound.map(name => name: Name)): bound_ =>
           resolve(scope ++ bound_, body)
 
       // the value at the entry of the procedure

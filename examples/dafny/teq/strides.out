@@ -1,0 +1,16 @@
+goal
+  forall N: int, C: int, D: int, K₅₈: Trace<int>, U?₅₄: List<int>,
+         W?₅₅: List<int>, l: int ::
+    K₅₈ == counter(0, 1, N)
+      && invs(for ⌊K₅₈⌋, U?₅₄, W?₅₅
+              check k₅₇, u₅₂, w₅₃ ::
+                u₅₂ != C && w₅₃ != C
+                  || u₅₂ != C && w₅₃ == C
+                  || u₅₂ == C && w₅₃ != C
+                  || u₅₂ == C && w₅₃ == C)
+      && length(U?₅₄) == N
+      && length(W?₅₅) == N
+      && 0 <= l < N
+      ==> !(if earlier(l, U?₅₄) != C then false else D == C)
+        && !(if earlier(l, W?₅₅) != C then false else D == C)
+

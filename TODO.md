@@ -19,10 +19,12 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s
          `p % m` (pr2, mbpr2-mbpr4);
       2. done (0.52.15): the definition of div and mod in the simplex (tcpy, diff-2-n-u); no forward lemmas for
          division;
-      3. the 2^s cases of s conditional stores: shape lemmas per number of cases (strides.dfy, Oct 28), pr3 and pnr2
-         proved; pr4 at the limit of 120 s (88 s locally), pr5 in 485 s (within the 15 min of the competition);
-         pnr3-pnr5 open. Merging the cases was
-         rejected by decision, the generic lemma over the window is too general (ideas/conditional-stores.md);
+      3. the 2^s cases of s conditional stores: the folds `strides₂` to `strides₅` with one list of values per cell
+         (strides.dfy, Oct 28), synthesized by the matcher with the cases of the update, constant offsets of the
+         positions cancelled in sums, conditionals lifted over equations; synthetic tasks of the shapes of pr2 and
+         pnr2 proved (examples/dafny/teq/strides.dfy); to be measured on the cloud, including whether `stores` with
+         values per case loses tasks (rew, the conditional-store lemmas); the Lean proofs of the new lemmas are open
+         (the generated files still state the shape lemmas);
       4. open: nr2-nr5, whose inner loop over two positions leaves cases that store at `2 * k` and `2 * k + 1`, the
          iteration variable written as the literal it equals in each case (ideas/engine-gaps.md, gap 3); no evaluation
          of concrete traces, by decision.
@@ -54,8 +56,9 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s
       aggregate of a multiset as an uninterpreted function (examples/dafny/teq/fallback_fold.dfy,
       fallback_recursion.dfy), where it unfolded the sum of a list; the cloud run of 0.53.0 (120 s) lost
       standard_partial_init_ground and SV-LIB array_2-1 at the bound on the rewrite steps.
-- [ ] Strided stores: consolidate the shape lemmas of strides.dfy (the cases per stride, the defaults per stride, 3
-      to 5 generated), later.
+- [ ] Strided stores: the shape lemmas of strides.dfy are consolidated into the folds `strides₂` to `strides₅` and
+      their reads (Oct 28); open are the Lean proofs of `select_current_strides₂` to `₅`, and lean/open.txt still
+      lists the removed select_current_trace_stride3_defaults to stride5_defaults.
 - [ ] functions_1-2 (false, lost in 0.52.16): `forall Result?: List<int> :: length(Result?) != 134217728` needs that a
       list of a given length exists, which neither the rules nor z3 decide. A predicate `haslength(n, xs)` that the
       engine drops when `xs` occurs nowhere else was considered and dropped by decision (Oct 28): one task, and a
@@ -186,8 +189,9 @@ Cleanup, none of it a bug.
   (standard_password_ground).
 - Reads over writes at another position are decided without the facts (`Simplify.select`), so `j != 3` does not
   reduce `a[3 := w][j]` (single_elem_safe).
-- Conditionals inside equations and products are not lifted (motivex).
-- A pattern sum of a rule variable and a bound variable matches only if the variable takes one summand
+- Conditionals are lifted over equations (Oct 28), not over comparisons and products (motivex).
+- A pattern sum of a rule variable and a bound variable matches only if the variable takes one summand, unless only
+  a constant offset differs (cancelled since Oct 28)
   (array_tiling_tcpy); a lemma for a monomial with a coefficient does not match it inside an equation (ps2-ll).
 - Conjunctions are matched in order, not modulo commutativity (seq-3).
 - No integer rounding (`2 * n <= 2 * k + 1` to `n <= k`), no cancellation of factors (count_by_k).

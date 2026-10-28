@@ -1,0 +1,12 @@
+// ./Cuvee.sh examples/boogie/printing/traces_subscripts.bpl
+// bound variables of the combinators with subscripts, which are indices as for the binders of quantifiers (as in
+// Dafny)
+type Trace<a₀>;
+
+type List<a₀>;
+
+function f(a: [int]int, K: List<int>, xs₀: List<int>, xs₁: List<int>): bool {
+  trace(a, for K, xs₀, xs₁ do b₀, p₀, x₀, x₁ :: b₀[p₀ := x₀][p₀ + 1 := x₁])
+      == trace(a, for K, xs₀, xs₁ do b₀, p₀, x₀, x₁ :: b₀[p₀ + 1 := x₁][p₀ := x₀])
+    && all(for K, map(for xs₀ yield x₀ :: x₀ + 1) check k₀, y₀ :: k₀ < y₀)
+}

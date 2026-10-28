@@ -178,9 +178,7 @@
       (and
         (main_inv_7 counter$2 result counter tmp$3 n$4 i$6)
         (< i$6 n$4)
-        (=
-          (ite (<= 0 i$6) (mod i$6 2) (- (mod i$6 2)))
-          1))
+        (ite (<= 0 i$6) (= (mod i$6 2) 1) false))
       (main_assign_10 counter$2 result counter tmp$3 n$4 (+ i$6 1)))))
 
 (assert
@@ -198,9 +196,7 @@
         (main_inv_7 counter$2 result counter tmp$3 n$4 i$6)
         (< i$6 n$4)
         (not
-          (=
-            (ite (<= 0 i$6) (mod i$6 2) (- (mod i$6 2)))
-            1)))
+          (ite (<= 0 i$6) (= (mod i$6 2) 1) false)))
       (main_join_9 counter$2 result counter tmp$3 n$4 i$6))))
 
 (assert

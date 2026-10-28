@@ -222,7 +222,7 @@ object Decisions extends TestSuite:
       simplify(Context.empty(State.empty), Ints.mod(Ints.plus(Ints.times(lit(3), n), Ints.one), lit(2))) ==> Ints.mod(Ints.plus(n, Ints.one), lit(2))
       simplify(Context.empty(State.empty), Ints.mod(n, lit(2))) ==> Ints.mod(n, lit(2))
 
-    // earlier and maps commute, also for the cases of an update
+    // earlier and maps commute, where the cases of an update are conditionals, the last guard decided by the others
     test("earlier of maps"):
       val k = Var("k", Sort.int)
       val v = Var("v", Sort.int)
@@ -231,7 +231,7 @@ object Decisions extends TestSuite:
         Ints.plus(Earlier(k, xs), Ints.one)
       val cases = Eps(List(Upd(Ints.lt(v, Ints.zero), Ints.zero), Upd(Ints.le(Ints.zero, v), v)))
       simplify(Context.empty(State.empty), Earlier(k, Maps(List(xs), List(v), cases))) ==>
-        Eps(List(Upd(Ints.lt(Earlier(k, xs), Ints.zero), Ints.zero), Upd(Ints.le(Ints.zero, Earlier(k, xs)), Earlier(k, xs))))
+        Ite(Ints.lt(Earlier(k, xs), Ints.zero), Ints.zero, Earlier(k, xs))
 
     // earlier moves into both branches of ite and into the body of let, whose bound variables avoid capture
     test("earlier of ite and let"):

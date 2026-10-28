@@ -106,7 +106,7 @@ modules are injected after it by `-include teq:<concept>`:
 | `sorted` | `sorted`, `perm`, `partitioned`, `swap`, the partition points `lower`, `upper` |
 | `arrays` | stores at a counter and at distinct keys, conditional stores, resets, reads along a trace, rows of two-dimensional arrays, copies from both ends |
 | `counters` | phases, flags, catching up, merged cases, constant, increasing and bounded values |
-| `strides` | strided stores and stores ahead (MonoCera), and the conditional stores of a stride `s` as shapes with one case per residue (`s` from 2 to 5) |
+| `strides` | the stores of 2 to 5 adjacent cells per iteration as folds `strides₂` to `strides₅` with one list of values per cell, synthesized with the cases of the update where the values differ (the conditional stores of pr2-pr5, pnr2-pnr5), their reads at a stride of at least their width; stores ahead (MonoCera) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |
 | `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, geometric `series`; after `aggregation`, `arithmetic` |
 
@@ -268,6 +268,8 @@ Tests: `examples/dafny/teq/fallback*.dfy`, `examples/c/teq/fallback*.c`,
 - The matcher ([Rewrite.scala](../src/cuvee/prove/Rewrite.scala)) selects the dependencies of the pattern among those
   of the expression, instantiates dependencies that are rule variables by `Maps`, and requires each case of the
   expression to be covered by a case of the pattern, whose guard matches or follows from the guard of the expression.
+  A pattern without cases that covers the cases only with different values of the bound variables of such
+  dependencies instantiates them by `Maps` with these cases ([prove.md](prove.md), "Rewriting").
   Variables left unbound occur only in cases of the pattern that cover no case of the expression and become
   `unspecified`; others are an error of the rule.
 

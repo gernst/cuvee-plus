@@ -123,6 +123,10 @@ binders, derivatives, and `old`; `Split` uses it.
   are remainders modulo `k` or the accumulator, with an initial value in range, assumes the range of its accumulator
   (`wrapped`) ([remainders.dfy](../examples/dafny/prove/remainders.dfy), `examples/c/teq/unsigned_*.c`).
 - **Reads after writes** `a[i := v][j]` are decided when `i == j` follows from the context or is denied by it.
+- **Conditionals in equations** are lifted over them, `ite(c, a, b) == d` is `ite(c, a == d, b == d)`, whose branches
+  are decided under the test, e.g. `(if x != c then x else d) != c` for `c != d`. The element `earlier(j, maps(...))`
+  of a map whose update has cases is these cases as conditionals, `unspecified` where no guard holds; whether cases and
+  conditionals should leave other atoms as well is open.
 - **Derivatives** follow the rules of dL ([hybrid.md](hybrid.md)); the body of a derivative is simplified with the
   facts that do not mention the variables it differentiates by.
 
@@ -137,14 +141,22 @@ by the simplifier in the context.
   (overlapping patterns are not handled); such rules terminate if the recursion is structural, which is why the
   definitions by a `match` of the database are `{:rw}` and those by a test on an integer (`counter`, `consts`) are
   not. Each rule carries the attributes of its command; `:named` names it.
-- **Matching** is modulo type instantiation, A/C and 0 of sums (`matchesSummands`), A/C and 1 of products where they
+- **Matching** is modulo type instantiation, A/C and 0 of sums (`matchesSummands`), and where that fails, modulo
+  their integer constants: the constant `c` of the pattern is cancelled against the constant `d` of the expression if
+  `c` lies between 0 and `d`, e.g. `p + 1` matches `3 * k + 2` with `p = 3 * k + 1`, also with `p` bound already, but
+  `k + 1` matches no `j` without a constant (`j - 1` would make every term a successor); A/C and 1 of products where they
   do not match position by position (`matchesFactors`), comparisons modulo moving summands, symmetry of equations,
   and the binding structure of `Trace`, `Maps`, `Invs` ([teq.md](teq.md)). Higher-order patterns `F(t₁, ..., tₙ)`
   match by abstraction (Miller's fragment, or terms whose variables are instantiated); the simplifier beta-reduces
   the instantiated right-hand side. A guard `D(x, h) && φ` binds `D` to the whole guard of the expression, and the
   conjuncts of `φ` must follow from it (`Rewrite.guard`). Updates and bodies of combinators are matched in their
   context (`Simplify.combinator`), assuming the invariants over their dependencies, with the same self as in the
-  traversal (`Views.self`). A term that a pattern does not match as it is, is matched by its alternatives, group by
+  traversal (`Views.self`). An update without cases against one with cases is matched as a whole, and otherwise case
+  by case (`Rewrite.update`): the bound variables of the dependencies that are variables of the rule take a value per
+  case, the dependency is synthesized as a map whose update has the cases of the expression with these values, e.g.
+  `b[p := x₀]` against `case P => a[k := 7] case !P => a[k := 0]` gives `maps(... :: case P => 7 case !P => 0)`; the
+  other variables are instantiated alike in all cases, and a guard that reads the accumulator excludes the map like a
+  value. A term that a pattern does not match as it is, is matched by its alternatives, group by
   group, lazily (`Rewrite.alternatives`): the definitions of a variable, the structural view of a component, and only
   then its projected view, which costs a simplification.
 - **Side conditions** are taken in order: a closed one is decided, an open one is matched against the facts, which

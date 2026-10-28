@@ -585,12 +585,12 @@ object Simplify:
       case (_, False) => not(config, state, ctx, left)
       case (False, _) => not(config, state, ctx, right)
 
-      // a conditional with literal branches against a literal is its test, its negation, or a constant, e.g.
-      // ite(c, 1, 0) == 0 of assume_abort_if_not in C is !c
-      case (Ite(test, a: Lit, b: Lit), d: Lit) =>
+      // a conditional is lifted over the equation, whose branches are then decided under the test, e.g. ite(c, 1, 0) == 0
+      // of assume_abort_if_not in C is !c, and (if x != c then x else d) != c is true for c != d
+      case (Ite(test, a, b), d) =>
         ite(config, state, ctx, test, eq_(config, state, ctx, a, d), eq_(config, state, ctx, b, d))
 
-      case (d: Lit, Ite(test, a: Lit, b: Lit)) =>
+      case (d, Ite(test, a, b)) =>
         ite(config, state, ctx, test, eq_(config, state, ctx, d, a), eq_(config, state, ctx, d, b))
 
       // extensionality: lambdas are equal if their bodies are for all values of the variables, which are renamed apart,
@@ -975,13 +975,20 @@ object Simplify:
         case _ =>
           op(left_, right_)
 
-  // earlier moves inward: into maps, whose element j is its update for the elements j of the dependencies,
-  // into both branches of ite, and into the body of let, whose bound variables are renamed apart from j
+  // earlier moves inward: into maps, whose element j is its update for the elements j of the dependencies, where cases
+  // are conditionals outside of the combinator, unspecified if no guard holds, into both branches of ite, and into the
+  // body of let, whose bound variables are renamed apart from j
   def earlier(config: Config, state: State, ctx: Context, j: Expr, arg: Expr): Expr =
     (j, arg) match
       case (j, ctx.↑(Maps(deps, bound, update))) =>
         val su = Subst.from(bound, deps.map(earlier(config, state, ctx, j, _)))
-        su(update)
+        su(update) match
+          case Eps(updates) =>
+            updates.foldRight(Unspecified(update.typ)): (upd, rest) =>
+              ite(config, state, ctx, upd.cond, upd.rhs, rest)
+
+          case update_ =>
+            update_
 
       case (j, Ite(test, left, right)) =>
         ite(config, state, ctx, test, earlier(config, state, ctx, j, left), earlier(config, state, ctx, j, right))

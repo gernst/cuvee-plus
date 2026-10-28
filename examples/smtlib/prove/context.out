@@ -6,7 +6,7 @@
 
 (declare-fun f (Int) Int)
 
-(assert (= (ite p x y) x))
+(assert (ite p true (= y x)))
 
 (assert (<= x y))
 

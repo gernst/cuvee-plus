@@ -2,6 +2,14 @@
 
 Current work, the third step of the strided stores (TODO.md, "Work queue: Now").
 
+**The cases in the synthesized maps (Oct 28, 2026, implemented, not yet measured).** Neither a merge in the simplifier
+nor a lemma per number of cases: the strided stores are the folds `strides₂` to `strides₅` with one list of values per
+cell (strides.dfy), and the matcher matches a pattern without cases against the cases of an update one by one, where
+the bound variables of the synthesized dependencies take a value per case and the map gets the cases of the update
+(`Rewrite.update`, doc/prove.md). The trace keeps its cases; they move into the lists of values. This applies to all
+folds over dependencies, so `stores` also takes conditional stores at the same key; whether that preempts the
+conditional-store lemmas below is what the cloud run has to show. The sections below are the history.
+
 **A generic lemma over the window of an iteration (Oct 28, 2026, measured, not adopted).** A loop whose iteration k
 changes only the cells of its window, with values that do not depend on the array, by any number of cases, leaves at
 j the value that the iteration j / s stores there; the update is a higher-order variable `U`, the window a quantified
