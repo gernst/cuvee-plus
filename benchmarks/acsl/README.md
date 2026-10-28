@@ -55,10 +55,11 @@ the 48 tasks that z3 proves only with `-split` as a separate task set
 ./benchmark xml/cuvee-acsl.xml -r ACSL_unreach-call -t C.unreach-call.Loops-split -T 60s
 ```
 
-`-split` makes each annotation a goal of its own, which z3 needs for the 47
+`-split` makes each annotation a goal of its own, which z3 needs for the 49
 tasks of [Loops-split.set](Loops-split.set), `geo1/2/3-ll` with `unsigned
 long long` (32) and `lcm2` (15) of `nla-digbench` and
-`nla-digbench-scaling`, which the task set `C.unreach-call.Loops` excludes
+`nla-digbench-scaling`, and `prodbin-ll`, `prod4br-ll_valuebound5` (since Oct
+28, 2026), which the task set `C.unreach-call.Loops` excludes
 and `C.unreach-call.Loops-split` runs with `-split`; it also shows the failing
 annotation. For other tasks it costs: with `-split` for all tasks (Oct 23,
 2026), 35 that prove without it in seconds had a part `unknown` or timed out

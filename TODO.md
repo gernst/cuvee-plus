@@ -255,12 +255,15 @@ Cleanup, none of it a bug.
 - ACSL: `\min`, `\max`, `\abs`; labels of `\at` other than `Pre`, `Here`, `LoopEntry`; contracts of functions that
   read globals need their values as preconditions; interpret `shl`, `shr`, `bitand`, ... where possible
   (`(x & 5) == 5` as `x % 8 == 5`); `-chc` answers `unknown` on unsigned arithmetic of annotated programs.
-- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl); Oct 23, 0.50.2, 60 s, `-split` only for `Loops-split.set`:
-  288 of 320 true tasks of Arrays, 467 of 555 of Loops): why z3 fails on the parts of `-split` (35 tasks prove only
-  without it); `prodbin-ll` and `prod4br-ll_valuebound5` prove only with it (2 to 3 s) and belong in
-  `Loops-split.set`; `copy-partial-3-u` has weak annotations (refuted at 15 min, a timeout at 60 s), the other
-  `copy-partial-*`, `add-*`, `diff-*` time out; annotate the VerifyThis tasks; nonlinear closed forms (`geo*`,
-  `lcm2`, `prod4br`, `partial_mod_count_2-5`, `array26`).
+- ACSL on SV-COMP ([benchmarks/acsl](benchmarks/acsl), the generator in benchmarks/acsl/generator; cloud, Oct 28,
+  0.53.13, 120 s: Arrays 289 true, Loops 424 true and 5 false, Loops-split 43 true; afterwards prodbin-ll and
+  prod4br-ll_valuebound5 moved to `Loops-split.set` and `counter` added to the loop assigns of knuth_unwindbound*,
+  not rerun yet): of Loops, 46 tasks are rejected by the C frontend (25 `goto` to a label whose statement falls
+  through, 21 parse errors); why z3 fails on the parts of `-split` (35 tasks prove only without it); nonlinear
+  verification conditions that z3 does not decide (`prod4br-ll` and its valuebound1 also with `-split`, `divbin`,
+  `knuth`, `geo*`, `lcm2`, `partial_mod_count_2-5`, `array26`); `copy-partial-3-u` has weak annotations, the other
+  `copy-partial-*`, `add-*`, `diff-*` time out; annotate the VerifyThis tasks (verifythis/lcp has none);
+  floating point programs (freire1, lu.cmp) are uninterpreted.
 
 ## SV-COMP
 

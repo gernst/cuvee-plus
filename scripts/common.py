@@ -165,7 +165,9 @@ def latest(results: Path = RESULTS) -> dict[tuple[str, str], list[Path]]:
         block = header(path).get("block")
         if not block:
             continue
-        found.setdefault((match["benchmark"], category(block)), []).append((match["date"], block, path))
+        # a run with a name (./benchmark -n <name>-<tasks>, one call per task set) is the benchmark <definition>.<name>
+        benchmark = match["benchmark"].removesuffix("-" + block)
+        found.setdefault((benchmark, category(block)), []).append((match["date"], block, path))
     return {key: newest(files) for key, files in found.items()}
 
 

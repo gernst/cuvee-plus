@@ -379,6 +379,12 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
 
 ## Fixed
 
+- **`-vcgen` answered a refutation out of the entry point's context `incorrect`** (found Oct 28, 2026, the ACSL run
+  of 0.53.13; fixed in 0.53.13, 46988318): verifythis/lcp of benchmarks/acsl (no annotations, expected true) was a
+  wrong false, from the goal of `check` for an arbitrary length, which `main` never passes; with an entry point, the
+  goals of other procedures and of callers of procedures without contract are `:abstract` now (`VCGen`), so such
+  refutations are `unknown`; linear_search and trex01-1, whose false answers rested on the same kind of refutation,
+  are `unknown` as well (examples/c/verify/entry_context_vcgen.c).
 - **The published SV-COMP archive** (0.41.4, 10.5281/zenodo.23317707) predated the entry points (25c90e96):
   `-teq` checked functions out of the context of their calls and answered `incorrect` for `sanfoundry_24-1` and
   `verifythis/lcp` (wrong false). Fixed in the code, and the archives since 0.50.18 contain the fix (0.52.17,

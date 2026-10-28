@@ -22,7 +22,7 @@ from table import pdflatex
 
 TEQ = common.SCRIPTS.parent / "resources" / "cuvee" / "teq.dfy"
 # the migrated modules of the database that the benchmark definitions include (-include teq:<module>)
-MODULES = ["aggregation", "arithmetic", "arrays", "counters", "search", "sorted", "strides", "unsigned"]
+MODULES = ["aggregation", "arithmetic", "arrays", "counters", "search", "sorted", "strides", "unsigned", "series"]
 DATABASE = [TEQ] + [TEQ.parent / "teq" / f"{name}.dfy" for name in MODULES]
 
 # the document of the statistics, compiled to rules.pdf, with the table rules-table.tex: the table of the rules and the unused lemmas
@@ -141,6 +141,14 @@ def frequency(collected, totals, ranked, labels, path):
     plt.close(figure)
 
 
+# a name in typewriter font: underscores escaped, subscript digits (strides₂) as subscripts of math mode
+def tt(name: str) -> str:
+    text = name.replace("_", r"\_")
+    for digit, sub in zip("₀₁₂₃₄₅₆₇₈₉", "0123456789"):
+        text = text.replace(digit, f"$_{sub}$")
+    return r"\texttt{" + text + "}"
+
+
 def main():
     parser = common.arguments(__doc__.splitlines()[0])
     parser.set_defaults(tools=["cuvee", "cuvee-fallback"])
@@ -217,7 +225,7 @@ def main():
         for tool in collected:
             n, m = totals[tool].get(rule, (0, 0))
             cells += [str(n), str(m)]
-        lines.append(r"\texttt{" + rule.replace("_", r"\_") + "} & " + " & ".join(cells) + r" \\")
+        lines.append(tt(rule) + " & " + " & ".join(cells) + r" \\")
     lines += [r"\end{longtable}", ""]
     (args.output / "rules-table.tex").write_text("\n".join(lines))
 
@@ -244,7 +252,7 @@ def main():
             .replace("<proved>", "Proved tasks: " + counts_per + ".")
             .replace("<unused>", str(len(unused)))
             .replace("<lemmas>", str(len(lemmas())))
-            .replace("<list>", ", ".join(r"\texttt{" + name.replace("_", r"\_") + "}" for name in unused))
+            .replace("<list>", ", ".join(tt(name) for name in unused))
         )
         (args.output / "rules.tex").write_text(document)
         print(pdflatex(args.output, "rules", runs=2))
