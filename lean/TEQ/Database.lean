@@ -1333,21 +1333,6 @@ def Stmt.stores_cases : Prop :=
               else
                 if ¬P (a0 k) then G (a0 k) else unspecified))
 
-def Stmt.stores_cases_point : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (c : Int) (F : Int → Int),
-    trace
-      a0
-      (butlast (counter 0 1 n))
-      (fun a k =>
-         if k ≠ c then
-           fun j => if j = k then F k else a j
-         else
-           if k = c then fun j => if j = c then F c else a j else unspecified)
-      = stores
-        a0
-        (butlast (counter 0 1 n))
-        (maps (butlast (counter 0 1 n)) (fun k => F k))
-
 def Stmt.stores_read_unmodified : Prop :=
   ∀ (a0 : Int → Int) (n : Int) (hs : List Int) (F : Int → Int → Int) (hhs : length hs = n),
     invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => n ≤ F k h)
@@ -1487,21 +1472,6 @@ def Stmt.store_select_other : Prop :=
     i ≠ j
       → (fun j1 => if j1 = j then a j else (fun j => if j = i then v else a j) j1)
         = (fun j => if j = i then v else a j)
-
-def Stmt.trace_merge_cases_ne : Prop :=
-  ∀ (x0 : Int) (n : Int) (c : Int) (d : Int) (F : Int → Int),
-    d = F c
-      → trace
-        x0
-        (butlast (counter 0 1 n))
-        (fun x k => if x ≠ c then F x else if x = c then d else unspecified)
-        = trace x0 (butlast (counter 0 1 n)) (fun x k => F x)
-
-def Stmt.invs_not_or : Prop :=
-  ∀ (hs : List Int) (gs : List Int) (fs : List Int) (P : Int → Int → Int → Prop) (Q : Int → Int → Int → Prop) (n : Int) (hhs : length hs = n) (hgs : length gs = n) (hfs : length fs = n),
-    invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬(P h g f ∨ Q h g f))
-      ↔ invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬P h g f)
-        ∧ invs (List.zip hs (List.zip gs fs)) (fun ⟨h, g, f⟩ => ¬Q h g f)
 
 def Stmt.current_trace_constant : Prop :=
   ∀ {α : Type} [Inhabited α] (x : α) (y : α) (i : Int) (c : Int) (n : Int),
@@ -1829,33 +1799,6 @@ def Stmt.select_current_trace_ahead : Prop :=
                  a0 j
                else
                  unspecified)
-
-def Stmt.select_current_trace_ahead_down : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (s : Int) (F : Int → Int) (G : Int → Int) (j : Int),
-    current
-      (trace
-         a0
-         (List.zip (butlast (counter 0 1 n)) (butlast (counter s (-1) n)))
-         (fun a ⟨k, i⟩ =>
-            if 1 ≤ i then
-              fun j =>
-                if j = i then
-                  G i
-                else
-                  (fun j => if j = i + -1 then F i else a j) j
-            else
-              if i < 1 then fun j => if j = i then G i else a j else unspecified))
-      j
-      = (if s - n < j ∧ j ≤ s then
-           G j
-         else
-           if j = s - n ∧ 0 ≤ j ∧ 0 < n then
-             F (j + 1)
-           else
-             if ¬(s - n < j ∧ j ≤ s) ∧ ¬(j = s - n ∧ 0 ≤ j ∧ 0 < n) then
-               a0 j
-             else
-               unspecified)
 
 noncomputable def mods (i : Int) (c : Int) (m : Int) (n : Int) : Trace Int :=
   trace i (butlast (counter 0 1 n)) (fun x k => (x + c) % m)

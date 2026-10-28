@@ -31,7 +31,7 @@ function {:teq} min(x: int, m: multiset<int>): int
 // the aggregates of the operations on multisets, always towards the arithmetic of the integers; the difference of the
 // core cuts off at zero (cvc5's bag.difference_subtract), hence only of a submultiset; the maximum and the minimum not
 // over a difference, since they have no inverse
-// (unused on SV-COMP; the empty sum, kept as a law of sum)
+// (the empty sum, a law of sum)
 lemma {:rw} {:teq} sum_empty()
   ensures sum(multiset{}) == 0
 
@@ -133,7 +133,7 @@ lemma {:rw} {:teq} sum_counter(i: int, c: int, n: int)
     == (2 * i + (n - 1) * c) * n / 2
 
 // the prefix maxima and minima starting with an initial value
-// (used on SV-COMP by standard_maxInArray_ground only)
+// (used on SV-COMP by matrix-2-2, max, sanfoundry_27_ground, standard_maxInArray_ground only)
 function {:teq} {:fold} maxs(x: int, values: List<int>): Trace<int>
 {
   trace(x, for values do m, v :: case m < v => v case v <= m => m)
@@ -154,7 +154,7 @@ lemma {:rw} {:teq} prefix_maxs(k: int, x: int, values: List<int>)
   ensures prefix(k, ⌊maxs(x, values)⌋)
     == ⌊maxs(x, prefix(k, values))⌋
 
-// (used on SV-COMP by standard_minInArray_ground-2 only)
+// (used on SV-COMP by standard_minInArray_ground-1, standard_minInArray_ground-2 only)
 function {:teq} {:fold} mins(x: int, values: List<int>): Trace<int>
 {
   trace(x, for values do m, v :: case v < m => v case m <= v => m)
@@ -176,7 +176,6 @@ lemma {:rw} {:teq} prefix_mins(k: int, x: int, values: List<int>)
     == ⌊mins(x, prefix(k, values))⌋
 
 // the number of occurrences of a value, counted from an initial value
-// (used on SV-COMP by half, sumt2 only)
 function {:teq} {:fold} counts<a>(x: int, e: a, vs: List<a>): Trace<int>
 {
   trace(x, for vs do y, v :: case v == e => y + 1 case v != e => y)
@@ -191,7 +190,6 @@ lemma {:rw} {:teq} counts_false(x: int, bs: List<bool>)
   ensures trace(x, for bs do y, b :: case !b => y + 1 case b => y)
     == counts(x, false, bs)
 
-// (used on SV-COMP by mono-crafted_10 only)
 lemma {:rw} {:teq} counts_true(x: int, bs: List<bool>)
   ensures trace(x, for bs do y, b :: case b => y + 1 case !b => y)
     == counts(x, true, bs)
@@ -298,7 +296,6 @@ lemma {:rw} {:teq} sum_add(xs: List<int>, ys: List<int>)
 
 // a sum of indicators, 1 where a condition holds and 0 otherwise, is the number of values where it holds, which the
 // lemmas on counts evaluate
-// (used on SV-COMP by brs1 only)
 lemma {:rw} {:teq} sum_indicator_true<a>(xs: List<a>, P: a -> bool)
   ensures sum(elems(maps(for xs yield x :: case P(x) => 1 case !P(x) => 0)))
     == elems(maps(for xs yield x :: P(x)))[true]
@@ -308,7 +305,6 @@ lemma {:rw} {:teq} sum_indicator_false<a>(xs: List<a>, P: a -> bool)
   ensures sum(elems(maps(for xs yield x :: case P(x) => 0 case !P(x) => 1)))
     == elems(maps(for xs yield x :: P(x)))[false]
 
-// (used on SV-COMP by nest-if3 only)
 lemma {:rw} {:teq} count_consts<a>(n: int, e: a, v: a)
   requires 0 <= n
   ensures elems(⌊consts(n, v)⌋)[e]
@@ -319,13 +315,11 @@ lemma {:rw} {:teq} count_consts<a>(n: int, e: a, v: a)
 
 // the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body; the counts of
 // false are the others, by count_false_true below
-// (used on SV-COMP by gj2007, mono-crafted_1, mono-crafted_9 only)
 lemma {:rw} {:teq} count_true_below(m: int, i: int, n: int)
   requires i <= m <= i + n
   ensures elems(maps(for ⌊counter(i, 1, n)⌋ yield k :: k < m))[true]
     == m - i
 
-// (used on SV-COMP by brs1, mono-crafted_10 only)
 lemma {:rw} {:teq} count_true_above(m: int, i: int, n: int)
   requires i <= m <= i + n
   ensures elems(maps(for ⌊counter(i, 1, n)⌋ yield k :: m <= k))[true]
@@ -335,7 +329,7 @@ lemma {:fw} {:teq} count_nonnegative<a>(e: a, vs: List<a>)
   ensures 0 <= elems(vs)[e]
 
 // the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m
-// (from half, sumt2, the only tasks of SV-COMP that use it)
+// (from half, sumt2; used on SV-COMP by half, sumt2, sumt3, sumt4, sumt5 only)
 lemma {:rw} {:teq} count_remainder(n: int, m: int, r: int)
   requires 0 <= n && 0 < m && 0 <= r < m
   ensures elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: k % m))[r] == (n + m - 1 - r) / m
@@ -349,13 +343,13 @@ lemma {:rw} {:teq} count_false_true(i: int, c: int, n: int, hs: List<int>, P: (i
     == n - elems(maps(for ⌊counter(i, c, n)⌋, hs yield k, h :: P(k, h)))[true]
 
 // the iterations where a value is r are counted by the occurrences of r among the values
-// (from sumt2, the only task of SV-COMP that uses it)
+// (from sumt2; used on SV-COMP by apache-escape-absolute, copy_nonzero, nest-if3, sumt2 only)
 lemma {:rw} {:teq} count_true_eq(ks: List<int>, r: int, hs: List<int>, F: (int, int) -> int)
   ensures elems(maps(for ks, hs yield k, h :: F(k, h) == r))[true]
     == elems(maps(for ks, hs yield k, h :: F(k, h)))[r]
 
 // the initial value is a bound of the maxima and minima, which are attained by some value otherwise
-// (used on SV-COMP by standard_maxInArray_ground only)
+// (used on SV-COMP by matrix-2-2, max, sanfoundry_27_ground, standard_maxInArray_ground only)
 lemma {:fw} {:teq} max_initial(x: int, values: List<int>)
   ensures x <= max(x, elems(values))
 
@@ -370,7 +364,8 @@ lemma {:rw} {:teq} max_prefix_earlier(k: int, x: int, n: int, xs: List<int>)
   requires 0 <= k < n
   ensures earlier(k, xs) <= max(x, elems(prefix(n, xs)))
 
-// (used on SV-COMP by standard_minInArray_ground-2 only)
+// (used on SV-COMP by array_min_and_copy_shift_sum_add, standard_minInArray_ground-1, standard_minInArray_ground-2
+// only)
 lemma {:fw} {:teq} min_initial(x: int, values: List<int>)
   ensures min(x, elems(values)) <= x
 
@@ -385,7 +380,7 @@ lemma {:rw} {:teq} min_prefix_earlier(k: int, x: int, n: int, xs: List<int>)
 
 // the maximum seeded with the read at h and continued with the reads at i, ..., i + n - 1, for h = i - 1, bounds the
 // reads at h, ..., i + n - 1, e.g. largest = a[0] before a loop from 1
-// (from sanfoundry_27_ground, the only task of SV-COMP that uses it)
+// (from sanfoundry_27_ground; used on SV-COMP by sanfoundry_27_ground only)
 lemma {:rw} {:teq} max_seeded_earlier(j: int, h: int, i: int, n: int, xs: List<int>)
   requires h == i - 1 && h <= j < i + n
   ensures earlier(j, xs) <= max(earlier(h, xs), elems(maps(for ⌊counter(i, 1, n)⌋ yield v :: earlier(v, xs))))

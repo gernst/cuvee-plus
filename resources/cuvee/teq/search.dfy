@@ -31,13 +31,13 @@ function {:teq} {:fold} above_iterations(n: int, ts: List<int>): bool
 }
 
 // a value that does not occur in the prefix of length n differs from the reads at the positions in that range
-// (from standard_find_ground-1, the only task of SV-COMP that uses it)
+// (from standard_find_ground-1)
 lemma {:rw} {:teq} earlier_eq_not_occurs_prefix(j: int, n: int, e: int, xs: List<int>)
   requires !occurs(e, prefix(n, xs)) && 0 <= j < n
   ensures (earlier(j, xs) == e) <==> false
 
 // the reads at the positions in the range exceed the positions
-// (from simple_array_index_value_2; unused on SV-COMP)
+// (from simple_array_index_value_2; used on SV-COMP by simple_array_index_value_2 only)
 lemma {:rw} {:teq} earlier_above_iterations(j: int, n: int, ts: List<int>)
   requires above_iterations(n, ts) && 0 <= j < n
   ensures (j < earlier(j, ts)) <==> true
@@ -54,7 +54,7 @@ lemma {:rw} {:teq} not_occurs_selects(a: array<int, int>, x: int, i: int, n: int
   ensures invs(for ⌊counter(i, 1, n)⌋ check k :: a[k] != x) <==> !occurs(x, selects(a, ⌊counter(i, 1, n)⌋))
 
 // a value that does not occur among the reads of a counter differs from the reads at the positions in its range
-// (used on SV-COMP by n.c40, str_cpy only)
+// (used on SV-COMP by n.c40, nec40, str_cpy only)
 lemma {:rw} {:teq} select_eq_not_occurs_selects(k: int, a: array<int, int>, x: int, i: int, n: int)
   requires !occurs(x, selects(a, ⌊counter(i, 1, n)⌋)) && i <= k < i + n
   ensures (a[k] == x) <==> false

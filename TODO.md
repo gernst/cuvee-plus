@@ -84,6 +84,9 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s
       geo1, prodbin) are relevant for the database. More time (15 min) and its 116 tasks at the step bound:
       ideas/prove-next.md, plan A.
       Experiments of Oct 26, 2026: the portfolio (ideas/portfolio.md), -slice alone (ideas/slice.md).
+      rewnifrev (Oct 28): `select_current_trace_ahead_down` never matched, since the canonical forms write its guard
+      and the cell ahead over the first counter; restated so (strides.dfy, examples/dafny/teq/ahead_down.dfy); rewnifrev
+      correct locally in 11 s (unknown with 0.53.11), to be confirmed on the cloud.
 - [ ] ps2-ll_unwindbound1 times out at 60 s.
 - [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma),
       `pcomp`, `sqm-if`, `nsqm-if`, `condm`.

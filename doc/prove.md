@@ -181,7 +181,7 @@ by the simplifier in the context.
   `b[p := x₀]` against `case P => a[k := 7] case !P => a[k := 0]` gives `maps(... :: case P => 7 case !P => 0)`; the
   other variables are instantiated alike in all cases, and a guard that reads the accumulator excludes the map like a
   value; a variable in the index of a store takes no value per case, since the keys must stay one sequence, e.g. a
-  counter, not `case k != c => k case k == c => c` (copysome2-1, `stores_cases_point`). A term that a pattern does not
+  counter, not `case k != c => k case k == c => c` (copysome2-1, examples/c/teq/stores_cases_point.c). A term that a pattern does not
   match as it is, is matched by its alternatives, group by
   group, lazily (`Rewrite.alternatives`): the definitions of a variable, the structural view of a component, and only
   then its projected view, which costs a simplification.

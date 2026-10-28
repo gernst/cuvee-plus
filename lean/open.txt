@@ -1,2 +1,3 @@
 # the lemmas of the stable modules without a proof in Lean, which the generator removes from the modules before
 # printing (scripts/lean/generate.py): a line `name -- why`; each line is a lemma that is assumed, not checked
+select_current_trace_ahead_down -- restated over the first counter with a guard P (Oct 28, rewnifrev), the proof of the former version in Naturals.lean (N.select_current_trace_ahead_down) to be adapted

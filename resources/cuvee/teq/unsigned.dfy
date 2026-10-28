@@ -25,7 +25,7 @@ lemma {:rw} {:teq} invs_mods_upper(b: int, i: int, c: int, m: int, n: int)
   ensures invs(for ⌊mods(i, c, m, n)⌋ check x :: x < b)
     <==> i + (n - 1) * c < b
 
-// (from simple_3-2, whose bound is a nondeterministic value; used on SV-COMP by sum_array-2-2, sum_by_3, vnew1 only)
+// (from simple_3-2, whose bound is a nondeterministic value)
 lemma {:rw} {:teq} invs_mods_upper_cases(b: int, i: int, c: int, m: int, n: int)
   requires 0 <= i && i < m && 0 < c && b + c <= m
   ensures invs(for ⌊mods(i, c, m, n)⌋ check x :: x < b)
@@ -66,28 +66,28 @@ lemma {:rw} {:teq} butlast_mods_up(i: int, c: int, m: int, n: int)
 
 // a test of a loop on the remainder of a counter by 1, e.g. an int counter that is compared as unsigned, holds for all
 // its values iff for the last one without the remainder, since the counter reaches b < m before it wraps around
-// (from invert_string-3, the only task of SV-COMP that uses it)
+// (from invert_string-3; used on SV-COMP by invert_string-3 only)
 lemma {:rw} {:teq} invs_counter_mod_upper_zero(b: int, m: int, n: int)
   requires 0 < b && b < m
   ensures invs(for ⌊counter(0, 1, n)⌋ check k :: k % m < b)
     <==> n - 1 < b
 
 // the same from i, with the disjunction for an initial value i that need not be below b
-// (from sum_by_3, sum_by_3_abstracted; used on SV-COMP by sum_by_3 only)
+// (from sum_by_3, sum_by_3_abstracted; used on SV-COMP by sum_by_3, sum_by_3_abstracted only)
 lemma {:rw} {:teq} invs_counter_mod_upper_cases(b: int, i: int, m: int, n: int)
   requires 0 <= i && i < m && b < m
   ensures invs(for ⌊counter(0, 1, n)⌋ check k :: (k + i) % m < b)
     <==> n <= 0 || i + n - 1 < b
 
 // the final value of a sum modulo m is the remainder of the sum, which the lemmas on sums compute
-// (from sum_natnum, the only task of SV-COMP that uses it)
+// (from sum_natnum; used on SV-COMP by sum_natnum only)
 lemma {:rw} {:teq} current_trace_mod_add_const(x0: int, n: int, m: int, c: int)
   requires 0 <= x0 && x0 < m
   ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: (k + x + c) % m))
     == current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: k + x + c)) % m
 
 // the same for a value that is increased in some iterations only
-// (from mono-crafted_10; used on SV-COMP by mono-crafted_10, trex03-2 only)
+// (from mono-crafted_10)
 lemma {:rw} {:teq} current_trace_mod_add_cases(x0: int, n: int, m: int, C: (int) -> bool, F: (int) -> int)
   requires 0 <= x0 && x0 < m
   ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C(k) => (x + F(k)) % m case !C(k) => x))

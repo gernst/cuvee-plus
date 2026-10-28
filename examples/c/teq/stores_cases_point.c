@@ -1,6 +1,6 @@
 // ./Cuvee.sh -teq -include teq:aggregation -include teq:arithmetic -include teq:arrays -include teq:counters -include teq:search -include teq:sorted -include teq:strides -include teq:unsigned -include teq:series -prove -split -prove -split -prove -quiet examples/c/teq/stores_cases_point.c
 // a copy whose iteration at the position z stores the same value by a branch of its own (copysome2-1): both branches
-// store a[i] at i (stores_cases_point)
+// store a[i] at i, the fold stores with the values per case (Rewrite.update), the keys stay the counter
 extern void abort(void);
 void reach_error() { abort(); }
 void __VERIFIER_assert(int cond) { if (!(cond)) { ERROR: {reach_error(); abort();} } }

@@ -62,7 +62,9 @@ a[0 := c]`) still match, since the matcher follows the members of a variable's c
 it alike), but closed instances for `Eval` and reads such as `earlier(k - 1, ...)` at `k == 0` keep `k`. The
 experiment measures it: the test suite and the cloud run, before any change of the database.
 
-**Database.** `stores_cases_point` (arrays.dfy) goes, `trace_merge_cases_ne` (counters.dfy) presumably too.
+**Database.** `stores_cases_point` (arrays.dfy) goes, `trace_merge_cases_ne` (counters.dfy) presumably too. Done
+(Oct 28): both removed, copysome1-1 and copysome2-1 are proved by `stores_where` in 0.53.10 without them, and
+stores_cases_point.c by `stores` with values per case.
 
 **Tests.** examples/c/teq/stores_cases_point.c is correct without the lemma (local, Oct 26; unknown with 0.52.8 within
 10 s); copysome2-1, the users of `trace_merge_cases_ne`. The lemma stays until the cloud run of Arrays and Loops shows
@@ -169,7 +171,8 @@ debug line; until then the two lemmas stay.
   stated in the orientation of the atom as the goals contain it (`j < earlier(j, ts)`, not `earlier(j, ts) <= j`),
   since negations are not normalized into the other comparison everywhere; `earlier_eq_not_occurs_prefix` needs
   `n <= length xs` (Lean, lean/premises.txt), which the loop provides.
-- The comments of the review of Oct 26: usage annotations out of date (`current_maxs_earlier`, `current_mins_earlier`
+- The comments of the review of Oct 26 (updated Oct 28 from the `:used` lists of the cloud run of 0.53.10, where
+  `invs_not_or` is unused and removed): usage annotations out of date (`current_maxs_earlier`, `current_mins_earlier`
   unused since the prefix variants; `count_consts`, `count_true_eq`, `counts`, `invs_not_or` no longer used by the
   tasks named), module headers.
 

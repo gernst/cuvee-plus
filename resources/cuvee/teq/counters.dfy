@@ -1,21 +1,6 @@
-// counters: the shapes of traces over a counter, phases, flags, catching up, merged cases, constants, increasing and
-// bounded values; an optional module over teq.dfy (-include teq:counters); the counters themselves, their reads and
-// the bounds of their iteration constraints are in teq.dfy, the counters modulo m in unsigned
-
-// two cases whose results agree under the guard of the second one, x == c, which the simplifier has substituted
-// into it, are one; the second result is a variable d, since F(c) would be compared literally
-// (from copysome1-1, copysome1-2)
-lemma {:rw} {:teq} trace_merge_cases_ne(x0: int, n: int, c: int, d: int, F: (int) -> int)
-  requires d == F(c)
-  ensures trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x != c => F(x) case x == c => d)
-    == trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: F(x))
-
-// an iteration constraint that is a negated disjunction, as the test of a break, is two of them
-// (from benchmark09_conjunctive, the only task of SV-COMP that uses it)
-lemma {:rw} {:teq} invs_not_or(hs: List<int>, gs: List<int>, fs: List<int>, P: (int, int, int) -> bool,
-                               Q: (int, int, int) -> bool)
-  ensures invs(for hs, gs, fs check h, g, f :: !(P(h, g, f) || Q(h, g, f)))
-    <==> invs(for hs, gs, fs check h, g, f :: !P(h, g, f)) && invs(for hs, gs, fs check h, g, f :: !Q(h, g, f))
+// counters: the shapes of traces over a counter, phases, flags, catching up, constants, increasing and bounded
+// values; an optional module over teq.dfy (-include teq:counters); the counters themselves, their reads and the bounds
+// of their iteration constraints are in teq.dfy, the counters modulo m in unsigned
 
 lemma {:rw} {:teq} current_trace_constant<a>(x: a, y: a, i: int, c: int, n: int)
   ensures current(trace(x, for ⌊counter(i, c, n)⌋ do z, v :: y))
@@ -70,7 +55,7 @@ lemma {:rw} {:teq} invs_phases_upper(x0: int, m: int, n: int, F: (int, int) -> i
 
 // a follower: y increases by 1 whenever it does not exceed the value x of a counter with step 1, hence y is the
 // larger of its initial value and the final value of x, given that it starts at least at x
-// (from benchmark05_conjunctive, the only task of SV-COMP that uses it)
+// (from benchmark05_conjunctive; used on SV-COMP by benchmark05_conjunctive only)
 lemma {:rw} {:teq} current_trace_catch_up(y0: int, x0: int, n: int)
   requires 0 <= n && x0 <= y0
   ensures current(trace(y0, for ⌊counter(0, 1, n)⌋, ⌊counter(x0, 1, n)⌋ do y, k, x :: case y <= x => y + 1 case x < y => y))

@@ -96,17 +96,20 @@ lemma {:rw} {:teq} select_current_trace_ahead(a0: array<int, int>, n: int, m: in
            case !(0 <= j && j < n) && !(j == n && 0 < j && j < m) => a0[j]
          }
 
-// the same for a loop down from s, whose iteration i stores F(i) at i - 1, if 1 <= i, and then G(i) at i: the cells
-// s - n + 1, ..., s hold G, the cell below the last iteration the value stored ahead by it
-// (from MonoCera: rewnifrev, the only task of SV-COMP that uses it)
-lemma {:rw} {:teq} select_current_trace_ahead_down(a0: array<int, int>, n: int, s: int, F: (int) -> int,
-    G: (int) -> int, j: int)
+// the same for a loop down from s, whose iteration k, at i == s - k, stores F(k) at i - 1 if a guard P(k) holds, and
+// then G(i) at i: the cells s - n + 1, ..., s hold G, the cell s - n below the last iteration the value stored ahead by
+// it if its guard holds; the canonical forms write the cell ahead over the first counter, d - k, and the guard too,
+// e.g. k + 2 <= N for 1 <= i (examples/dafny/teq/ahead_down.dfy)
+// (from MonoCera: rewnifrev)
+lemma {:rw} {:teq} select_current_trace_ahead_down(a0: array<int, int>, n: int, s: int, d: int, P: (int) -> bool,
+    F: (int) -> int, G: (int) -> int, j: int)
+  requires d == s - 1
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(s, -1, n)⌋ do a, k, i ::
-                  case 1 <= i => a[i + (-1) := F(i)][i := G(i)]
-                  case i < 1 => a[i := G(i)]))[j]
+                  case P(k) => a[d - k := F(k)][i := G(i)]
+                  case !P(k) => a[i := G(i)]))[j]
       == if {
            case s - n < j && j <= s => G(j)
-           case j == s - n && 0 <= j && 0 < n => F(j + 1)
-           case !(s - n < j && j <= s) && !(j == s - n && 0 <= j && 0 < n) => a0[j]
+           case j == s - n && 0 < n && P(n - 1) => F(n - 1)
+           case !(s - n < j && j <= s) && !(j == s - n && 0 < n && P(n - 1)) => a0[j]
          }

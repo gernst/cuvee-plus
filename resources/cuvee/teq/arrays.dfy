@@ -29,17 +29,9 @@ lemma {:rw} {:teq} stores_cases(a0: array<int, int>, n: int, c: int, P: (int) ->
       == stores(a0, ⌊counter(0, 1, n)⌋,
                 maps(for ⌊counter(0, 1, n)⌋ yield k :: case P(a0[k]) => c case !P(a0[k]) => G(a0[k])))
 
-// a loop whose iteration k stores F(k) at k by two cases split at a position c, where the simplifier has substituted
-// c for k in the second case, so that the cases are not merged (TODO.md, ideas/dnf-guards.md)
-// (from copysome2-1, the only task of SV-COMP that uses it)
-lemma {:rw} {:teq} stores_cases_point(a0: array<int, int>, n: int, c: int, F: (int) -> int)
-  ensures
-    trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k != c => a[k := F(k)] case k == c => a[c := F(c)])
-      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: F(k)))
-
 // stores at the positions 0, ..., n - 1 of values read from the array itself outside of that range read the initial
 // array
-// (from standard_palindrome_ground, the only task of SV-COMP that uses it)
+// (from standard_palindrome_ground; used on SV-COMP by standard_palindrome_ground only)
 lemma {:rw} {:teq} stores_read_unmodified(a0: array<int, int>, n: int, hs: List<int>, F: (int, int) -> int)
   requires invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: n <= F(k, h))
   ensures trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := a[F(k, h)]])
@@ -47,7 +39,7 @@ lemma {:rw} {:teq} stores_read_unmodified(a0: array<int, int>, n: int, hs: List<
 
 // a reset of a cell j in the first iteration, where the other iterations keep the array, e.g. since the simplifier has
 // reduced sum[0] + a[i] to sum[0] for a[i] == 0
-// (from MonoCera: ms1, the only task of SV-COMP that uses it)
+// (from MonoCera: ms1; used on SV-COMP by ms1, ms1f only)
 lemma {:rw} {:teq} select_current_trace_reset_keep(a0: array<int, int>, j: int, n: int, c: int)
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a))[j]
@@ -69,7 +61,7 @@ lemma {:rw} {:teq} select_current_shifts(a: array<int, int>, i: int, n: int, j: 
 
 // the elements of stores at the positions of a counter, read at the positions of the same counter, are the stored
 // values; both counters are patterns, since they are different trace variables in programs
-// (from conda, condaf, ss1, ss1f; used on SV-COMP by revcpyswp2 only)
+// (from conda, condaf, ss1, ss1f)
 lemma {:rw} {:teq} selects_stores_counter(a: array<int, int>, i: int, c: int, n: int, vs: List<int>)
   requires c != 0
   ensures selects(current(stores(a, ⌊counter(i, c, n)⌋, vs)), ⌊counter(i, c, n)⌋) == vs

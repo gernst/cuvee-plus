@@ -1288,16 +1288,6 @@ theorem stores_cases : Stmt.stores_cases := by
   conv => rhs; simp (disch := complement) only [cases_of]
   rw [counter_N]; exact N.stores_cases a0 n.toNat c P G
 
-theorem stores_cases_point : Stmt.stores_cases_point := by
-  intro a0 n c F
-  simp only [N.ite_ne_eq]
-  rw [← N.trace_stores_maps]
-  congr 1
-  funext a k j
-  by_cases e : k = c
-  · subst e; simp
-  · simp [e]
-
 theorem stores_read_unmodified : Stmt.stores_read_unmodified := by
   intro a0 n hs F hhs h
   obtain ⟨m, rfl⟩ : ∃ m : Nat, n = m := ⟨hs.length, hhs.symm⟩
@@ -1554,12 +1544,6 @@ theorem select_current_trace_cap : Stmt.select_current_trace_cap := by
 theorem store_select_other : Stmt.store_select_other := N.store_select_other
 
 -- the lemmas of counters.dfy
-
-theorem trace_merge_cases_ne : Stmt.trace_merge_cases_ne := by
-  intro x0 n c d F h; rw [counter_N]; exact N.trace_merge_cases_ne x0 n.toNat c d F h
-
-theorem invs_not_or : Stmt.invs_not_or := by
-  intro hs gs fs P Q n hhs hgs hfs; exact N.invs_not_or hs gs fs P Q hs.length rfl (by omega) (by omega)
 
 theorem current_trace_constant : Stmt.current_trace_constant := by
   unfold Stmt.current_trace_constant; choices
@@ -1925,14 +1909,6 @@ theorem select_current_trace_ahead : Stmt.select_current_trace_ahead := by
   · rw [show n.toNat = 0 by omega, if_neg (by omega), if_neg (by omega)]; rfl
   · rw [N.select_current_trace_ahead a0 n.toNat m F G j (by rw [N.integer_cast]; omega), N.integer_cast,
       Int.toNat_of_nonneg hn]
-
-theorem select_current_trace_ahead_down : Stmt.select_current_trace_ahead_down := by
-  intro a0 n s F G j
-  conv => rhs; simp (disch := complement) only [cases_of]
-  rw [counter_N, counter_N, N.select_current_trace_ahead_down, N.integer_cast]
-  rcases Int.lt_or_le n 0 with hn | hn
-  · rw [show n.toNat = 0 by omega, if_neg (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega)]
-  · rw [Int.toNat_of_nonneg hn]
 
 -- the lemmas of unsigned.dfy
 

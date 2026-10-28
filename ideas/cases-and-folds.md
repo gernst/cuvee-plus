@@ -1,7 +1,8 @@
 # Cases instead of conditionals, and named folds
 
-**Status.** Sections 1-3 are implemented (Oct 28, documented in doc/prove.md), except that `stores_index_cases` is
-kept until the cloud run; sections 4-6 are open. Decided and done (Oct 28): the right-hand sides of the lemmas are
+**Status.** Sections 1-3 are implemented (Oct 28, documented in doc/prove.md), `stores_index_cases` removed (section
+8); sections 4-6 are settled from the `:used` lists of the cloud run of 0.53.10 (Oct 28, below), open are only the
+engine gaps mbpr4 and nr2-nr5, which need Scala. Decided and done (Oct 28): the right-hand sides of the lemmas are
 choices (section 2, "Open"; 34 lemmas of teq.dfy and the modules, with the term syntax `if { case ... }` in the Dafny
 parser, not yet in Boogie); the scalar version of the reset and accumulation, and `sum_above`, `sum_below` instead of
 the shape lemmas of sums (section 7). The patterns that match nearly any trace (section 5) are left as they are.
@@ -63,7 +64,12 @@ guards take cases.
 
 ## 4. Overlaps among the lemmas (as of 0.53.1)
 
-From the patterns, not measured:
+Settled (Oct 28, the `:used` lists of 0.53.10): the specific lemmas fire where they apply, the general ones do not
+preempt them: `_reset_add` on brs1, ms2, ms3 and the false variants (12 tasks), `_reset_add_keep` on brs2-brs5,
+`_reset_keep` on ms1; `current_trace_step_or_keep` on 8 tasks (iftelse, sum01-1, mono-crafted_8, ...), `counts_true`
+on 17 others; `select_current_trace_recurrence` (ifcomp, ifeqn1-ifeqn3, 18 tasks) and `select_current_scans` (eqn1-eqn5,
+21 tasks) on disjoint tasks; `copy_both_ends` and `_list` were replaced by `copies` (section 5). From the patterns,
+as of 0.53.1:
 - `select_current_trace_reset_add_keep` (aggregation.dfy) may cover `reset_add` and `reset_keep` (arrays.dfy) with
   the guard variable `P` true or false, depending on how `Rewrite.guard` treats `!P(k)`; aggregation comes before
   arrays, so the subsuming lemma is tried first. To check with `-debug match`; then the specific lemmas first.
@@ -85,14 +91,14 @@ since a direct read lemma costs one rewrite step and a fold two or more.
 | Shape | Lemmas |
 |---|---|
 | shift `x[k := x[k + 1]]` over `counter(i, 1, n)` | done (Oct 28): the fold `shifts(a, keys)` of teq.dfy with its accessors, and `select_current_shifts`, `elems_selects_shift`, `elems_selects_rotate` over it; the fold fires on bAnd1, the users take about 30 s, to be confirmed on the cloud |
-| reset and accumulate at one cell, `case k == 0 => a[j := c] case 0 < k => ...` | `select_current_trace_reset_keep`, `_reset_add`, `_reset_add_keep` |
+| reset and accumulate at one cell, `case k == 0 => a[j := c] case 0 < k => ...` | kept (Oct 28): the three forms differ in their number of cases, two or three, so a fold would need an introduction per form; each has its tasks in 0.53.10 (section 4) |
 | recurrence `b[i := b[i - 1] + G]` | done in part (Oct 28): the fold `scans(a, keys, values)` (aggregation.dfy) with `select_current_scans` replaces `_prefix_sums` and `_prefix_sums_add`, also for the form over two counters, whose store index `i` the pattern `p + 1` reaches through `i == k + 1` (eqn1, eqn2, nsqm, sqm, standard_seq_init_ground correct; with `prefix_consts` of teq.dfy); `select_current_trace_recurrence` (a reset at 0, the read `a[i - 1]`) stays until `phases` splits off the first iteration |
 | two phases `x + 1` up to `b`, then `x + c` | done (Oct 28): `phases(x0, m, n, F, G)` (counters.dfy), the first `m` iterations by `F`, the others by `G`, introduced by `trace_threshold` and read by `current_phases` (the two phases composed over counters from 0) and `invs_phases_upper` (increasing steps); declared without a body, since as a fold it took switches at an iteration from `current_trace_step_or_keep` (counters_phase_mod); `current_trace_two_phases`, `invs_two_phases`, and `current_trace_increasing` (preempted by the fold `sums`) removed; Mono1_1, mono-crafted_6, _11, phases_1 unchanged |
 | copy from both ends `a[m - k - 1 := ...][k := ...]` | done (Oct 28): the fold `copies(a, ks, ls, S)` with `select_current_copies` (arrays.dfy), the source `S` an array or a list, with `occurs_counter_down` and `maps_counter_neg` of teq.dfy; tcpy, array_tiling_tcpy correct, faster |
 | conditional store keeping the array otherwise | done (Oct 28): the fold `stores_where(a, n, guards, values)`, stores at the iterations `k` of a counter where a guard holds, `case g => b[k := v] case !g => b`, with the guards and values synthesized over any dependencies, replaces `_conditional_store` and `_deps` (a synthetic example with a choice as the guard proved, which `_deps` did not); in 0.53.7 its keys were a list, which took the compactions at a count `j` from `filters_above` and lost standard_partition_ground-2 (Arrays, MonoCera), so the keys are the counter, and `select_current_trace_reset_keep` (a reset at one position) is back; converting the general fold into the compaction folds by lemmas was considered and not taken (simpler by decision); the matcher bug it exposed (a shared front of another type, bugs.md) is fixed; `select_current_trace_cap` stays, its guard reads the array |
-| accumulation at a key, histogram | `current_trace_add_at`, `current_trace_histogram` |
-| conditional step, geometric product, counters | `current_trace_step_or_keep`, `current_trace_geometric`, `current_trace_catch_up`, `current_trace_flag` |
-| stores ahead (windows of width 2 at stride 1, the last iteration shorter) | `select_current_trace_ahead`, `_ahead_down` |
+| accumulation at a key, histogram | kept: `current_trace_add_at` (69 tasks in 0.53.10), `current_trace_histogram` (an example) |
+| conditional step, geometric product, counters | kept: `current_trace_step_or_keep` (8 tasks), `current_trace_geometric` (37), `current_trace_catch_up` (benchmark05_conjunctive), `current_trace_flag` (9) |
+| stores ahead (windows of width 2 at stride 1, the last iteration shorter) | `select_current_trace_ahead` (rew, rewnif); `_ahead_down` never matched (rewnifrev unknown in all runs): the canonical forms write its guard and the cell ahead over the first counter, `k + 2 <= N` and `N - k - 2`, not over the counter down; restated so (Oct 28), with a guard `P(k)` and the cell `d - k` for `d == s - 1`, examples/dafny/teq/ahead_down.dfy proved, rewnifrev correct locally (11 s, unknown with 0.53.11); the windows as an overlapping `strides₂` not taken, the read of a cell that two iterations write is the shape itself |
 
 Patterns that match nearly any trace (a variable for the whole update): `perm_swaps`,
 `perm_steps_three`, `sorted_prefix_steps`, `sorted_prefix_steps_two`; they apply only at the atoms `perm(...)` and
@@ -100,7 +106,7 @@ Patterns that match nearly any trace (a variable for the whole update): `perm_sw
 
 ## 6. Other open points of the strided stores
 
-- The Lean proofs of `select_current_strides₂` to `₅` (lean/open.txt still lists the removed defaults).
+- The Lean proofs of `select_current_strides₂` to `₅`: done (Oct 28).
 - The stores ahead as `strides₂` at stride 1 with a read lemma for overlapping windows (the last writer wins); the
   last iteration of rewnif stores one cell only, which a fold of two cells does not cover.
 - nr2-nr5: the iteration variable written as the literal it equals in each case ([engine-gaps.md](engine-gaps.md),
@@ -170,10 +176,15 @@ the cases; several choices multiply the cases, bounded by the depth of the split
   `perm_swaps_one`, `perm_steps`, `perm_steps_two` (covered by `perm_swaps` and `perm_steps_three`, whose further
   dependencies share the bound variable of the first; the answers of the sorting examples unchanged).
 - Kept: `store_select_other` (the equation of two arrays is not decided without it), `invs_not_or` (a negated
-  disjunction is not pushed into `invs`), `occurs_counter_up` and `indexof_counter_up` (`(j - i) % 1` simplifies now,
+  disjunction is not pushed into `invs`; removed later, below), `occurs_counter_up` and `indexof_counter_up` (`(j - i) % 1` simplifies now,
   but the step versions need `0 <= n` and are in counters.dfy, not in the core; to measure), `sum_indicator_true` and
   `_false` (a general `sum_cases_two` rewrites the sum before `sum_below` sees its comparison, brs2-brs5 lost).
-- Deferred: the bounds by `max` and `min` through membership, one parity fact for the triangles.
+- Deferred, then not taken (Oct 28): the bounds by `max` and `min` through membership (no task or example needs it),
+  one parity fact for the triangles (`triangle_even_scaled` does not cover `triangle_even` with `a = 1`, since literal
+  coefficients are not matched, engine-gaps.md).
+- Removed (Oct 28, unused in 0.53.10): `stores_cases_point` (copysome2-1 and stores_cases_point.c by `stores_where` and
+  `stores` with values per case), `trace_merge_cases_ne` (copysome1-1 by `stores_where`), `invs_not_or`
+  (benchmark09_conjunctive by `sums`). The provenance comments of the modules updated from the same lists.
 - Added: the accessors of the folds of aggregation, `earlier` and `prefix` of `maxs`, `mins`, `parities`, `prefix` of
   `counts`, as those of `sums` (uniform, they cost nothing where they do not match).
 - Not taken: `perm` and the equality of multisets are not unified, since `perm` relates whole arrays by a bijection of all indices, while a multiset needs a finite list of

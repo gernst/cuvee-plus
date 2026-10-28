@@ -9,7 +9,7 @@ function {:teq} pow(c: int, n: int): int
 }
 
 // a positive number divides itself
-// (from modn, modnf; used on SV-COMP by modn, modp, mods only)
+// (from modn, modnf; used on SV-COMP by array_mul_init, eqn1f, ps2-ll_valuebound1 only)
 // a square equal to its root is 0 or 1, c * (c - 1) == 0, a nonlinear atom as linear ones
 // (from nla-digbench-scaling: ps2-ll_valuebound1 to ps6-ll_valuebound1)
 lemma {:rw} {:teq} square_eq_self(c: int)
@@ -21,12 +21,12 @@ lemma {:rw} {:teq} mod_self(x: int)
 
 // twice a number is the product of consecutive numbers iff it is its half, as an equivalence of atoms, since an
 // equation of integers as a lemma rewrites its left-hand side as a term
-// (from gauss_sum; used on SV-COMP by array_init_var_plus_ind, array_init_var_plus_ind2 only)
+// (from gauss_sum)
 lemma {:rw} {:teq} double_eq_half(n: int, s: int)
   ensures (2 * s == n + n * n) <==> (s == (n + n * n) / 2)
 
 // a quotient below b + 1: x / d is at most b for 0 <= x < d * (b + 1)
-// (from mlceu2; used on SV-COMP by vnew1 only)
+// (from mlceu2; unused on SV-COMP)
 lemma {:rw} {:teq} div_below(b: int, x: int, d: int)
   requires 0 < d && 0 <= x && x < d * (b + 1)
   ensures (b < x / d) <==> false
@@ -38,7 +38,7 @@ lemma {:rw} {:teq} div_nonpos(x: int, c: int)
   ensures (x / c <= 0) == (x < c)
 
 // a nonnegative factor cancels in a strict comparison; does not match a literal coefficient (see TODO.md)
-// (from count_by_k; used on SV-COMP by count_by_k, fermat2-ll_valuebound1 only)
+// (from count_by_k; used on SV-COMP by count_by_k only)
 lemma {:rw} {:teq} mul_lt_cancel(k: int, a: int, b: int)
   requires 0 <= k
   ensures (k * a < k * b) <==> (0 < k && a < b)
@@ -60,7 +60,7 @@ lemma {:fw} {:teq} triangle_nonneg_below(x: int)
 
 // the triangles are exact, x * (x + 1) and x * (x - 1) being even, which the linear arithmetic needs where they are
 // halved and doubled again, e.g. 2 * s == n * (n + 1) for the sum s of 1, ..., n
-// (from gauss_sum; used on SV-COMP by array_init_var_plus_ind, array_init_var_plus_ind2 only)
+// (from gauss_sum)
 lemma {:fw} {:teq} triangle_even(x: int)
   ensures 2 * ((x + x * x) / 2) == x + x * x
 
