@@ -1,5 +1,5 @@
 lemma {:rw} sum_invs_const(n: int, c: int, js: List<int>)
   requires 0 <= n
   requires invs(for ⌊counter(0, 1, n)⌋, js check k, j :: j == c)
-  ensures sum(js) == c * n
+  ensures sum(elems(js)) == c * n
 

@@ -115,7 +115,7 @@ object TEQ extends TestSuite:
         val prefix = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("prefix", j, Butlast(app(name, args*))))
         assert(subexprs(prefix).contains(app(name, args.init :+ app("prefix", j, values)*)))
 
-    // the prefix counts are counts of prefixes (earlier_counts of the module aggregation)
+    // the prefix counts are the multiplicities in the multisets of prefixes (earlier_counts of the module aggregation)
     test("count"):
       val rules = cuvee.prove.Rules.from(State.empty, database)
       def fun(name: String) = database.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun; case DefineFun(fun, _, _) if fun.name.name == name => fun }.get
@@ -129,7 +129,7 @@ object TEQ extends TestSuite:
 
       val bounds = cuvee.prove.Context.empty(State.empty).withRules(rules)
       val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, bounds, app("earlier", j, Butlast(app("counts", x, e, keys))))
-      assert(subexprs(earlier).contains(app("count", e, app("prefix", j, keys))))
+      assert(subexprs(earlier).contains(app("elems", app("prefix", j, keys))))
       assert(!has(earlier, "counts"))
 
     // the invariant of a loop condition i < 1024 over a counter is rewritten by the lemma for k < m,
