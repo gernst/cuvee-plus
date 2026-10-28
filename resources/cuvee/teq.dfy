@@ -99,6 +99,13 @@ function {:teq} {:fold} stores<a, b>(a: array<a, b>, keys: List<a>, values: List
   trace(a, for keys, values do b, k, v :: b[k := v])
 }
 
+// the values moved one position down at the keys: each key k takes the value at k + 1, which for keys increasing by 1
+// is that of the initial array, since it is written only afterwards (select_current_shifts of the module arrays)
+function {:teq} {:fold} shifts(a: array<int, int>, keys: List<int>): Trace<array<int, int>>
+{
+  trace(a, for keys do b, k :: b[k := b[k + 1]])
+}
+
 // lists
 
 lemma {:rw} {:teq} maps_identity<a>(xs: List<a>)
@@ -142,6 +149,12 @@ lemma {:rw} {:teq} maps_counter_scale(b: int, i: int, c: int, n: int)
   ensures maps(for ⌊counter(i, c, n)⌋ yield v :: b * v)
     == ⌊counter(b * i, b * c, n)⌋
 
+// the same with the counter subtracted, a - v, which the pattern a + b * v does not match with b = -1 (TODO.md)
+// (from array-tiling/tcpy: the positions m - k - 1)
+lemma {:rw} {:teq} maps_counter_neg(a: int, i: int, c: int, n: int)
+  ensures maps(for ⌊counter(i, c, n)⌋ yield v :: a - v)
+    == ⌊counter(a - i, -c, n)⌋
+
 lemma {:rw} {:teq} invs_const(b: bool, i: int, c: int, n: int)
   ensures invs(for ⌊counter(i, c, n)⌋ check v :: b)
     <==> n <= 0 || b
@@ -177,9 +190,18 @@ lemma {:rw} {:teq} prefix_counter(k: int, i: int, c: int, n: int)
   ensures prefix(k, ⌊counter(i, c, n)⌋)
     == ⌊counter(i, c, k)⌋
 
+lemma {:rw} {:teq} prefix_consts(k: int, n: int, x: int)
+  ensures prefix(k, ⌊consts(n, x)⌋)
+    == ⌊consts(k, x)⌋
+
 lemma {:rw} {:teq} occurs_counter_up(j: int, i: int, n: int)
   ensures occurs(j, ⌊counter(i, 1, n)⌋)
     <==> i <= j < i + n
+
+// a counter down from i by 1, e.g. the positions m - k - 1 of a copy from both ends
+lemma {:rw} {:teq} occurs_counter_down(j: int, i: int, n: int)
+  ensures occurs(j, ⌊counter(i, -1, n)⌋)
+    <==> i - n < j <= i
 
 lemma {:rw} {:teq} indexof_counter_up(j: int, i: int, n: int)
   requires i <= j < i + n
@@ -252,6 +274,9 @@ lemma {:rw} {:teq} length_stores<a, b>(a: array<a, b>, keys: List<a>, values: Li
   requires length(values) == length(keys)
   ensures length(⌊stores(a, keys, values)⌋) == length(keys)
 
+lemma {:rw} {:teq} length_shifts(a: array<int, int>, keys: List<int>)
+  ensures length(⌊shifts(a, keys)⌋) == length(keys)
+
 // a choice of a loop, e.g. the numbers of iterations of an inner loop, whose values are all determined by the
 // iteration constraint is a constant list, which the reads of the choice then follow (earlier_consts)
 lemma {:rw} {:teq} consts_choice<a>(n: int, xs: List<a>, c: a)
@@ -282,3 +307,11 @@ lemma {:rw} {:teq} earlier_stores<a, b>(k: a, j: int, a: array<a, b>, keys: List
       case occurs(k, prefix(j, keys)) => earlier(indexof(k, prefix(j, keys)), values)
       case !occurs(k, prefix(j, keys)) => a[k]
     }
+
+lemma {:rw} {:teq} earlier_shifts(j: int, a: array<int, int>, keys: List<int>)
+  ensures earlier(j, ⌊shifts(a, keys)⌋)
+    == current(shifts(a, prefix(j, keys)))
+
+lemma {:rw} {:teq} prefix_shifts(k: int, a: array<int, int>, keys: List<int>)
+  ensures prefix(k, ⌊shifts(a, keys)⌋)
+    == ⌊shifts(a, prefix(k, keys))⌋

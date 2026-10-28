@@ -46,6 +46,13 @@ conditionals (`if 0 <= j < n then ... else a0[j]`); whether those are written as
 since it touches many lemmas. Whether conditionals and cases should leave comparisons and products (motivex) as well
 is open too.
 
+**Regression (0.53.6, cloud).** mbpr4, SV-LIB bhmr2007, loopv1 and loopv3 end in unknown: a definition whose value
+contains a choice, e.g. `a == x0 + n * eps(c => 1, !c => 2)` from `maps_const` and `sums_consts`, is lifted into the
+conjunction `(c ==> a == ...) && (!c ==> a == ...)`, which the case split of `-prove` does not take apart, where the
+conditional of 0.53.5 was split (also with a further `-split -prove`). The proposed fix lifts a choice out of an atom
+into the nested conditional `ite(c₁, A[v₁], ite(c₂, A[v₂], ... A[unspecified]))`, the form the rest of `-prove`
+handles, while the cases stay cases in updates, maps and the right-hand sides of lemmas (TODO.md).
+
 ## 3. Keys stay keys
 
 A bound variable of a synthesized dependency that is the index of a store takes no values per case
@@ -77,12 +84,12 @@ since a direct read lemma costs one rewrite step and a fold two or more.
 
 | Shape | Lemmas |
 |---|---|
-| shift `x[k := x[k + 1]]` over `counter(i, 1, n)` | `select_current_trace_shift`, `elems_selects_shift`, `elems_selects_rotate` |
+| shift `x[k := x[k + 1]]` over `counter(i, 1, n)` | done (Oct 28): the fold `shifts(a, keys)` of teq.dfy with its accessors, and `select_current_shifts`, `elems_selects_shift`, `elems_selects_rotate` over it; the fold fires on bAnd1, the users take about 30 s, to be confirmed on the cloud |
 | reset and accumulate at one cell, `case k == 0 => a[j := c] case 0 < k => ...` | `select_current_trace_reset_keep`, `_reset_add`, `_reset_add_keep` |
-| recurrence `b[i := b[i - 1] + G]` | `select_current_trace_recurrence`, `_prefix_sums`, `_prefix_sums_add` |
-| two phases `case x < b => x + 1 case b <= x => x + c` | `current_trace_two_phases`, `invs_two_phases` |
-| copy from both ends `a[m - k - 1 := ...][k := ...]` | `select_current_trace_copy_both_ends`, `_list` |
-| conditional store keeping the array otherwise | `select_current_trace_conditional_store`, `_deps`, `select_current_trace_cap` |
+| recurrence `b[i := b[i - 1] + G]` | done in part (Oct 28): the fold `scans(a, keys, values)` (aggregation.dfy) with `select_current_scans` replaces `_prefix_sums` and `_prefix_sums_add`, also for the form over two counters, whose store index `i` the pattern `p + 1` reaches through `i == k + 1` (eqn1, eqn2, nsqm, sqm, standard_seq_init_ground correct; with `prefix_consts` of teq.dfy); `select_current_trace_recurrence` (a reset at 0, the read `a[i - 1]`) stays until `phases` splits off the first iteration |
+| two phases `x + 1` up to `b`, then `x + c` | done (Oct 28): `phases(x0, m, n, F, G)` (counters.dfy), the first `m` iterations by `F`, the others by `G`, introduced by `trace_threshold` and read by `current_phases` (the two phases composed over counters from 0) and `invs_phases_upper` (increasing steps); declared without a body, since as a fold it took switches at an iteration from `current_trace_step_or_keep` (counters_phase_mod); `current_trace_two_phases`, `invs_two_phases`, and `current_trace_increasing` (preempted by the fold `sums`) removed; Mono1_1, mono-crafted_6, _11, phases_1 unchanged |
+| copy from both ends `a[m - k - 1 := ...][k := ...]` | done (Oct 28): the fold `copies(a, ks, ls, S)` with `select_current_copies` (arrays.dfy), the source `S` an array or a list, with `occurs_counter_down` and `maps_counter_neg` of teq.dfy; tcpy, array_tiling_tcpy correct, faster |
+| conditional store keeping the array otherwise | done (Oct 28): the fold `stores_where(a, keys, guards, values)`, `case g => b[k := v] case !g => b`, with the guards and values synthesized over any dependencies, replaces `_conditional_store` and `_deps` (a synthetic example with a choice as the guard proved, which `_deps` did not); `select_current_stores_where_first` replaces `select_current_trace_reset_keep`, which the fold takes first (ms1, ms1f); the matcher bug it exposed (a shared front of another type, bugs.md) is fixed; `select_current_trace_cap` stays, its guard reads the array; copysome*, array_mul_init, condn take 25-50 s, to be confirmed on the cloud |
 | accumulation at a key, histogram | `current_trace_add_at`, `current_trace_histogram` |
 | conditional step, geometric product, counters | `current_trace_step_or_keep`, `current_trace_geometric`, `current_trace_catch_up`, `current_trace_flag` |
 | stores ahead (windows of width 2 at stride 1, the last iteration shorter) | `select_current_trace_ahead`, `_ahead_down` |

@@ -409,14 +409,14 @@ lemma {:rw} {:teq} elems_selects_swap(a: array<int, int>, p: int, q: int, v: int
 // (from reducercommutativity, array-crafted bAnd, bor, xor)
 lemma {:rw} {:teq} elems_selects_shift(a: array<int, int>, i: int, n: int, m: int)
   requires 0 <= n && m == n + 1
-  ensures elems(selects(current(trace(a, for ⌊counter(i, 1, n)⌋ do x, k :: x[k := x[k + 1]])), ⌊counter(i, 1, m)⌋))
+  ensures elems(selects(current(shifts(a, ⌊counter(i, 1, n)⌋)), ⌊counter(i, 1, m)⌋))
     == elems(selects(a, ⌊counter(i, 1, m)⌋)) - multiset{a[i]} + multiset{a[i + n]}
 
 // a rotation by one over the positions i, ..., i + n: the shift, then the old first element stored at the end
 // (from reducercommutativity, array-crafted bAnd, bor, xor)
 lemma {:rw} {:teq} elems_selects_rotate(a: array<int, int>, i: int, n: int, m: int, v: int)
   requires 0 <= n && m == n + 1 && v == a[i]
-  ensures elems(selects(current(trace(a, for ⌊counter(i, 1, n)⌋ do x, k :: x[k := x[k + 1]]))[i + n := v],
+  ensures elems(selects(current(shifts(a, ⌊counter(i, 1, n)⌋))[i + n := v],
                         ⌊counter(i, 1, m)⌋))
     == elems(selects(a, ⌊counter(i, 1, m)⌋))
 
@@ -554,24 +554,35 @@ lemma {:rw} {:teq} current_trace_reset_add_keep(x0: int, n: int, c: int, P: (int
           c + sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: case 0 < k && P(k) => G(k) case k <= 0 || !P(k) => 0)))
       }
 
-// an array filled by a recurrence at the positions 1, ..., n, each element from its predecessor plus G of the position
-// of the predecessor, is the initial element plus the sum of G over the positions before
-// (from eqn1, eqn1f, nsqm, nsqmf, pcomp, pcompf, sqm)
-lemma {:rw} {:teq} select_current_trace_prefix_sums(b0: array<int, int>, n: int, j: int, G: (int) -> int)
-  ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := G(k) + b[k]]))[j]
-    == if {
-      case 0 <= j <= n => b0[0] + sum(elems(maps(for ⌊counter(0, 1, j)⌋ yield k :: G(k))))
-      case !(0 <= j <= n) => b0[j]
-    }
+// prefix sums in an array: each position after a key holds the value at the key plus the value of the iteration, e.g.
+// b[i] = b[i - 1] + G(i - 1) of a loop over i from 1, whose read the context of the update writes over the counter k
+// from 0 with i == k + 1, which the pattern p + 1 reaches through that definition; the values are a list, so any
+// number of summands of G
+function {:teq} {:fold} scans(a: array<int, int>, keys: List<int>, values: List<int>): Trace<array<int, int>>
+{
+  trace(a, for keys, values do b, p, v :: b[p + 1 := b[p] + v])
+}
 
-// the same with two added terms, since a higher-order summand matches a single summand only (see TODO.md)
-// (from nsqm, nsqmf, pcomp, pcompf, sqm; unused on SV-COMP, whose tasks nsqm, pcomp remain open for other reasons)
-lemma {:rw} {:teq} select_current_trace_prefix_sums_add(b0: array<int, int>, n: int, j: int, G: (int) -> int,
-                                                 H: (int) -> int)
-  ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := b[k] + G(k) + H(k)]))[j]
+lemma {:rw} {:teq} length_scans(a: array<int, int>, keys: List<int>, values: List<int>)
+  ensures length(⌊scans(a, keys, values)⌋) == length(keys)
+
+lemma {:rw} {:teq} earlier_scans(j: int, a: array<int, int>, keys: List<int>, values: List<int>)
+  ensures earlier(j, ⌊scans(a, keys, values)⌋)
+    == current(scans(a, prefix(j, keys), prefix(j, values)))
+
+lemma {:rw} {:teq} prefix_scans(k: int, a: array<int, int>, keys: List<int>, values: List<int>)
+  ensures prefix(k, ⌊scans(a, keys, values)⌋)
+    == ⌊scans(a, prefix(k, keys), prefix(k, values))⌋
+
+// over the positions of a counter from i, the cells i, ..., i + n hold the initial value at i plus the sum of the first
+// values, the others are untouched
+// (from eqn1-eqn5, ncomp, nsqm, pcomp, sqm, standard_seq_init_ground and their false variants)
+lemma {:rw} {:teq} select_current_scans(b0: array<int, int>, i: int, n: int, values: List<int>, j: int)
+  requires 0 <= n
+  ensures current(scans(b0, ⌊counter(i, 1, n)⌋, values))[j]
     == if {
-      case 0 <= j <= n => b0[0] + sum(elems(maps(for ⌊counter(0, 1, j)⌋ yield k :: G(k) + H(k))))
-      case !(0 <= j <= n) => b0[j]
+      case i <= j <= i + n => b0[i] + sum(elems(prefix(j - i, values)))
+      case !(i <= j <= i + n) => b0[j]
     }
 
 // a recurrence in an array: the first cell set to c, each further cell i the previous one plus G(i), so the cell j is

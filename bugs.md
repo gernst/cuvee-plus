@@ -376,6 +376,14 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
 
 ## Fixed
 
+- **A rule with more dependencies than the expression aborts the run with "type mismatch"** (found Oct 28, 2026,
+  0.53.6): when the direct match fails, `Rewrite.combinator` retries with the further dependencies of the pattern
+  sharing the bound variable of the first ("front"); a local of another type, e.g. the boolean guard `g` of a fold
+  `stores_where(a, keys, guards, values)` against the trace of `filters_above` over an integer key and the history
+  of `counts`, is then bound to that integer variable, and the type check raises an error instead of failing the
+  match, which ends the whole run (examples/c/teq/filters.c with the fold). Fixed on Oct 28, 2026: the sharing
+  matches the types of the bound variables with that of the front, like any binding (`Rewrite.combinator`).
+
 - **`-prove` does not terminate on a goal of several negated conjunctions** (found Oct 28, 2026, in 0.52.17 and
   0.53.1): `ensures !(x == c && d == c) && !(y == c && d == c)` hangs in `Normalize.goal`, which moves the negated
   conjuncts to the front of the succedents one by one, rebuilt the conjunction in the reversed order, and normalized

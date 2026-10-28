@@ -64,6 +64,14 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
+- [ ] Tasks lost in 0.53.6 (cloud, Oct 28, against 0.53.5; ending in unknown, not timeouts): array-tiling/mbpr4
+      (Arrays and MonoCera), SV-LIB bhmr2007, loopv1, loopv3. The choices lifted out of atoms (`Simplify.atom`)
+      turn definitions with a choice, e.g. `a == consts`-values of guards that do not depend on the iteration
+      (`maps_const`, `sums_consts`), into conjunctions of implications `(c ==> a == n) && (!c ==> a == 2 * n)`,
+      which the case split of `-prove` does not take apart (nor `-split`, tried), while the conditionals of 0.53.5
+      were split; in mbpr4 the lifted goal needs the case `i == 2` of `0 < i < 3`. Proposed, not tried: lift a
+      choice out of an atom into the nested conditional `ite(c₁, A[v₁], ... A[unspecified])` instead
+      (ideas/cases-and-folds.md, section 2). No removed lemma is involved (`scripts/missing.py`).
 - [ ] Tasks lost since 0.52.4 (ideas/prove-next.md, A2, the table of Oct 28): brs2-brs5
       (`select_current_trace_reset_add_keep`) and ps2-ps6 valuebound1 (`square_eq_self`, the case split on
       two-element intervals) recovered in 0.52.17, pr3 by its shape; open: mods, modsf, functions_1-2, and those at

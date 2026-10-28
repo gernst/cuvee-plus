@@ -102,12 +102,12 @@ modules are injected after it by `-include teq:<concept>`:
 
 | Module | Contents |
 |---|---|
-| `aggregation` | the multiset of a list (`elems`) and the aggregates over multisets: `sum`, `parity`, `max(x, m)`, `min(x, m)`, and counts as the multiplicity `m[e]` of the core; the prefix traces `sums`, `parities`, `counts`, `maxs`, `mins`, whose current values are these aggregates; swap, shift and rotation of arrays preserve the multiset; compactions and filters (`compacts`, `filters_above`, `filters_below`) |
+| `aggregation` | the multiset of a list (`elems`) and the aggregates over multisets: `sum`, `parity`, `max(x, m)`, `min(x, m)`, and counts as the multiplicity `m[e]` of the core; the prefix traces `sums`, `parities`, `counts`, `maxs`, `mins`, whose current values are these aggregates; swap, shift and rotation of arrays preserve the multiset; prefix sums in arrays (`scans`); compactions and filters (`compacts`, `filters_above`, `filters_below`) |
 | `arithmetic` | `pow`, and the facts the arithmetic does not decide alone, e.g. halved triangles |
 | `search` | agreeing prefixes, no occurrence, values above the iterations, the bisection with a probe |
 | `sorted` | `sorted`, `perm`, `partitioned`, `swap`, the partition points `lower`, `upper` |
-| `arrays` | stores at a counter and at distinct keys, conditional stores, resets, reads along a trace, rows of two-dimensional arrays, copies from both ends |
-| `counters` | phases, flags, catching up, merged cases, constant, increasing and bounded values |
+| `arrays` | stores at a counter and at distinct keys, the folds `stores_where` (stores where a guard holds, the guards and values synthesized over any dependencies) and `copies` (copies of a source at two lists of keys, e.g. from both ends), resets, reads along a trace, rows of two-dimensional arrays |
+| `counters` | `phases` (two phases, the first `m` iterations by `F`, the others by `G`, from a switch at a threshold of the value), flags, catching up, merged cases, constant and bounded values |
 | `strides` | the stores of 2 to 5 adjacent cells per iteration as folds `strides₂` to `strides₅` with one list of values per cell, synthesized with the cases of the update where the values differ (the conditional stores of pr2-pr5, pnr2-pnr5), their reads at a stride of at least their width; stores ahead (MonoCera) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |
 | `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, geometric `series`; after `aggregation`, `arithmetic` |

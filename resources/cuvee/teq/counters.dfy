@@ -10,17 +10,6 @@ lemma {:rw} {:teq} trace_merge_cases_ne(x0: int, n: int, c: int, d: int, F: (int
   ensures trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x != c => F(x) case x == c => d)
     == trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: F(x))
 
-// the same counter is increasing for 0 < c, hence an upper bound B holds at all its values before the current one
-// iff it holds at the last of them
-// (from Mono1_1-2)
-lemma {:rw} {:teq} invs_two_phases(x0: int, n: int, b: int, c: int, B: int)
-  requires x0 <= b && 0 < c
-  ensures
-    invs(for ⌊counter(0, 1, n)⌋, ⌊trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c)⌋
-         check k, x :: x < B)
-      <==> (n <= 0
-             || if { case n - 1 <= b - x0 => x0 + n - 1 case b - x0 < n - 1 => b + (n - 1 - (b - x0)) * c } < B)
-
 // an iteration constraint that is a negated disjunction, as the test of a break, is two of them
 // (from benchmark09_conjunctive, the only task of SV-COMP that uses it)
 lemma {:rw} {:teq} invs_not_or(hs: List<int>, gs: List<int>, fs: List<int>, P: (int, int, int) -> bool,
@@ -35,16 +24,49 @@ lemma {:rw} {:teq} current_trace_constant<a>(x: a, y: a, i: int, c: int, n: int)
       case 0 < n => y
     }
 
-// a counter in two phases: by 1 up to the bound b, from an initial value up to b, then by c >= 0, which keeps it
-// at least b
-// (from Mono1_1-2, phases_1-1, phases_1-2)
-lemma {:rw} {:teq} current_trace_two_phases(x0: int, n: int, b: int, c: int)
-  requires 0 <= n && x0 <= b && 0 <= c
-  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c))
+// a value in two phases: the first m iterations by F, the others by G, which may depend on the iteration, i.e.,
+// trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case k < m => F(x, k) case m <= k => G(x, k)); the second phase starts
+// where the first ends; no fold, but introduced only by a switch at a threshold of the value (trace_threshold), since
+// as a fold it would take every switch at an iteration from the lemmas that read it directly, e.g. a value that keeps
+// and then adds, whose remainder current_trace_step_or_keep gives (examples/dafny/teq/counters_phase_mod.dfy)
+function {:teq} phases(x0: int, m: int, n: int, F: (int, int) -> int, G: (int, int) -> int): Trace<int>
+
+lemma {:rw} {:teq} length_phases(x0: int, m: int, n: int, F: (int, int) -> int, G: (int, int) -> int)
+  requires 0 <= n
+  ensures length(⌊phases(x0, m, n, F, G)⌋) == n
+
+lemma {:rw} {:teq} earlier_phases(j: int, x0: int, m: int, n: int, F: (int, int) -> int, G: (int, int) -> int)
+  ensures earlier(j, ⌊phases(x0, m, n, F, G)⌋)
+    == current(phases(x0, m, j, F, G))
+
+lemma {:rw} {:teq} prefix_phases(k: int, x0: int, m: int, n: int, F: (int, int) -> int, G: (int, int) -> int)
+  ensures prefix(k, ⌊phases(x0, m, n, F, G)⌋)
+    == ⌊phases(x0, m, k, F, G)⌋
+
+// a switch at a threshold b of the value, reached after b - x0 steps by 1 and kept by steps c >= 0
+// (from Mono1_1-2, mono-crafted_6, mono-crafted_11, phases_1-1, phases_1-2)
+lemma {:rw} {:teq} trace_threshold(x0: int, n: int, b: int, c: int)
+  requires x0 <= b && 0 <= c
+  ensures trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c)
+    == phases(x0, b - x0, n, (y: int, l: int) => y + 1, (y: int, l: int) => y + c)
+
+// the second phase starts from the end of the first, both over counters from 0, which the lemmas on traces over a
+// counter take, e.g. counter_def
+lemma {:rw} {:teq} current_phases(x0: int, m: int, n: int, F: (int, int) -> int, G: (int, int) -> int)
+  requires 0 <= m && 0 <= n
+  ensures current(phases(x0, m, n, F, G))
     == if {
-      case n <= b - x0 => x0 + n
-      case b - x0 < n => b + (n - (b - x0)) * c
+      case n <= m => current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: F(x, k)))
+      case m < n => current(trace(current(trace(x0, for ⌊counter(0, 1, m)⌋ do x, k :: F(x, k))),
+                                  for ⌊counter(0, 1, n - m)⌋ do x, k :: G(x, k + m)))
     }
+
+// increasing phases: an upper bound holds at all earlier values iff it holds at the last of them
+lemma {:rw} {:teq} invs_phases_upper(x0: int, m: int, n: int, F: (int, int) -> int, G: (int, int) -> int, B: int)
+  requires 0 <= m
+  requires forall y: int, l: int :: y <= F(y, l) && y <= G(y, l)
+  ensures invs(for ⌊counter(0, 1, n)⌋, ⌊phases(x0, m, n, F, G)⌋ check k, x :: x < B)
+    <==> (n <= 0 || current(phases(x0, m, n - 1, F, G)) < B)
 
 // a follower: y increases by 1 whenever it does not exceed the value x of a counter with step 1, hence y is the
 // larger of its initial value and the final value of x, given that it starts at least at x
@@ -66,16 +88,6 @@ lemma {:rw} {:teq} current_trace_flag<a>(x0: a, c: a, n: int, hs: List<int>, D: 
       case invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !D(k, h)) => x0
       case !invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !D(k, h)) => c
     }
-
-// a value that increases by a positive constant in each of its three cases exceeds its initial value after at
-// least one iteration; the fourth case, the complement of the others, makes the lemma hold for every update, the
-// traces of the loops match it without that case (doc/teq.md, complete guards)
-// (from large_const, the only task of SV-COMP that uses it)
-lemma {:rw} {:teq} current_trace_increasing(x0: int, n: int, a: int, b: int, c: int, hs: List<int>, C: (int) -> bool,
-                                            D: (int) -> bool, E: (int) -> bool)
-  requires 0 < n && 0 < a && 0 < b && 0 < c
-  ensures x0 < current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h ::
-    case C(h) => x + a case D(h) => x + b case E(h) => x + c case !(C(h) || D(h) || E(h)) => x + a))
 
 // an interval that contains the initial value and that each of the three cases maps into itself contains the
 // current value, an inductive invariant; the left-hand side is the conjunction of both bounds, which binds both;

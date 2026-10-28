@@ -45,23 +45,12 @@ lemma {:rw} {:teq} stores_read_unmodified(a0: array<int, int>, n: int, hs: List<
   ensures trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := a[F(k, h)]])
     == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a0[F(k, h)]))
 
-// the same where the other iterations keep the array, e.g. since the simplifier has reduced sum[0] + a[i] to sum[0]
-// for a[i] == 0
-// (from MonoCera: ms1, the only task of SV-COMP that uses it)
-lemma {:rw} {:teq} select_current_trace_reset_keep(a0: array<int, int>, j: int, n: int, c: int)
-  ensures
-    current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a))[j]
-      == if {
-        case n <= 0 => a0[j]
-        case 0 < n => c
-      }
-
 // a loop that moves each element of i + 1, ..., i + n one position down reads the next element of the initial array at
 // the positions it writes, i, ..., i + n - 1, which it has not written yet, and the initial array elsewhere
 // (from reducercommutativity, array-crafted bAnd, bor, xor: the rotation)
-lemma {:rw} {:teq} select_current_trace_shift(a: array<int, int>, i: int, n: int, j: int)
+lemma {:rw} {:teq} select_current_shifts(a: array<int, int>, i: int, n: int, j: int)
   requires 0 <= n
-  ensures current(trace(a, for ⌊counter(i, 1, n)⌋ do x, k :: x[k := x[k + 1]]))[j]
+  ensures current(shifts(a, ⌊counter(i, 1, n)⌋))[j]
     == if {
       case i <= j < i + n => a[j + 1]
       case !(i <= j < i + n) => a[j]
@@ -74,29 +63,47 @@ lemma {:rw} {:teq} selects_stores_counter(a: array<int, int>, i: int, c: int, n:
   requires c != 0
   ensures selects(current(stores(a, ⌊counter(i, c, n)⌋, vs)), ⌊counter(i, c, n)⌋) == vs
 
-// stores at the positions of a counter, guarded by C, keep the other positions; a read at j; the case that keeps the
-// array is no store, so the fold stores does not apply (ideas/conditional-stores.md)
-// (from copysome1-1, copysome1-2; used on SV-COMP by copysome1-1 only)
-lemma {:rw} {:teq} select_current_trace_conditional_store(a0: array<int, int>, n: int, j: int, C: (int) -> bool,
-                                                   V: (int) -> int)
-  ensures
-    current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case C(k) => a[k := V(k)] case !C(k) => a))[j]
-      == if {
-        case 0 <= j < n && C(j) => V(j)
-        case !(0 <= j < n && C(j)) => a0[j]
-      }
+// stores at the keys where a guard holds, the other positions kept: the case that keeps the array is no store, so the
+// fold stores does not apply; the guards and the values are lists, which the matcher synthesizes over the dependencies
+// they read, e.g. the index, choices, or other arrays (ideas/conditional-stores.md)
+function {:teq} {:fold} stores_where(a: array<int, int>, keys: List<int>, guards: List<bool>, values: List<int>):
+    Trace<array<int, int>>
+{
+  trace(a, for keys, guards, values do b, k, g, v :: case g => b[k := v] case !g => b)
+}
 
-// the same, with the guard and the value on the values of three further dependencies at the iteration of j
-// (from array_mul_init; used on SV-COMP by array_mul_init, motivex only)
-lemma {:rw} {:teq} select_current_trace_conditional_store_deps(a0: array<int, int>, n: int, j: int, hs: List<int>,
-                                                        cs: List<int>, vs: List<int>, C: (int, int, int) -> bool,
-                                                        V: (int, int, int) -> int)
-  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs, cs, vs do a, k, h, c, v ::
-                  case C(h, c, v) => a[k := V(h, c, v)] case !C(h, c, v) => a))[j]
+lemma {:rw} {:teq} length_stores_where(a: array<int, int>, keys: List<int>, guards: List<bool>, values: List<int>)
+  ensures length(⌊stores_where(a, keys, guards, values)⌋) == length(keys)
+
+lemma {:rw} {:teq} earlier_stores_where(j: int, a: array<int, int>, keys: List<int>, guards: List<bool>,
+    values: List<int>)
+  ensures earlier(j, ⌊stores_where(a, keys, guards, values)⌋)
+    == current(stores_where(a, prefix(j, keys), prefix(j, guards), prefix(j, values)))
+
+lemma {:rw} {:teq} prefix_stores_where(k: int, a: array<int, int>, keys: List<int>, guards: List<bool>,
+    values: List<int>)
+  ensures prefix(k, ⌊stores_where(a, keys, guards, values)⌋)
+    == ⌊stores_where(a, prefix(k, keys), prefix(k, guards), prefix(k, values))⌋
+
+// a read at distinct keys: the value of the iteration of j if its guard holds, otherwise the initial value
+// (from copysome1-1, copysome1-2, copysome2-1, array_mul_init, motivex)
+lemma {:rw} {:teq} select_current_stores_where(a0: array<int, int>, keys: List<int>, guards: List<bool>,
+    values: List<int>, j: int)
+  requires distincts(keys)
+  ensures current(stores_where(a0, keys, guards, values))[j]
     == if {
-      case 0 <= j < n && C(earlier(j, hs), earlier(j, cs), earlier(j, vs)) =>
-        V(earlier(j, hs), earlier(j, cs), earlier(j, vs))
-      case !(0 <= j < n && C(earlier(j, hs), earlier(j, cs), earlier(j, vs))) => a0[j]
+      case occurs(j, keys) && earlier(indexof(j, keys), guards) => earlier(indexof(j, keys), values)
+      case !(occurs(j, keys) && earlier(indexof(j, keys), guards)) => a0[j]
+    }
+
+// stores at one key j, guarded to the first iteration only: a reset of a cell where the other iterations keep the
+// array, e.g. since the simplifier has reduced sum[0] + a[i] to sum[0] for a[i] == 0; the keys are not distinct
+// (from MonoCera: ms1, the only task of SV-COMP that uses it)
+lemma {:rw} {:teq} select_current_stores_where_first(a0: array<int, int>, n: int, j: int, values: List<int>)
+  ensures current(stores_where(a0, ⌊consts(n, j)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: k == 0), values))[j]
+    == if {
+      case n <= 0 => a0[j]
+      case 0 < n => earlier(0, values)
     }
 
 // a clamp of each element to b, where the guard reads the initial element, since each position is written in its own
@@ -109,26 +116,34 @@ lemma {:rw} {:teq} select_current_trace_cap(a0: array<int, int>, n: int, j: int,
       case !(0 <= j < n && b <= a0[j]) => a0[j]
     }
 
-// a copy from both ends: iteration k copies the positions m - k - 1 and k from b, so a position covered by either
-// range holds b at it, whatever the order of the stores and whether the ranges overlap; the index as the simplifier
-// normalizes it, and the source an array or the list of values of an earlier loop, since a higher-order value
-// F(m - k - 1) does not match (TODO.md)
-// (from array-tiling/tcpy, array-cav19/array_tiling_tcpy)
-lemma {:rw} {:teq} select_current_trace_copy_both_ends(a0: array<int, int>, b: array<int, int>, n: int, m: int, j: int)
-  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: a[-k + m + -1 := b[-k + m + -1]][k := b[k]]))[j]
-    == if {
-      case 0 <= j < n || m - n <= j < m => b[j]
-      case !(0 <= j < n || m - n <= j < m) => a0[j]
-    }
+// copies of the values of a source S at the keys of two lists per iteration, e.g. a copy from both ends, positions
+// m - k - 1 and k: each position takes the value of the source at itself, so the order of the stores does not matter,
+// nor whether the keys overlap; S is the source read at its position, an array b[p] or the list of values of an
+// earlier loop earlier(p, xs)
+function {:teq} {:fold} copies(a: array<int, int>, ks: List<int>, ls: List<int>, S: (int) -> int):
+    Trace<array<int, int>>
+{
+  trace(a, for ks, ls do b, p, q :: b[p := S(p)][q := S(q)])
+}
 
-// (from array-tiling/tcpy)
-lemma {:rw} {:teq} select_current_trace_copy_both_ends_list(a0: array<int, int>, xs: List<int>, n: int, m: int,
-                                                            j: int)
-  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k ::
-                  a[-k + m + -1 := earlier(-k + m + -1, xs)][k := earlier(k, xs)]))[j]
+lemma {:rw} {:teq} length_copies(a: array<int, int>, ks: List<int>, ls: List<int>, S: (int) -> int)
+  ensures length(⌊copies(a, ks, ls, S)⌋) == length(ks)
+
+lemma {:rw} {:teq} earlier_copies(j: int, a: array<int, int>, ks: List<int>, ls: List<int>, S: (int) -> int)
+  ensures earlier(j, ⌊copies(a, ks, ls, S)⌋)
+    == current(copies(a, prefix(j, ks), prefix(j, ls), S))
+
+lemma {:rw} {:teq} prefix_copies(k: int, a: array<int, int>, ks: List<int>, ls: List<int>, S: (int) -> int)
+  ensures prefix(k, ⌊copies(a, ks, ls, S)⌋)
+    == ⌊copies(a, prefix(k, ks), prefix(k, ls), S)⌋
+
+// a position among the keys holds the source at it, the others the initial value
+// (from array-tiling/tcpy, array-cav19/array_tiling_tcpy)
+lemma {:rw} {:teq} select_current_copies(a0: array<int, int>, ks: List<int>, ls: List<int>, S: (int) -> int, j: int)
+  ensures current(copies(a0, ks, ls, S))[j]
     == if {
-      case 0 <= j < n || m - n <= j < m => earlier(j, xs)
-      case !(0 <= j < n || m - n <= j < m) => a0[j]
+      case occurs(j, ks) || occurs(j, ls) => S(j)
+      case !(occurs(j, ks) || occurs(j, ls)) => a0[j]
     }
 
 // a store of the old value of a cell after a store at another position changes nothing, e.g. volArray[2 k + 1] =

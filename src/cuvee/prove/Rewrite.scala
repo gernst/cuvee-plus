@@ -704,7 +704,7 @@ object Rewrite:
 
           fresh ++ shared
 
-    def results(shared: Map[Var, Var]) =
+    def results(shared: Map[Var, Var], subst: Subst[Type, Expr]) =
       for
         (selected, subst1) <- select(es, pairs_, Nil, subst)
         subst2 <- body(locals ++ zs.map(_._2), bound ++ acc ++ selected ++ shared, avoid ++ ys_ ++ acc.values, subst1)
@@ -714,13 +714,17 @@ object Rewrite:
     // an expression with fewer dependencies than the pattern, e.g. the loop variable only for a rule of the
     // per-variable form over ⌊counter(0, 1, n)⌋, hs, may have none left for the variables of the rule among the
     // dependencies: if the match fails otherwise, their bound variables share that of the front, whose dependency
-    // they take (see instantiate); not first, since e.g. vs of stores over ks, vs takes a map over the front
-    val direct = results(Map())
+    // they take (see instantiate); not first, since e.g. vs of stores over ks, vs takes a map over the front; sharing
+    // matches their types with that of the front, like any binding, e.g. the guards of stores_where over keys, guards,
+    // values do not share an integer front
+    val direct = results(Map(), subst)
     if direct.nonEmpty || deps_.length >= deps.length || deps_.isEmpty || zs.isEmpty
     then direct
     else
       val (_, y_) = front(ctx, deps_ zip ys_)
-      results(zs.map((_, y) => y -> y_).toMap)
+      val typed = zs.foldLeft(List(subst)):
+        case (substs, (_, y)) => substs.flatMap(matchesType(state, params, y.typ, y_.typ, _))
+      typed.flatMap(results(zs.map((_, y) => y -> y_).toMap, _))
 
   // the update of a combinator, as a whole, and otherwise a pattern without cases against the cases of the expression
   // case by case, where the bound variables of the dependencies that are variables of the rule and that this combinator

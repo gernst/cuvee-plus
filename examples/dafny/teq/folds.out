@@ -1,0 +1,5 @@
+goal
+  forall N: int, S: array<int, int>, A0: array<int, int>, C?₆₀: List<int>,
+         l: int ::
+    length(C?₆₀) == N && 0 <= l < N && earlier(l, C?₆₀) == 0 ==> A0[l] == S[l]
+
