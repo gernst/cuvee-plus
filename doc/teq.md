@@ -106,7 +106,7 @@ modules are injected after it by `-include teq:<concept>`:
 | `arithmetic` | `pow`, and the facts the arithmetic does not decide alone, e.g. halved triangles |
 | `search` | agreeing prefixes, no occurrence, values above the iterations, the bisection with a probe |
 | `sorted` | `sorted`, `perm`, `partitioned`, `swap`, the partition points `lower`, `upper` |
-| `arrays` | stores at a counter and at distinct keys, the folds `stores_where` (stores at the iterations of a counter where a guard holds, the guards and values synthesized over any dependencies) and `copies` (copies of a source at two lists of keys, e.g. from both ends), resets, reads along a trace, rows of two-dimensional arrays |
+| `arrays` | stores at a counter and at distinct keys, the folds `stores_where` (stores at the positions of a counter among the dependencies where a guard holds, the guards and values synthesized over any dependencies) and `copies` (copies of a source at two lists of keys, e.g. from both ends), resets, reads along a trace, rows of two-dimensional arrays |
 | `counters` | `phases` (two phases, the first `m` iterations by `F`, the others by `G`, from a switch at a threshold of the value), flags, catching up, merged cases, constant and bounded values |
 | `strides` | the stores of 2 to 5 adjacent cells per iteration as folds `strides₂` to `strides₅` with one list of values per cell, synthesized with the cases of the update where the values differ (the conditional stores of pr2-pr5, pnr2-pnr5), their reads at a stride of at least their width; stores ahead (MonoCera) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |

@@ -75,23 +75,14 @@ object Simplify:
   // an atom whose terms contain a choice as a value, e.g. the read earlier(j, maps(...)) of a map whose update has
   // cases, is lifted into the cases of the choice by the polarity of its position (see Normalize.cases): in a goal or
   // a neutral position the conjunction of the guards implying the atom at the results, among the facts the
-  // disjunction of the guards with the atom at the results, which keeps a definition in each case; a choice that is itself the formula, the update of a trace of Bool, stays, and so does
-  // a choice inside a list or a trace, the value of all its elements, e.g. consts(n, eps(...)) for guards that do not
-  // depend on the iteration (maps_const), whose equation defines a trace in the classes
-  // (atoms only: connectives are simplified part by part, whose atoms are lifted there)
+  // disjunction of the guards with the atom at the results, which keeps a definition in each case; a choice that is
+  // itself the formula, the update of a trace of Bool, stays (atoms only: connectives are simplified part by part,
+  // whose atoms are lifted there)
   def atom(polarity: Option[Boolean], expr: Expr): Expr =
     expr match
-      case And(_) | Or(_) | Not(_) | Imp(_, _)                    => expr
-      case App(_, _, _, args) if expr.typ == Sort.bool && args.exists(value) => Normalize.cases(expr, polarity != Some(false))
-      case _                                                      => expr
-
-  // whether a term contains a choice that is not inside a list or a trace
-  def value(expr: Expr): Boolean =
-    expr match
-      case Eps(_)                                                                => true
-      case App(_, _, Sort(Con.list | Con.trace, _), _)                           => false
-      case App(_, _, _, args)                                                    => args.exists(value)
-      case _                                                                     => false
+      case And(_) | Or(_) | Not(_) | Imp(_, _)          => expr
+      case App(_, _, _, _) if expr.typ == Sort.bool => Normalize.cases(expr, polarity != Some(false))
+      case _                                        => expr
 
   // a comparison or an equation at a position with a polarity, decided by the forward lemmas that fire on its own terms
   // (see Forward): at a positive position, it holds if its denial contradicts their instances, e.g. the bare goal

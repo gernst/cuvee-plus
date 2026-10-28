@@ -137,13 +137,15 @@ binders, derivatives, and `old`; `Split` uses it.
   from the cases of an update; so are choices nested in a term of an update, `R[eps(cᵢ => vᵢ)]` as
   `case cᵢ => R[vᵢ]`, e.g. the read of a map with cases added to an accumulator. A choice in an atom, e.g. the
   element `earlier(j, maps(...))` of a map with cases compared with a value, is lifted out of the atom by the
-  polarity of its position (`Simplify.atom`, `Normalize.cases`): in a goal or a neutral position, e.g. a side
-  condition or the body of `invs`, into the conjunction of `cᵢ ==> A[vᵢ]`; among the facts into the disjunction of
-  `cᵢ && A[vᵢ]`, which the case split of disjunctive facts and `-split` take apart, so that a definition
-  `a == t[eps(...)]` holds in each case; both with the case where no guard holds, `A[unspecified]`, which vanishes
-  for exhaustive guards. A choice inside a list or a trace stays, since it is the value of all elements, e.g.
-  `consts(n, eps(...))` of guards that do not depend on the iteration. `-split` lifts choices like conditionals
-  (`Normalize.lift`) and splits a choice of formulas by its cases.
+  polarity of its position: in a goal or a neutral position, e.g. a side condition or the body of `invs`, into the
+  conjunction of `cᵢ ==> A[vᵢ]`; among the facts into the disjunction of `cᵢ && A[vᵢ]`, which the case split of
+  disjunctive facts and `-split` take apart, so that a definition `a == t[eps(...)]` holds in each case. One function
+  lifts at an atom (`Normalize.cases`), for the simplifier (`Simplify.atom`) and for `-split`, which lifts the
+  choices of a whole formula by the polarity of its atoms (`Normalize.choices`) besides the conditionals
+  (`Normalize.lift`). The guards are complete in context, by the iteration constraint of the loop of the update, also
+  where the context at hand does not contain it, e.g. a side condition, so there is no case where no guard holds. A
+  choice inside a list or a trace stays, since it is the value of all elements, e.g. `consts(n, eps(...))` of guards
+  that do not depend on the iteration (`Normalize.value`).
 - **Conditionals in equations** are lifted over them, `ite(c, a, b) == d` is `ite(c, a == d, b == d)`, whose branches
   are decided under the test; they come from the conditionals of programs, while the right-hand sides of the lemmas of
   the database are choices (`if { case 0 <= j < n => ... case !(0 <= j < n) => a0[j] }`, whose guards are exhaustive
@@ -186,10 +188,9 @@ by the simplifier in the context.
 - **Side conditions** are taken in order: a closed one is decided, an open one is matched against the facts, which
   binds the variables that occur only in conditions; so conjuncts that bind variables come first in a lemma. A closed
   condition is first looked up among the facts modulo the classes and the canonical forms of binders
-  (`Rewrite.known`). A condition that does not simplify to true is simplified once more with its choices lifted out of
-  its atoms, `A[eps(cᵢ => vᵢ)]` as the conjunction of `cᵢ ==> A[vᵢ]` (`Normalize.choices`, like `Normalize.lift` for
-  `ite`): the choices appear once a higher-order variable of the rule, instantiated by an update, is beta-reduced and
-  read; the cases stay as guards, nothing is merged.
+  (`Rewrite.known`). The choices that appear once a higher-order variable of the rule, instantiated by an update, is
+  beta-reduced and read are lifted out of the atoms of the condition by the simplifier, as in any neutral position
+  (`Simplify.atom`, "Cases rather than conditionals"); the cases stay as guards, nothing is merged.
 - **The bound on the steps**: every rewrite step counts against a bound per goal and per procedure (`-prove:steps`,
   default 1000, `Context.withRules`), beyond which rewriting is reported not to terminate
   ([steps.dfy](../examples/dafny/prove/steps.dfy)). A fact that equates a term with a literal is no rule of the context

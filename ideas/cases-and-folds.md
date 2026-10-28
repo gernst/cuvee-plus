@@ -123,8 +123,10 @@ Patterns that match nearly any trace (a variable for the whole update): `perm_sw
 
 ## 9. Choices in terms: lifting by polarity (implemented Oct 28, doc/prove.md)
 
-**Status.** Implemented as proposed: bhmr2007, loopv1 recovered locally (5 s, both goals), brs2, sum_cases, strides
-unchanged; mbpr4 open (below); to be measured on the cloud.
+**Status.** Implemented (0.53.9): bhmr2007, loopv1, loopv3 recovered on the cloud. The case where no guard holds,
+proposed below for guards that are not exhaustive, lost large_const in 0.53.9 (the side condition of `sum_above` lacks
+the iteration constraint that makes its guards complete) and was removed by decision: the guards are complete in
+context. mbpr4 open (below).
 
 A choice `eps(cᵢ => vᵢ)` in a term is reasoned about only by a case analysis on its guards. Since 0.53.6 that analysis
 happens in the wrong form at some places and not at all at others:
@@ -147,8 +149,7 @@ for exhaustive and disjoint guards the forms are equivalent, they differ in whic
 
 - A choice that is the value of all elements of a list or a trace stays, e.g. `consts(n, eps(...))`, read element by
   element by the read lemmas (the existing exception of `Simplify.atom`).
-- Guards that are not exhaustive (the update of a loop with a break) get the case where none holds, `A[unspecified]`;
-  for the right-hand sides of the database, whose guards are exhaustive, it simplifies away.
+- Not taken (0.53.9, removed): the case where no guard holds, `A[unspecified]`; the guards are complete in context.
 - Places: `Simplify.atom` with the polarity of the context (`ctx.polarity`); `Normalize.lift` lifts conditionals and
   choices alike for `Split`, which splits a choice of formulas per case in conclusions and antecedents; no special case
   in `Prove.alternatives` (by decision); implications among the antecedents stay implications (by decision).

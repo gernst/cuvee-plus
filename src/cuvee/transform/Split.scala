@@ -17,8 +17,8 @@ import cuvee.prove.Normalize
 // and disjunctions and if-then-else are split into cases;
 // obligations that are true, e.g. those with false among the antecedents
 // or with a succedent that is also an antecedent, are dropped, as are duplicates;
-// beforehand, if-then-else and choices are lifted out of the terms of atoms (see Normalize.lift), such that they are
-// split as well
+// beforehand, if-then-else and choices are lifted out of the terms of atoms (see Normalize.lift and
+// Normalize.choices), such that they are split as well, the choices by the polarity of their atoms
 object Split extends Transform:
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val cmds_ =
@@ -36,7 +36,7 @@ object Split extends Transform:
         List(cmd)
 
       case Assert(justify, params, phi, attrs) =>
-        split(Nil, Nil, Normalize.lift(phi)) match
+        split(Nil, Nil, Normalize.lift(Normalize.choices(phi, true))) match
           case List(phi_) =>
             List(Assert(justify, params, phi_, attrs))
 
@@ -90,10 +90,6 @@ object Split extends Transform:
       case Ite(test, left, right) :: rest if left.typ == Sort.bool =>
         assume(List(test), left :: rest, bound, ant, suc) ++ assume(List(Not(test)), right :: rest, bound, ant, suc)
 
-      // a choice of formulas holds in each of its cases (see Normalize.lift)
-      case Eps(updates) :: rest if updates.forall(_.rhs.typ == Sort.bool) =>
-        updates.flatMap(upd => assume(List(upd.cond), upd.rhs :: rest, bound, ant, suc))
-
       case All(xs, body) :: rest =>
         val (xs_, body_) = avoid(bound, xs, body)
         assert(body_ :: rest, bound ++ xs_, ant, suc)
@@ -133,9 +129,6 @@ object Split extends Transform:
 
       case Ite(test, left, right) :: rest if left.typ == Sort.bool =>
         assume(test :: left :: rest, todo, bound, ant, suc) ++ assume(Not(test) :: right :: rest, todo, bound, ant, suc)
-
-      case Eps(updates) :: rest if updates.forall(_.rhs.typ == Sort.bool) =>
-        updates.flatMap(upd => assume(upd.cond :: upd.rhs :: rest, todo, bound, ant, suc))
 
       case Ex(xs, body) :: rest =>
         val (xs_, body_) = avoid(bound, xs, body)

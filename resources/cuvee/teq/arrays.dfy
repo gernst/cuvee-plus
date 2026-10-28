@@ -74,37 +74,44 @@ lemma {:rw} {:teq} selects_stores_counter(a: array<int, int>, i: int, c: int, n:
   requires c != 0
   ensures selects(current(stores(a, ⌊counter(i, c, n)⌋, vs)), ⌊counter(i, c, n)⌋) == vs
 
-// stores at the iterations k of a counter where a guard holds, the other positions kept: the case that keeps the array
+// stores at the positions of a counter where a guard holds, the other positions kept: the case that keeps the array
 // is no store, so the fold stores does not apply; the guards and the values are lists, which the matcher synthesizes
 // over the dependencies they read, e.g. the index, choices, or other arrays (ideas/conditional-stores.md); the keys
-// are the counter itself, not a list, so that stores at other positions, e.g. the compactions at a count j of the
-// module aggregation (filters_above) or a reset at one position, keep their own folds and lemmas
-function {:teq} {:fold} stores_where(a: array<int, int>, n: int, guards: List<bool>, values: List<int>):
+// are a counter among the dependencies, which every loop has, e.g. the variable of a loop by 2 (array_monotonic),
+// not a list, so that stores at other positions, e.g. the compactions at a count j of the module aggregation
+// (filters_above, standard_partition_ground-2) or a reset at one position, keep their own folds and lemmas
+function {:teq} {:fold} stores_where(a: array<int, int>, i: int, c: int, n: int, guards: List<bool>, values: List<int>):
     Trace<array<int, int>>
 {
-  trace(a, for ⌊counter(0, 1, n)⌋, guards, values do b, k, g, v :: case g => b[k := v] case !g => b)
+  trace(a, for ⌊counter(i, c, n)⌋, guards, values do b, k, g, v :: case g => b[k := v] case !g => b)
 }
 
-lemma {:rw} {:teq} length_stores_where(a: array<int, int>, n: int, guards: List<bool>, values: List<int>)
+lemma {:rw} {:teq} length_stores_where(a: array<int, int>, i: int, c: int, n: int, guards: List<bool>,
+    values: List<int>)
   requires 0 <= n
-  ensures length(⌊stores_where(a, n, guards, values)⌋) == n
+  ensures length(⌊stores_where(a, i, c, n, guards, values)⌋) == n
 
-lemma {:rw} {:teq} earlier_stores_where(j: int, a: array<int, int>, n: int, guards: List<bool>, values: List<int>)
-  ensures earlier(j, ⌊stores_where(a, n, guards, values)⌋)
-    == current(stores_where(a, j, prefix(j, guards), prefix(j, values)))
+lemma {:rw} {:teq} earlier_stores_where(j: int, a: array<int, int>, i: int, c: int, n: int, guards: List<bool>,
+    values: List<int>)
+  ensures earlier(j, ⌊stores_where(a, i, c, n, guards, values)⌋)
+    == current(stores_where(a, i, c, j, prefix(j, guards), prefix(j, values)))
 
-lemma {:rw} {:teq} prefix_stores_where(k: int, a: array<int, int>, n: int, guards: List<bool>, values: List<int>)
-  ensures prefix(k, ⌊stores_where(a, n, guards, values)⌋)
-    == ⌊stores_where(a, k, prefix(k, guards), prefix(k, values))⌋
+lemma {:rw} {:teq} prefix_stores_where(k: int, a: array<int, int>, i: int, c: int, n: int, guards: List<bool>,
+    values: List<int>)
+  ensures prefix(k, ⌊stores_where(a, i, c, n, guards, values)⌋)
+    == ⌊stores_where(a, i, c, k, prefix(k, guards), prefix(k, values))⌋
 
-// a read: the value of the iteration j if its guard holds, otherwise the initial value
-// (from copysome1-1, copysome1-2, copysome2-1, array_mul_init, motivex)
-lemma {:rw} {:teq} select_current_stores_where(a0: array<int, int>, n: int, guards: List<bool>, values: List<int>,
-    j: int)
-  ensures current(stores_where(a0, n, guards, values))[j]
+// a read at distinct keys, c != 0: the value of the iteration of j if j is a key and its guard holds, otherwise the
+// initial value
+// (from copysome1-1, copysome1-2, copysome2-1, array_mul_init, array_monotonic, motivex)
+lemma {:rw} {:teq} select_current_stores_where(a0: array<int, int>, i: int, c: int, n: int, guards: List<bool>,
+    values: List<int>, j: int)
+  requires c != 0
+  ensures current(stores_where(a0, i, c, n, guards, values))[j]
     == if {
-      case 0 <= j < n && earlier(j, guards) => earlier(j, values)
-      case !(0 <= j < n && earlier(j, guards)) => a0[j]
+      case occurs(j, ⌊counter(i, c, n)⌋) && earlier(indexof(j, ⌊counter(i, c, n)⌋), guards) =>
+        earlier(indexof(j, ⌊counter(i, c, n)⌋), values)
+      case !(occurs(j, ⌊counter(i, c, n)⌋) && earlier(indexof(j, ⌊counter(i, c, n)⌋), guards)) => a0[j]
     }
 
 // a clamp of each element to b, where the guard reads the initial element, since each position is written in its own
