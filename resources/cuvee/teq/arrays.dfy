@@ -45,6 +45,17 @@ lemma {:rw} {:teq} stores_read_unmodified(a0: array<int, int>, n: int, hs: List<
   ensures trace(a0, for ⌊counter(0, 1, n)⌋, hs do a, k, h :: a[k := a[F(k, h)]])
     == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: a0[F(k, h)]))
 
+// a reset of a cell j in the first iteration, where the other iterations keep the array, e.g. since the simplifier has
+// reduced sum[0] + a[i] to sum[0] for a[i] == 0
+// (from MonoCera: ms1, the only task of SV-COMP that uses it)
+lemma {:rw} {:teq} select_current_trace_reset_keep(a0: array<int, int>, j: int, n: int, c: int)
+  ensures
+    current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a))[j]
+      == if {
+        case n <= 0 => a0[j]
+        case 0 < n => c
+      }
+
 // a loop that moves each element of i + 1, ..., i + n one position down reads the next element of the initial array at
 // the positions it writes, i, ..., i + n - 1, which it has not written yet, and the initial array elsewhere
 // (from reducercommutativity, array-crafted bAnd, bor, xor: the rotation)
@@ -63,47 +74,37 @@ lemma {:rw} {:teq} selects_stores_counter(a: array<int, int>, i: int, c: int, n:
   requires c != 0
   ensures selects(current(stores(a, ⌊counter(i, c, n)⌋, vs)), ⌊counter(i, c, n)⌋) == vs
 
-// stores at the keys where a guard holds, the other positions kept: the case that keeps the array is no store, so the
-// fold stores does not apply; the guards and the values are lists, which the matcher synthesizes over the dependencies
-// they read, e.g. the index, choices, or other arrays (ideas/conditional-stores.md)
-function {:teq} {:fold} stores_where(a: array<int, int>, keys: List<int>, guards: List<bool>, values: List<int>):
+// stores at the iterations k of a counter where a guard holds, the other positions kept: the case that keeps the array
+// is no store, so the fold stores does not apply; the guards and the values are lists, which the matcher synthesizes
+// over the dependencies they read, e.g. the index, choices, or other arrays (ideas/conditional-stores.md); the keys
+// are the counter itself, not a list, so that stores at other positions, e.g. the compactions at a count j of the
+// module aggregation (filters_above) or a reset at one position, keep their own folds and lemmas
+function {:teq} {:fold} stores_where(a: array<int, int>, n: int, guards: List<bool>, values: List<int>):
     Trace<array<int, int>>
 {
-  trace(a, for keys, guards, values do b, k, g, v :: case g => b[k := v] case !g => b)
+  trace(a, for ⌊counter(0, 1, n)⌋, guards, values do b, k, g, v :: case g => b[k := v] case !g => b)
 }
 
-lemma {:rw} {:teq} length_stores_where(a: array<int, int>, keys: List<int>, guards: List<bool>, values: List<int>)
-  ensures length(⌊stores_where(a, keys, guards, values)⌋) == length(keys)
+lemma {:rw} {:teq} length_stores_where(a: array<int, int>, n: int, guards: List<bool>, values: List<int>)
+  requires 0 <= n
+  ensures length(⌊stores_where(a, n, guards, values)⌋) == n
 
-lemma {:rw} {:teq} earlier_stores_where(j: int, a: array<int, int>, keys: List<int>, guards: List<bool>,
-    values: List<int>)
-  ensures earlier(j, ⌊stores_where(a, keys, guards, values)⌋)
-    == current(stores_where(a, prefix(j, keys), prefix(j, guards), prefix(j, values)))
+lemma {:rw} {:teq} earlier_stores_where(j: int, a: array<int, int>, n: int, guards: List<bool>, values: List<int>)
+  ensures earlier(j, ⌊stores_where(a, n, guards, values)⌋)
+    == current(stores_where(a, j, prefix(j, guards), prefix(j, values)))
 
-lemma {:rw} {:teq} prefix_stores_where(k: int, a: array<int, int>, keys: List<int>, guards: List<bool>,
-    values: List<int>)
-  ensures prefix(k, ⌊stores_where(a, keys, guards, values)⌋)
-    == ⌊stores_where(a, prefix(k, keys), prefix(k, guards), prefix(k, values))⌋
+lemma {:rw} {:teq} prefix_stores_where(k: int, a: array<int, int>, n: int, guards: List<bool>, values: List<int>)
+  ensures prefix(k, ⌊stores_where(a, n, guards, values)⌋)
+    == ⌊stores_where(a, k, prefix(k, guards), prefix(k, values))⌋
 
-// a read at distinct keys: the value of the iteration of j if its guard holds, otherwise the initial value
+// a read: the value of the iteration j if its guard holds, otherwise the initial value
 // (from copysome1-1, copysome1-2, copysome2-1, array_mul_init, motivex)
-lemma {:rw} {:teq} select_current_stores_where(a0: array<int, int>, keys: List<int>, guards: List<bool>,
-    values: List<int>, j: int)
-  requires distincts(keys)
-  ensures current(stores_where(a0, keys, guards, values))[j]
+lemma {:rw} {:teq} select_current_stores_where(a0: array<int, int>, n: int, guards: List<bool>, values: List<int>,
+    j: int)
+  ensures current(stores_where(a0, n, guards, values))[j]
     == if {
-      case occurs(j, keys) && earlier(indexof(j, keys), guards) => earlier(indexof(j, keys), values)
-      case !(occurs(j, keys) && earlier(indexof(j, keys), guards)) => a0[j]
-    }
-
-// stores at one key j, guarded to the first iteration only: a reset of a cell where the other iterations keep the
-// array, e.g. since the simplifier has reduced sum[0] + a[i] to sum[0] for a[i] == 0; the keys are not distinct
-// (from MonoCera: ms1, the only task of SV-COMP that uses it)
-lemma {:rw} {:teq} select_current_stores_where_first(a0: array<int, int>, n: int, j: int, values: List<int>)
-  ensures current(stores_where(a0, ⌊consts(n, j)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: k == 0), values))[j]
-    == if {
-      case n <= 0 => a0[j]
-      case 0 < n => earlier(0, values)
+      case 0 <= j < n && earlier(j, guards) => earlier(j, values)
+      case !(0 <= j < n && earlier(j, guards)) => a0[j]
     }
 
 // a clamp of each element to b, where the guard reads the initial element, since each position is written in its own

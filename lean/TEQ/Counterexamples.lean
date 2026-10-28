@@ -41,21 +41,18 @@ example : ¬ (Bag.count (elems (maps (List.zip (butlast (counter 0 1 1)) ([] : L
     = 1 - Bag.count (elems (maps (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨k, h⟩ => k < h))) True) :=
   by simp [maps, count_N, N.count, counter, butlast]
 
--- current_trace_increasing
-example : ¬ ((0 : Int) < 1 ∧ (0 : Int) < 1 ∧ (0 : Int) < 1 ∧ (0 : Int) < 1
-    → (0 : Int) < current (trace 0 (List.zip (butlast (counter 0 1 1)) ([] : List Int))
-        (fun x ⟨k, h⟩ => if h < 0 then x + 1 else if h = 0 then x + 1 else x + 1))) :=
-  by simp [trace, current]
-
 -- selects_stores and selects_stores_counter, with fewer values than keys
 example : ¬ (distincts [(0 : Int)] → selects (current (stores (fun (_ : Int) => (0 : Int)) [0] [])) [0] = []) :=
   by simp [distincts, occurs, selects, maps, stores, trace, current]
 
--- select_current_trace_conditional_store_deps
-example : ¬ (current (trace (fun (_ : Int) => (0 : Int)) (List.zip (butlast (counter 0 1 1)) (List.zip ([] : List Int) (List.zip ([] : List Int) ([] : List Int))))
-      (fun a ⟨k, h, c, v⟩ => if True then fun j => if j = k then 1 else a j else a)) 0
-    = (if 0 ≤ (0 : Int) ∧ (0 : Int) < 1 ∧ True then 1 else 0)) :=
-  by simp [trace, current]
+-- length_stores_where and prefix_stores_where, with guards and values shorter than the iterations, which the fold
+-- over the counter does not see (premises.txt)
+example : ¬ ((length (butlast (stores_where (fun (_ : Int) => (0 : Int)) 1 [] [])) : Int) = 1) :=
+  by simp [stores_where, counter, butlast, trace]
+
+example : ¬ («prefix» 1 (butlast (stores_where (fun (_ : Int) => (0 : Int)) 0 [True] [1]))
+    = butlast (stores_where (fun (_ : Int) => (0 : Int)) 1 («prefix» 1 [True]) («prefix» 1 [1]))) :=
+  by simp [stores_where, «prefix», counter, butlast, trace]
 
 -- current_trace_bounded, where the updates are conditionals that apply F3 also if no guard holds, unlike the cases of
 -- teq.dfy, whose guards are complete

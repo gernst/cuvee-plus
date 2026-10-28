@@ -1,2 +1,8 @@
 # the lemmas of the stable modules without a proof in Lean, which the generator removes from the modules before
 # printing (scripts/lean/generate.py): a line `name -- why`; each line is a lemma that is assumed, not checked
+length_phases -- phases is declared without a body, which -print lean prints as an axiom: its model belongs into Semantics.lean and AGGREGATES of scripts/lean/generate.py, not edited here
+earlier_phases -- phases is declared without a body (see length_phases)
+prefix_phases -- phases is declared without a body (see length_phases)
+trace_threshold -- phases is declared without a body (see length_phases)
+current_phases -- phases is declared without a body (see length_phases)
+invs_phases_upper -- phases is declared without a body (see length_phases)

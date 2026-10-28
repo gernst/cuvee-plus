@@ -12,6 +12,13 @@ earlier_selects: 0 ≤ j ∧ j < n -- the reads of the selects of a loop are at 
 earlier_stores: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
 earlier_sums: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
 earlier_counts: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
+earlier_maxs: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
+earlier_mins: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
+earlier_parities: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
+earlier_shifts: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
+earlier_scans: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
+earlier_copies: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
+earlier_stores_where: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
 max_earlier: 0 ≤ k ∧ k < length values -- the values of a loop are read at its iterations
 min_earlier: 0 ≤ k ∧ k < length values -- the values of a loop are read at its iterations
 max_prefix_earlier: (hxs : k < length xs) -- the list is read at the iterations of a loop that it covers
@@ -19,7 +26,12 @@ min_prefix_earlier: (hxs : k < length xs) -- the list is read at the iterations 
 
 # prefixes: the prefixes that the lemmas make are those of the earlier states of a loop, at most its length
 prefix_counter: k ≤ n -- the prefixes of a counter are cut at the iterations of its loop
+prefix_consts: k ≤ n -- the prefixes of a constant trace are cut at the iterations of its loop
 
 # lengths that lean.Printer.lengths does not see, since the list is no dependency of a combinator
 earlier_eq_not_occurs_prefix: (hxs : n ≤ length xs) -- xs is a list of the loop of n iterations, read at its iterations
 earlier_above_iterations: (hn : n1 = n) -- ts is a list of the loop of n iterations, the dependency of the fold above_iterations
+length_stores_where: (hn : n1 = n) -- guards and values are lists of the loop of n iterations, the dependencies of the fold stores_where over the counter
+earlier_stores_where: (hn : n1 = n) -- guards and values are lists of the loop of n iterations, the dependencies of the fold stores_where over the counter
+prefix_stores_where: (hn : n1 = n) -- guards and values are lists of the loop of n iterations, the dependencies of the fold stores_where over the counter
+select_current_stores_where: (hn : n1 = n) -- guards and values are lists of the loop of n iterations, the dependencies of the fold stores_where over the counter

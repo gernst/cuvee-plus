@@ -106,7 +106,7 @@ modules are injected after it by `-include teq:<concept>`:
 | `arithmetic` | `pow`, and the facts the arithmetic does not decide alone, e.g. halved triangles |
 | `search` | agreeing prefixes, no occurrence, values above the iterations, the bisection with a probe |
 | `sorted` | `sorted`, `perm`, `partitioned`, `swap`, the partition points `lower`, `upper` |
-| `arrays` | stores at a counter and at distinct keys, the folds `stores_where` (stores where a guard holds, the guards and values synthesized over any dependencies) and `copies` (copies of a source at two lists of keys, e.g. from both ends), resets, reads along a trace, rows of two-dimensional arrays |
+| `arrays` | stores at a counter and at distinct keys, the folds `stores_where` (stores at the iterations of a counter where a guard holds, the guards and values synthesized over any dependencies) and `copies` (copies of a source at two lists of keys, e.g. from both ends), resets, reads along a trace, rows of two-dimensional arrays |
 | `counters` | `phases` (two phases, the first `m` iterations by `F`, the others by `G`, from a switch at a threshold of the value), flags, catching up, merged cases, constant and bounded values |
 | `strides` | the stores of 2 to 5 adjacent cells per iteration as folds `strides₂` to `strides₅` with one list of values per cell, synthesized with the cases of the update where the values differ (the conditional stores of pr2-pr5, pnr2-pnr5), their reads at a stride of at least their width; stores ahead (MonoCera) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |
@@ -218,7 +218,9 @@ Lean 4 without Mathlib, in the Lake project at the root ([lean/README.md](../lea
   `N`.
 - [Check.lean](../lean/TEQ/Check.lean) (generated): `example : Stmt.<name> := @<name>` for each lemma.
 - [Counterexamples.lean](../lean/TEQ/Counterexamples.lean): the lemmas without their premises or conditions are false.
-- [open.txt](../lean/open.txt): lemmas without proof, removed from the modules before printing (empty).
+- [open.txt](../lean/open.txt): lemmas without proof, removed from the modules before printing (the six lemmas of
+  `phases`, which is declared without a body: proving them needs its model in Semantics.lean and an entry in
+  `AGGREGATES` of generate.py).
 
 The dependencies of a combinator have equal lengths, which `zip` does not assume: `-print lean` adds hypotheses
 (`lean.Printer.lengths`), `length xs = n` for each list that is a dependency of a combinator (also through a fold),

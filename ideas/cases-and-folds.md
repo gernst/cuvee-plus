@@ -89,7 +89,7 @@ since a direct read lemma costs one rewrite step and a fold two or more.
 | recurrence `b[i := b[i - 1] + G]` | done in part (Oct 28): the fold `scans(a, keys, values)` (aggregation.dfy) with `select_current_scans` replaces `_prefix_sums` and `_prefix_sums_add`, also for the form over two counters, whose store index `i` the pattern `p + 1` reaches through `i == k + 1` (eqn1, eqn2, nsqm, sqm, standard_seq_init_ground correct; with `prefix_consts` of teq.dfy); `select_current_trace_recurrence` (a reset at 0, the read `a[i - 1]`) stays until `phases` splits off the first iteration |
 | two phases `x + 1` up to `b`, then `x + c` | done (Oct 28): `phases(x0, m, n, F, G)` (counters.dfy), the first `m` iterations by `F`, the others by `G`, introduced by `trace_threshold` and read by `current_phases` (the two phases composed over counters from 0) and `invs_phases_upper` (increasing steps); declared without a body, since as a fold it took switches at an iteration from `current_trace_step_or_keep` (counters_phase_mod); `current_trace_two_phases`, `invs_two_phases`, and `current_trace_increasing` (preempted by the fold `sums`) removed; Mono1_1, mono-crafted_6, _11, phases_1 unchanged |
 | copy from both ends `a[m - k - 1 := ...][k := ...]` | done (Oct 28): the fold `copies(a, ks, ls, S)` with `select_current_copies` (arrays.dfy), the source `S` an array or a list, with `occurs_counter_down` and `maps_counter_neg` of teq.dfy; tcpy, array_tiling_tcpy correct, faster |
-| conditional store keeping the array otherwise | done (Oct 28): the fold `stores_where(a, keys, guards, values)`, `case g => b[k := v] case !g => b`, with the guards and values synthesized over any dependencies, replaces `_conditional_store` and `_deps` (a synthetic example with a choice as the guard proved, which `_deps` did not); `select_current_stores_where_first` replaces `select_current_trace_reset_keep`, which the fold takes first (ms1, ms1f); the matcher bug it exposed (a shared front of another type, bugs.md) is fixed; `select_current_trace_cap` stays, its guard reads the array; copysome*, array_mul_init, condn take 25-50 s, to be confirmed on the cloud |
+| conditional store keeping the array otherwise | done (Oct 28): the fold `stores_where(a, n, guards, values)`, stores at the iterations `k` of a counter where a guard holds, `case g => b[k := v] case !g => b`, with the guards and values synthesized over any dependencies, replaces `_conditional_store` and `_deps` (a synthetic example with a choice as the guard proved, which `_deps` did not); in 0.53.7 its keys were a list, which took the compactions at a count `j` from `filters_above` and lost standard_partition_ground-2 (Arrays, MonoCera), so the keys are the counter, and `select_current_trace_reset_keep` (a reset at one position) is back; converting the general fold into the compaction folds by lemmas was considered and not taken (simpler by decision); the matcher bug it exposed (a shared front of another type, bugs.md) is fixed; `select_current_trace_cap` stays, its guard reads the array |
 | accumulation at a key, histogram | `current_trace_add_at`, `current_trace_histogram` |
 | conditional step, geometric product, counters | `current_trace_step_or_keep`, `current_trace_geometric`, `current_trace_catch_up`, `current_trace_flag` |
 | stores ahead (windows of width 2 at stride 1, the last iteration shorter) | `select_current_trace_ahead`, `_ahead_down` |
@@ -120,6 +120,44 @@ Patterns that match nearly any trace (a variable for the whole update): `perm_sw
   the sum of brs2 in a scalar instead of the cell `sum[0]` had `if { case k % 2 == 0 => 2 case 0 < k % 2 => 0 } + S`
   in its update; with `current_trace_reset_add_keep` (aggregation.dfy), the scalar version of
   `select_current_trace_reset_add_keep`, it is proved (examples/dafny/teq/sum_cases.dfy).
+
+## 9. Choices in terms: lifting by polarity (proposal, Oct 28, not implemented)
+
+A choice `eps(cᵢ => vᵢ)` in a term is reasoned about only by a case analysis on its guards. Since 0.53.6 that analysis
+happens in the wrong form at some places and not at all at others:
+- facts: `Simplify.atom` turns a definition with a choice into the conjunction `(c ==> a == ...) && (!c ==> a == ...)`,
+  which neither the case split of `-prove` nor `-split` takes apart (the losses of 0.53.6: mbpr4, SV-LIB bhmr2007,
+  loopv1, loopv3; TODO.md);
+- side conditions: the bodies of `invs` need the lifting case by case, `sum_above` and `sum_below` depend on it
+  (removing `Simplify.atom` lost brs2-brs5, large_const, sum_cases, sum_above; tried and reverted);
+- `-split` does not lift choices (lifting them in `Normalize.lift` and splitting a choice of formulas per case in
+  `Split` recovered bhmr2007, loopv1, loopv3 with `-split` alone; tried and reverted with the rest).
+
+**Principle.** A choice in an atom is lifted to the level of formulas in the form that fits the position of the atom;
+for exhaustive and disjoint guards the forms are equivalent, they differ in which part of the engine takes them apart:
+
+| Position of the atom | Form | Taken apart by |
+|---|---|---|
+| goal (positive) | `⋀ᵢ (cᵢ ==> A[vᵢ])` | the simplifier, conjunct by conjunct; `-split` per conjunct |
+| fact (negative) | `⋁ᵢ (cᵢ && A[vᵢ])`, the DNF | the case split of `-prove` on disjunctive facts (up to three disjuncts); `-split` among the antecedents |
+| in a combinator or a side condition (neutral) | `⋀ᵢ (cᵢ ==> A[vᵢ])`, pointwise | the simplifier, as before |
+
+- A choice that is the value of all elements of a list or a trace stays, e.g. `consts(n, eps(...))`, read element by
+  element by the read lemmas (the existing exception of `Simplify.atom`).
+- Guards that are not exhaustive (the update of a loop with a break) get the case where none holds, `A[unspecified]`;
+  for the right-hand sides of the database, whose guards are exhaustive, it simplifies away.
+- Places: `Simplify.atom` with the polarity of the context (`ctx.polarity`); `Normalize.lift` lifts conditionals and
+  choices alike for `Split`, which splits a choice of formulas per case in conclusions and antecedents; no special case
+  in `Prove.alternatives` (by decision); implications among the antecedents stay implications (by decision).
+
+**Expected.** bhmr2007, loopv1, loopv3: the definition `a == ... eps(nondet != 0 => ...)` becomes the fact
+`(c && a == n) || (!c && a == 2 * n)`, which both `-prove` and `-split` split; sum_above, sum_below: the side
+conditions are neutral, as before 0.53.6. mbpr4 is a goal position as in 0.53.6 and needs more: its residual goal
+`i == 1 || (i + 2) % 4 == 0 || ... || 3 <= i` needs the case split on the two values of `i`, whose bound `i < 3` is a
+negated disjunct of the conclusion, not a premise, which the split on two-valued variables does not see.
+
+**Cost.** A fact in DNF is no equation of the classes until it is split, so a definition reaches the matcher only in
+the cases; several choices multiply the cases, bounded by the depth of the split (4) and by `-split`.
 
 ## 8. A review of the database (Oct 28)
 
