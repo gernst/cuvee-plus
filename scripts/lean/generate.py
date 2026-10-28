@@ -2,7 +2,8 @@
 # generates lean/TEQ/Database.lean and lean/TEQ/Check.lean from the stable modules of the lemma database (MODULES):
 # the definitions as printed by -print lean, each lemma as the proposition Stmt.<name> of its printed statement with
 # the premises of lean/premises.txt, and for each lemma the check that the theorem <name> of lean/TEQ/Proofs.lean
-# proves it; the datatype of traces is that of lean/TEQ/Semantics.lean, which the printed one must equal
+# proves it; the datatype of traces is that of lean/TEQ/Semantics.lean, which the printed one must equal, and so are
+# the declarations of the aggregates of multisets that it defines (AGGREGATES)
 #
 #   scripts/lean/generate.py [--jar cuvee.jar | --classpath <classpath>] [--check]
 #
@@ -29,6 +30,13 @@ MODULES = ["resources/cuvee/teq.dfy", "resources/cuvee/teq/aggregation.dfy", "re
 TRACE = """inductive Trace (α₀ : Type) where
   | stop (last : α₀) : Trace α₀
   | step (first : α₀) (rest : Trace α₀) : Trace α₀"""
+
+# the aggregates of multisets, which the modules declare without a body and lean/TEQ/Semantics.lean defines over its
+# model of multisets: the printed declarations, which the generator checks and leaves out
+AGGREGATES = {"sum": "axiom sum : Bag Int → Int",
+              "parity": "axiom parity : Bag Int → Int",
+              "max": "axiom max : Int → Bag Int → Int",
+              "min": "axiom min : Int → Bag Int → Int"}
 
 def norm(s):
     return re.sub(r"\s+", " ", s).strip()
@@ -132,12 +140,17 @@ def generate(printed):
     blocks = [b for b in printed.strip().split("\n\n") if b.strip()]
     database = []
     lemmas = []
+    aggregates = dict(AGGREGATES)
     for block in blocks:
         if block.startswith("inductive Trace"):
             if norm(block) != norm(TRACE):
                 sys.exit("the printed datatype of traces differs from that of Semantics.lean:\n" + block)
             continue
         m = re.match(r"(?:@\[simp\] )?axiom (\S+)(.*)", block, re.S)
+        if m and m.group(1) in aggregates:
+            if norm(block) != norm(aggregates.pop(m.group(1))):
+                sys.exit("the printed aggregate differs from that of Semantics.lean:\n" + block)
+            continue
         # a declared function or constant, whose axiom has no explicit binders, unlike a lemma of the same name
         if m and m.group(1) in functions and not any(b.startswith("(") for b in split_binders(m.group(2))[0]):
             database.append(block)
@@ -156,6 +169,8 @@ def generate(printed):
             lemmas.append(theorem(name, functions))
         else:
             database.append(block)
+    if aggregates:
+        sys.exit("aggregates of Semantics.lean that the modules do not declare: " + ", ".join(aggregates))
     if extra:
         sys.exit("premises of lemmas that are not in the database: " + ", ".join(extra))
 

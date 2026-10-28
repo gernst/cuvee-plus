@@ -117,8 +117,8 @@ aggregates over lists (0.53.0; before, the module `multisets` converted the fold
 consume them). The aggregates have no body; the laws of the operations on multisets (empty, single, union,
 difference) characterize them, and `elems` unfolds on constructors only. Open: the bitwise reductions, sep (a count
 by C's signed `%`, no `parity`), reducercommutativity max, the fallback (`-fallback` lowers an aggregate of a multiset
-as an uninterpreted function, where it unfolded the sum of a list), and the Lean model, the multiset as the quotient
-of `List` by `List.Perm` of core Lean with each aggregate lifted by `Quotient.lift`. Not taken: splitting lists at
+as an uninterpreted function, where it unfolded the sum of a list). In Lean, a multiset is a list up to permutation
+(the semantics in Lean, below). Not taken: splitting lists at
 positions (by decision), and `perm` of `sorted` (a fact the goal does not contain, without the direction towards the
 original array).
 
@@ -200,7 +200,14 @@ Lean 4 without Mathlib, in the Lake project at the root ([lean/README.md](../lea
 
 - [Semantics.lean](../lean/TEQ/Semantics.lean): the datatype `Trace` (`step`, `stop`, never empty) and the
   combinators `trace`, `maps`, `invs` over one dependency; the printer zips several and prints guarded cases as
-  conditionals that end in `unspecified`.
+  conditionals that end in `unspecified`. Multisets: `Bag α`, the quotient of `List α` by `List.Perm` of core Lean,
+  with the empty multiset `∅`, a single element `{x}`, union `+` (append), difference `-` (the elements of the second
+  list erased once each, which cuts off at zero like the core's), the multiplicity `Bag.count m e` (`List.count`),
+  and submultisets `n ≤ m` (by the multiplicities), each lifted by `Quotient.lift₂` or `Quotient.lift`. The
+  aggregates `sum`, `parity`, `max`, `min`, which the modules declare without a body, are defined here as right folds
+  of the lists, lifted by the proof that the fold does not depend on the order; the generator checks their printed
+  declarations and leaves them out (`AGGREGATES`). Proofs.lean bridges `elems xs` to the class of `xs` and the
+  aggregates of it to the folds of lists of Naturals.lean (`sum_N`, `parity_N`, `count_N`).
 - [Database.lean](../lean/TEQ/Database.lean) (generated): the functions as printed by `-print lean`, and each lemma
   as a proposition `Stmt.<name>` with the premises of [premises.txt](../lean/premises.txt).
 - [Naturals.lean](../lean/TEQ/Naturals.lean): the definitions over naturals (namespace `TEQ.N`) and the proofs by

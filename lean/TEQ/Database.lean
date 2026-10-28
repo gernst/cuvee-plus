@@ -273,26 +273,88 @@ def Stmt.earlier_stores : Prop :=
             else
               a k))
 
-noncomputable def sum (values : List Int) : Int :=
-  match values with
-  | .nil => 0
-  | .cons v vs => v + sum vs
+noncomputable def elems {α : Type} [Inhabited α] (xs : List α) : Bag α :=
+  match xs with
+  | .nil => ∅
+  | .cons y ys => {y} + elems ys
 
-noncomputable def parity (values : List Int) : Int :=
-  match values with
-  | .nil => 0
-  | .cons v vs => (if v % 2 = 0 then 1 else -1) + parity vs
+def Stmt.sum_empty : Prop :=
+  sum ∅ = 0
 
-noncomputable def max (m : Int) (n : Int) : Int :=
-  if m ≤ n then n else m
+def Stmt.sum_single : Prop :=
+  ∀ (x : Int),
+    sum {x} = x
 
-noncomputable def min (m : Int) (n : Int) : Int :=
-  if m ≤ n then m else n
+def Stmt.sum_union : Prop :=
+  ∀ (m : Bag Int) (n : Bag Int),
+    sum (m + n) = sum m + sum n
 
-noncomputable def count {α : Type} [Inhabited α] (e : α) (vs : List α) : Int :=
-  match vs with
-  | .nil => 0
-  | .cons v ws => (if v = e then 1 else 0) + count e ws
+def Stmt.sum_difference : Prop :=
+  ∀ (m : Bag Int) (n : Bag Int),
+    n ≤ m → sum (m - n) = sum m - sum n
+
+def Stmt.parity_empty : Prop :=
+  parity ∅ = 0
+
+def Stmt.parity_single : Prop :=
+  ∀ (x : Int),
+    parity {x} = (if x % 2 = 0 then 1 else -1)
+
+def Stmt.parity_union : Prop :=
+  ∀ (m : Bag Int) (n : Bag Int),
+    parity (m + n) = parity m + parity n
+
+def Stmt.parity_difference : Prop :=
+  ∀ (m : Bag Int) (n : Bag Int),
+    n ≤ m → parity (m - n) = parity m - parity n
+
+def Stmt.multiplicity_empty : Prop :=
+  ∀ {α : Type} [Inhabited α] (e : α),
+    Bag.count (∅ : Bag α) e = 0
+
+def Stmt.multiplicity_single : Prop :=
+  ∀ {α : Type} [Inhabited α] (v : α) (e : α),
+    Bag.count {v} e = (if v = e then 1 else 0)
+
+def Stmt.multiplicity_union : Prop :=
+  ∀ {α : Type} [Inhabited α] (m : Bag α) (n : Bag α) (e : α),
+    Bag.count (m + n) e = Bag.count m e + Bag.count n e
+
+def Stmt.multiplicity_difference : Prop :=
+  ∀ {α : Type} [Inhabited α] (m : Bag α) (n : Bag α) (e : α),
+    n ≤ m → Bag.count (m - n) e = Bag.count m e - Bag.count n e
+
+def Stmt.max_empty : Prop :=
+  ∀ (x : Int),
+    max x ∅ = x
+
+def Stmt.max_single : Prop :=
+  ∀ (x : Int) (v : Int),
+    max x {v} = (if x ≤ v then v else x)
+
+def Stmt.max_union : Prop :=
+  ∀ (x : Int) (m : Bag Int) (n : Bag Int),
+    max x (m + n) = max (max x m) n
+
+def Stmt.min_empty : Prop :=
+  ∀ (x : Int),
+    min x ∅ = x
+
+def Stmt.min_single : Prop :=
+  ∀ (x : Int) (v : Int),
+    min x {v} = (if x ≤ v then x else v)
+
+def Stmt.min_union : Prop :=
+  ∀ (x : Int) (m : Bag Int) (n : Bag Int),
+    min x (m + n) = min (min x m) n
+
+def Stmt.single_earlier_le_elems : Prop :=
+  ∀ {α : Type} [Inhabited α] (j : Int) (xs : List α),
+    0 ≤ j ∧ j < length xs → ({earlier j xs} ≤ elems xs ↔ True)
+
+def Stmt.single_select_le_elems : Prop :=
+  ∀ (a : Int → Int) (k : Int) (keys : List Int) (n : Int) (hkeys : length keys = n),
+    occurs k keys → ({a k} ≤ elems (selects a keys) ↔ True)
 
 noncomputable def sums (x : Int) (values : List Int) : Trace Int :=
   trace x values (fun s v => s + v)
@@ -303,27 +365,24 @@ def Stmt.length_sums : Prop :=
 
 def Stmt.current_sums : Prop :=
   ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
-    current (sums x values) = x + sum values
+    current (sums x values) = x + sum (elems values)
 
 def Stmt.earlier_sums : Prop :=
   ∀ (j : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     0 ≤ j ∧ j < n →
-      (earlier j (butlast (sums x values)) = x + sum («prefix» j values))
+      (earlier j (butlast (sums x values)) = x + sum (elems («prefix» j values)))
 
 def Stmt.prefix_sums : Prop :=
   ∀ (k : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     «prefix» k (butlast (sums x values)) = butlast (sums x («prefix» k values))
 
-def Stmt.sum_empty : Prop :=
-  sum nil = 0
-
 def Stmt.sum_consts : Prop :=
   ∀ (n : Int) (x : Int),
-    0 ≤ n → sum (butlast (consts n x)) = x * n
+    0 ≤ n → sum (elems (butlast (consts n x))) = x * n
 
 def Stmt.sum_counter : Prop :=
   ∀ (i : Int) (c : Int) (n : Int),
-    0 ≤ n → sum (butlast (counter i c n)) = (2 * i + (n - 1) * c) * n / 2
+    0 ≤ n → sum (elems (butlast (counter i c n))) = (2 * i + (n - 1) * c) * n / 2
 
 noncomputable def maxs (x : Int) (values : List Int) : Trace Int :=
   trace
@@ -335,6 +394,10 @@ def Stmt.length_maxs : Prop :=
   ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     length (butlast (maxs x values)) = length values
 
+def Stmt.current_maxs : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    current (maxs x values) = max x (elems values)
+
 noncomputable def mins (x : Int) (values : List Int) : Trace Int :=
   trace
     x
@@ -344,6 +407,10 @@ noncomputable def mins (x : Int) (values : List Int) : Trace Int :=
 def Stmt.length_mins : Prop :=
   ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     length (butlast (mins x values)) = length values
+
+def Stmt.current_mins : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    current (mins x values) = min x (elems values)
 
 noncomputable def counts {α : Type} [Inhabited α] (x : Int) (e : α)
                                                   (vs : List α) : Trace Int :=
@@ -373,12 +440,12 @@ def Stmt.current_trace_step_or_keep : Prop :=
          x0
          (List.zip (butlast (counter 0 1 n)) xs)
          (fun z ⟨k, x⟩ => if C x then z + a else if ¬C x then z else unspecified))
-      = x0 + a * count True (maps xs (fun x => C x))
+      = x0 + a * Bag.count (elems (maps xs (fun x => C x))) True
 
 def Stmt.current_trace_add_at : Prop :=
   ∀ {α : Type} [Inhabited α] (a : α → Int) (k : α) (values : List Int) (n : Int) (hvalues : length values = n),
     current (trace a values (fun b v => fun j => if j = k then b k + v else b j))
-      = (fun j => if j = k then a k + sum values else a j)
+      = (fun j => if j = k then a k + sum (elems values) else a j)
 
 def Stmt.current_trace_histogram : Prop :=
   ∀ (c0 : Int → Int) (a : Int → Int) (n : Int) (hs : List Int) (v : Int) (hhs : length hs = n),
@@ -388,45 +455,45 @@ def Stmt.current_trace_histogram : Prop :=
          (List.zip (butlast (counter 0 1 n)) hs)
          (fun c ⟨k, h⟩ => fun j => if j = a k then c (a k) + 1 else c j))
       v
-      = c0 v + count v (selects a (butlast (counter 0 1 n)))
+      = c0 v + Bag.count (elems (selects a (butlast (counter 0 1 n)))) v
 
 def Stmt.current_counts : Prop :=
   ∀ {α : Type} [Inhabited α] (x : Int) (e : α) (vs : List α) (n : Int) (hvs : length vs = n),
-    current (counts x e vs) = x + count e vs
+    current (counts x e vs) = x + Bag.count (elems vs) e
 
 def Stmt.earlier_counts : Prop :=
   ∀ {α : Type} [Inhabited α] (j : Int) (x : Int) (e : α) (vs : List α) (n : Int) (hvs : length vs = n),
     0 ≤ j ∧ j < n →
-      (earlier j (butlast (counts x e vs)) = x + count e («prefix» j vs))
+      (earlier j (butlast (counts x e vs)) = x + Bag.count (elems («prefix» j vs)) e)
 
 def Stmt.sum_selects_update : Prop :=
   ∀ {α : Type} [Inhabited α] (a : α → Int) (k : α) (v : Int) (keys : List α) (n : Int) (hkeys : length keys = n),
     distincts keys
-      → sum (selects (fun j => if j = k then v else a j) keys)
+      → sum (elems (selects (fun j => if j = k then v else a j) keys))
         = (if occurs k keys then
-             sum (selects a keys) + v - a k
+             sum (elems (selects a keys)) + v - a k
            else
-             sum (selects a keys))
+             sum (elems (selects a keys)))
 
 def Stmt.parity_selects_update : Prop :=
   ∀ {α : Type} [Inhabited α] (a : α → Int) (k : α) (v : Int) (keys : List α) (n : Int) (hkeys : length keys = n),
     distincts keys
-      → parity (selects (fun j => if j = k then v else a j) keys)
+      → parity (elems (selects (fun j => if j = k then v else a j) keys))
         = (if occurs k keys then
-             parity (selects a keys) + (if v % 2 = 0 then 1 else -1)
+             parity (elems (selects a keys)) + (if v % 2 = 0 then 1 else -1)
                - (if a k % 2 = 0 then 1 else -1)
            else
-             parity (selects a keys))
+             parity (elems (selects a keys)))
 
 def Stmt.count_selects_update : Prop :=
   ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β) (k : α) (w : β) (e : β) (keys : List α) (n : Int) (hkeys : length keys = n),
     distincts keys
-      → count e (selects (fun j => if j = k then w else a j) keys)
+      → Bag.count (elems (selects (fun j => if j = k then w else a j) keys)) e
         = (if occurs k keys then
-             count e (selects a keys) + (if w = e then 1 else 0)
+             Bag.count (elems (selects a keys)) e + (if w = e then 1 else 0)
                - (if a k = e then 1 else 0)
            else
-             count e (selects a keys))
+             Bag.count (elems (selects a keys)) e)
 
 def Stmt.sums_consts : Prop :=
   ∀ (x : Int) (n : Int) (c : Int),
@@ -436,122 +503,170 @@ def Stmt.sum_cases_below : Prop :=
   ∀ (n : Int) (c : Int) (d : Int) (e : Int) (P : Int → Prop),
     0 ≤ e ∧ n * c ≤ e ∧ n * d ≤ e
       → sum
-        (maps
-           (butlast (counter 0 1 n))
-           (fun k => if 0 < k then if P k then c else d else 0))
+        (elems
+           (maps
+              (butlast (counter 0 1 n))
+              (fun k => if 0 < k then if P k then c else d else 0)))
         ≤ e
 
 def Stmt.sum_mod_below : Prop :=
   ∀ (n : Int) (m : Int) (e : Int),
     0 ≤ n ∧ 0 < m ∧ n * (m - 1) ≤ e
-      → sum (maps (butlast (counter 0 1 n)) (fun k => if 0 < k then k % m else 0))
+      → sum
+        (elems
+           (maps (butlast (counter 0 1 n)) (fun k => if 0 < k then k % m else 0)))
         ≤ e
 
 def Stmt.sum_neg : Prop :=
   ∀ (values : List Int) (n : Int) (hvalues : length values = n),
-    sum (maps values (fun v => -v)) = -sum values
+    sum (elems (maps values (fun v => -v))) = -sum (elems values)
 
 def Stmt.sum_scale : Prop :=
   ∀ (values : List Int) (a : Int) (n : Int) (hvalues : length values = n),
-    sum (maps values (fun v => a * v)) = a * sum values
+    sum (elems (maps values (fun v => a * v))) = a * sum (elems values)
 
 def Stmt.sum_add : Prop :=
   ∀ (xs : List Int) (ys : List Int) (n : Int) (hxs : length xs = n) (hys : length ys = n),
-    sum (maps (List.zip xs ys) (fun ⟨v, w⟩ => v + w)) = sum xs + sum ys
+    sum (elems (maps (List.zip xs ys) (fun ⟨v, w⟩ => v + w)))
+      = sum (elems xs) + sum (elems ys)
 
 def Stmt.sum_indicator_true : Prop :=
   ∀ {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) (n : Int) (hxs : length xs = n),
-    sum (maps xs (fun x => if P x then 1 else 0))
-      = count True (maps xs (fun x => P x))
+    sum (elems (maps xs (fun x => if P x then 1 else 0)))
+      = Bag.count (elems (maps xs (fun x => P x))) True
 
 def Stmt.sum_indicator_false : Prop :=
   ∀ {α : Type} [Inhabited α] (xs : List α) (P : α → Prop) (n : Int) (hxs : length xs = n),
-    sum (maps xs (fun x => if P x then 0 else 1))
-      = count False (maps xs (fun x => P x))
+    sum (elems (maps xs (fun x => if P x then 0 else 1)))
+      = Bag.count (elems (maps xs (fun x => P x))) False
 
 def Stmt.count_consts : Prop :=
   ∀ {α : Type} [Inhabited α] (n : Int) (e : α) (v : α),
-    0 ≤ n → count e (butlast (consts n v)) = (if v = e then n else 0)
+    0 ≤ n → Bag.count (elems (butlast (consts n v))) e = (if v = e then n else 0)
 
 def Stmt.count_true_below : Prop :=
   ∀ (m : Int) (i : Int) (n : Int),
     i ≤ m ∧ m ≤ i + n
-      → count True (maps (butlast (counter i 1 n)) (fun k => k < m)) = m - i
+      → Bag.count (elems (maps (butlast (counter i 1 n)) (fun k => k < m))) True
+        = m - i
 
 def Stmt.count_true_above : Prop :=
   ∀ (m : Int) (i : Int) (n : Int),
     i ≤ m ∧ m ≤ i + n
-      → count True (maps (butlast (counter i 1 n)) (fun k => m ≤ k)) = i + n - m
+      → Bag.count (elems (maps (butlast (counter i 1 n)) (fun k => m ≤ k))) True
+        = i + n - m
 
 def Stmt.count_nonnegative : Prop :=
   ∀ {α : Type} [Inhabited α] (e : α) (vs : List α),
-    0 ≤ count e vs
+    0 ≤ Bag.count (elems vs) e
 
 def Stmt.count_remainder : Prop :=
   ∀ (n : Int) (m : Int) (r : Int),
     0 ≤ n ∧ 0 < m ∧ 0 ≤ r ∧ r < m
-      → count r (maps (butlast (counter 0 1 n)) (fun k => k % m))
+      → Bag.count (elems (maps (butlast (counter 0 1 n)) (fun k => k % m))) r
         = (n + m - 1 - r) / m
 
 def Stmt.count_false_true : Prop :=
   ∀ (i : Int) (c : Int) (n : Int) (hs : List Int) (P : Int → Int → Prop) (hhs : length hs = n),
     0 ≤ n
-      → count
+      → Bag.count
+        (elems
+           (maps (List.zip (butlast (counter i c n)) hs) (fun ⟨k, h⟩ => P k h)))
         False
-        (maps (List.zip (butlast (counter i c n)) hs) (fun ⟨k, h⟩ => P k h))
         = n
-          - count
+          - Bag.count
+            (elems
+               (maps
+                  (List.zip (butlast (counter i c n)) hs)
+                  (fun ⟨k, h⟩ => P k h)))
             True
-            (maps (List.zip (butlast (counter i c n)) hs) (fun ⟨k, h⟩ => P k h))
 
 def Stmt.count_true_eq : Prop :=
   ∀ (ks : List Int) (r : Int) (hs : List Int) (F : Int → Int → Int) (n : Int) (hks : length ks = n) (hhs : length hs = n),
-    count True (maps (List.zip ks hs) (fun ⟨k, h⟩ => F k h = r))
-      = count r (maps (List.zip ks hs) (fun ⟨k, h⟩ => F k h))
+    Bag.count (elems (maps (List.zip ks hs) (fun ⟨k, h⟩ => F k h = r))) True
+      = Bag.count (elems (maps (List.zip ks hs) (fun ⟨k, h⟩ => F k h))) r
 
-def Stmt.current_maxs_initial : Prop :=
-  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
-    x ≤ current (maxs x values)
+def Stmt.max_initial : Prop :=
+  ∀ (x : Int) (values : List Int),
+    x ≤ max x (elems values)
 
-def Stmt.current_maxs_earlier : Prop :=
-  ∀ (k : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
-    0 ≤ k ∧ k < n →
-      (earlier k values ≤ current (maxs x values))
+def Stmt.max_earlier : Prop :=
+  ∀ (k : Int) (x : Int) (values : List Int),
+    0 ≤ k ∧ k < length values →
+      (earlier k values ≤ max x (elems values))
 
-def Stmt.current_maxs_prefix_earlier : Prop :=
+def Stmt.max_prefix_earlier : Prop :=
   ∀ (k : Int) (x : Int) (n : Int) (xs : List Int) (hxs : k < length xs),
-    0 ≤ k ∧ k < n → earlier k xs ≤ current (maxs x («prefix» n xs))
+    0 ≤ k ∧ k < n → earlier k xs ≤ max x (elems («prefix» n xs))
 
-def Stmt.current_mins_initial : Prop :=
-  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
-    current (mins x values) ≤ x
+def Stmt.min_initial : Prop :=
+  ∀ (x : Int) (values : List Int),
+    min x (elems values) ≤ x
 
-def Stmt.current_mins_earlier : Prop :=
-  ∀ (k : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
-    0 ≤ k ∧ k < n →
-      (current (mins x values) ≤ earlier k values)
+def Stmt.min_earlier : Prop :=
+  ∀ (k : Int) (x : Int) (values : List Int),
+    0 ≤ k ∧ k < length values →
+      (min x (elems values) ≤ earlier k values)
 
-def Stmt.current_mins_prefix_earlier : Prop :=
+def Stmt.min_prefix_earlier : Prop :=
   ∀ (k : Int) (x : Int) (n : Int) (xs : List Int) (hxs : k < length xs),
-    0 ≤ k ∧ k < n → current (mins x («prefix» n xs)) ≤ earlier k xs
+    0 ≤ k ∧ k < n → min x (elems («prefix» n xs)) ≤ earlier k xs
 
-def Stmt.current_maxs_seeded_earlier : Prop :=
+def Stmt.max_seeded_earlier : Prop :=
   ∀ (j : Int) (h : Int) (i : Int) (n : Int) (xs : List Int),
     h = i - 1 ∧ h ≤ j ∧ j < i + n
       → earlier j xs
-        ≤ current
-          (maxs
-             (earlier h xs)
-             (maps (butlast (counter i 1 n)) (fun v => earlier v xs)))
+        ≤ max
+          (earlier h xs)
+          (elems (maps (butlast (counter i 1 n)) (fun v => earlier v xs)))
 
-def Stmt.current_mins_seeded_earlier : Prop :=
+def Stmt.min_seeded_earlier : Prop :=
   ∀ (j : Int) (h : Int) (i : Int) (n : Int) (xs : List Int),
     h = i - 1 ∧ h ≤ j ∧ j < i + n
-      → current
-        (mins
-           (earlier h xs)
-           (maps (butlast (counter i 1 n)) (fun v => earlier v xs)))
+      → min
+        (earlier h xs)
+        (elems (maps (butlast (counter i 1 n)) (fun v => earlier v xs)))
         ≤ earlier j xs
+
+def Stmt.elems_selects_swap : Prop :=
+  ∀ (a : Int → Int) (p : Int) (q : Int) (v : Int) (w : Int) (keys : List Int) (n : Int) (hkeys : length keys = n),
+    distincts keys ∧ occurs p keys ∧ occurs q keys ∧ v = a q ∧ w = a p
+      → elems
+        (selects
+           (fun j => if j = q then w else (fun j => if j = p then v else a j) j)
+           keys)
+        = elems (selects a keys)
+
+def Stmt.elems_selects_shift : Prop :=
+  ∀ (a : Int → Int) (i : Int) (n : Int) (m : Int),
+    0 ≤ n ∧ m = n + 1
+      → elems
+        (selects
+           (current
+              (trace
+                 a
+                 (butlast (counter i 1 n))
+                 (fun x k => fun j => if j = k then x (k + 1) else x j)))
+           (butlast (counter i 1 m)))
+        = elems (selects a (butlast (counter i 1 m))) - {a i} + {a (i + n)}
+
+def Stmt.elems_selects_rotate : Prop :=
+  ∀ (a : Int → Int) (i : Int) (n : Int) (m : Int) (v : Int),
+    0 ≤ n ∧ m = n + 1 ∧ v = a i
+      → elems
+        (selects
+           (fun j =>
+              if j = i + n then
+                v
+              else
+                current
+                  (trace
+                     a
+                     (butlast (counter i 1 n))
+                     (fun x k => fun j => if j = k then x (k + 1) else x j))
+                  j)
+           (butlast (counter i 1 m)))
+        = elems (selects a (butlast (counter i 1 m)))
 
 noncomputable def compacts (c0 : Int → Int) (ks : List Int)
                            (P : Int → Prop) : Trace (Int → Int) :=
@@ -571,7 +686,7 @@ def Stmt.length_compacts : Prop :=
 def Stmt.select_current_compacts_lower : Prop :=
   ∀ (c0 : Int → Int) (K : Trace Int) (n : Int) (m : Int) (x : Int) (P : Int → Prop),
     K = counter 0 1 n
-      ∧ m = count True (maps (butlast K) (fun k => P k))
+      ∧ m = Bag.count (elems (maps (butlast K) (fun k => P k))) True
       ∧ 0 ≤ x
       ∧ x < m
       → x ≤ current (compacts c0 (butlast K) P) x
@@ -579,7 +694,7 @@ def Stmt.select_current_compacts_lower : Prop :=
 def Stmt.select_current_compacts_upper : Prop :=
   ∀ (c0 : Int → Int) (K : Trace Int) (n : Int) (m : Int) (x : Int) (P : Int → Prop),
     K = counter 0 1 n
-      ∧ m = count True (maps (butlast K) (fun k => P k))
+      ∧ m = Bag.count (elems (maps (butlast K) (fun k => P k))) True
       ∧ 0 ≤ x
       ∧ x < m
       → current (compacts c0 (butlast K) P) x + m ≤ x + n
@@ -601,7 +716,7 @@ def Stmt.length_filters_above : Prop :=
 
 def Stmt.select_current_filters_above : Prop :=
   ∀ (c0 : Int → Int) (ks : List Int) (b : Int) (F : Int → Int) (m : Int) (x : Int) (n : Int) (hks : length ks = n),
-    m = count True (maps ks (fun k => b ≤ F k)) ∧ 0 ≤ x ∧ x < m
+    m = Bag.count (elems (maps ks (fun k => b ≤ F k))) True ∧ 0 ≤ x ∧ x < m
       → b ≤ current (filters_above c0 ks b F) x
 
 noncomputable def filters_below (c0 : Int → Int) (ks : List Int) (b : Int)
@@ -625,7 +740,7 @@ def Stmt.length_filters_below : Prop :=
 def Stmt.select_current_filters_below : Prop :=
   ∀ (c0 : Int → Int) (K : Trace Int) (n : Int) (b : Int) (F : Int → Int) (m : Int) (x : Int),
     K = counter 0 1 n
-      ∧ count True (maps (butlast K) (fun k => b ≤ F k)) + m = n
+      ∧ Bag.count (elems (maps (butlast K) (fun k => b ≤ F k))) True + m = n
       ∧ 0 ≤ x
       ∧ x < m
       → current (filters_below c0 (butlast K) b F) x < b
@@ -643,7 +758,7 @@ def Stmt.length_parities : Prop :=
 
 def Stmt.current_parities : Prop :=
   ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
-    current (parities x values) = x + parity values
+    current (parities x values) = x + parity (elems values)
 
 def Stmt.select_current_trace_reset_add : Prop :=
   ∀ (a0 : Int → Int) (j : Int) (n : Int) (c : Int) (G : Int → Int),
@@ -665,9 +780,10 @@ def Stmt.select_current_trace_reset_add : Prop :=
          else
            c
              + sum
-               (maps
-                  (butlast (counter 0 1 n))
-                  (fun k => if 0 < k then G k else 0)))
+               (elems
+                  (maps
+                     (butlast (counter 0 1 n))
+                     (fun k => if 0 < k then G k else 0))))
 
 def Stmt.select_current_trace_reset_add_keep : Prop :=
   ∀ (a0 : Int → Int) (j : Int) (n : Int) (c : Int) (P : Int → Prop) (G : Int → Int),
@@ -689,9 +805,10 @@ def Stmt.select_current_trace_reset_add_keep : Prop :=
          else
            c
              + sum
-               (maps
-                  (butlast (counter 0 1 n))
-                  (fun k => if 0 < k then if P k then G k else 0 else 0)))
+               (elems
+                  (maps
+                     (butlast (counter 0 1 n))
+                     (fun k => if 0 < k then if P k then G k else 0 else 0))))
 
 def Stmt.select_current_trace_prefix_sums : Prop :=
   ∀ (b0 : Int → Int) (n : Int) (j : Int) (G : Int → Int),
@@ -702,7 +819,7 @@ def Stmt.select_current_trace_prefix_sums : Prop :=
          (fun b ⟨k, i⟩ => fun j => if j = i then G k + b k else b j))
       j
       = (if 0 ≤ j ∧ j ≤ n then
-           b0 0 + sum (maps (butlast (counter 0 1 j)) (fun k => G k))
+           b0 0 + sum (elems (maps (butlast (counter 0 1 j)) (fun k => G k)))
          else
            b0 j)
 
@@ -715,7 +832,8 @@ def Stmt.select_current_trace_prefix_sums_add : Prop :=
          (fun b ⟨k, i⟩ => fun j => if j = i then b k + G k + H k else b j))
       j
       = (if 0 ≤ j ∧ j ≤ n then
-           b0 0 + sum (maps (butlast (counter 0 1 j)) (fun k => G k + H k))
+           b0 0
+             + sum (elems (maps (butlast (counter 0 1 j)) (fun k => G k + H k)))
          else
            b0 j)
 
@@ -735,7 +853,7 @@ def Stmt.select_current_trace_recurrence : Prop :=
                 unspecified))
       j
       = (if 0 ≤ j ∧ j < n then
-           c + sum (maps (butlast (counter 1 1 j)) (fun k => G k))
+           c + sum (elems (maps (butlast (counter 1 1 j)) (fun k => G k)))
          else
            a0 j)
 
@@ -1397,550 +1515,146 @@ def Stmt.indexof_counter_step : Prop :=
     0 < d ∧ i ≤ j ∧ j < i + n * d ∧ (j - i) % d = 0
       → indexof j (butlast (counter i d n)) = (j - i) / d
 
-def Stmt.select_current_trace_stride2 : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (X : Int) (Y : Int) (j : Int),
-    current
-      (trace
-         a0
-         (butlast (counter 0 1 n))
-         (fun a k =>
-            fun j =>
-              if j = 2 * k + 1 then
-                Y
-              else
-                (fun j => if j = 2 * k then X else a j) j))
-      j
-      = (if 0 ≤ j ∧ j < 2 * n then if j % 2 = 0 then X else Y else a0 j)
+noncomputable def strides₂ (a : Int → Int) (keys : List Int) (xs₀ : List Int)
+                           (xs₁ : List Int) : Trace (Int → Int) :=
+  trace
+    a
+    (List.zip keys (List.zip xs₀ xs₁))
+    (fun b ⟨p, x₀, x₁⟩ =>
+       fun j =>
+         if j = p + 1 then x₁ else (fun j => if j = p then x₀ else b j) j)
 
-def Stmt.select_current_trace_stride3 : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (X : Int) (Y : Int) (Z : Int) (j : Int),
-    current
-      (trace
-         a0
-         (butlast (counter 0 1 n))
-         (fun a k =>
-            fun j =>
-              if j = 3 * k + 2 then
-                Z
+noncomputable def strides₃ (a : Int → Int) (keys : List Int) (xs₀ : List Int)
+                           (xs₁ : List Int)
+                           (xs₂ : List Int) : Trace (Int → Int) :=
+  trace
+    a
+    (List.zip keys (List.zip xs₀ (List.zip xs₁ xs₂)))
+    (fun b ⟨p, x₀, x₁, x₂⟩ =>
+       fun j =>
+         if j = p + 2 then
+           x₂
+         else
+           (fun j =>
+              if j = p + 1 then x₁ else (fun j => if j = p then x₀ else b j) j)
+             j)
+
+noncomputable def strides₄ (a : Int → Int) (keys : List Int) (xs₀ : List Int)
+                           (xs₁ : List Int) (xs₂ : List Int)
+                           (xs₃ : List Int) : Trace (Int → Int) :=
+  trace
+    a
+    (List.zip keys (List.zip xs₀ (List.zip xs₁ (List.zip xs₂ xs₃))))
+    (fun b ⟨p, x₀, x₁, x₂, x₃⟩ =>
+       fun j =>
+         if j = p + 3 then
+           x₃
+         else
+           (fun j =>
+              if j = p + 2 then
+                x₂
               else
                 (fun j =>
-                   if j = 3 * k + 1 then
-                     Y
+                   if j = p + 1 then
+                     x₁
                    else
-                     (fun j => if j = 3 * k then X else a j) j)
-                  j))
-      j
-      = (if 0 ≤ j ∧ j < 3 * n then
-           if j % 3 = 0 then X else if j % 3 = 1 then Y else Z
+                     (fun j => if j = p then x₀ else b j) j)
+                  j)
+             j)
+
+noncomputable def strides₅ (a : Int → Int) (keys : List Int) (xs₀ : List Int)
+                           (xs₁ : List Int) (xs₂ : List Int) (xs₃ : List Int)
+                           (xs₄ : List Int) : Trace (Int → Int) :=
+  trace
+    a
+    (List.zip keys (List.zip xs₀ (List.zip xs₁ (List.zip xs₂ (List.zip xs₃ xs₄)))))
+    (fun b ⟨p, x₀, x₁, x₂, x₃, x₄⟩ =>
+       fun j =>
+         if j = p + 4 then
+           x₄
          else
-           a0 j)
-
-def Stmt.select_current_trace_stride2_cases : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (P : Prop) (Q : Prop) (R : Prop) (X1 : Int) (Y1 : Int) (X2 : Int) (Y2 : Int) (X3 : Int) (Y3 : Int) (j : Int),
-    (R ↔ ¬P ∧ ¬Q)
-      → current
-        (trace
-           a0
-           (butlast (counter 0 1 n))
-           (fun a k =>
-              if P then
-                fun j =>
-                  if j = 2 * k + 1 then
-                    Y1
-                  else
-                    (fun j => if j = 2 * k then X1 else a j) j
+           (fun j =>
+              if j = p + 3 then
+                x₃
               else
-                if Q then
-                  fun j =>
-                    if j = 2 * k + 1 then
-                      Y2
-                    else
-                      (fun j => if j = 2 * k then X2 else a j) j
-                else
-                  if R then
-                    fun j =>
-                      if j = 2 * k + 1 then
-                        Y3
-                      else
-                        (fun j => if j = 2 * k then X3 else a j) j
-                  else
-                    unspecified))
-        j
-        = (if 0 ≤ j ∧ j < 2 * n then
-             if j % 2 = 0 then
-               if P then X1 else if Q then X2 else X3
+                (fun j =>
+                   if j = p + 2 then
+                     x₂
+                   else
+                     (fun j =>
+                        if j = p + 1 then
+                          x₁
+                        else
+                          (fun j => if j = p then x₀ else b j) j)
+                       j)
+                  j)
+             j)
+
+def Stmt.select_current_strides₂ : Prop :=
+  ∀ (a0 : Int → Int) (o : Int) (s : Int) (n : Int) (xs₀ : List Int) (xs₁ : List Int) (j : Int) (hxs₀ : length xs₀ = n) (hxs₁ : length xs₁ = n),
+    2 ≤ s
+      → current (strides₂ a0 (butlast (counter o s n)) xs₀ xs₁) j
+        = (if 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < 2 then
+             if (j - o) % s = 0 then
+               earlier ((j - o) / s) xs₀
              else
-               if P then Y1 else if Q then Y2 else Y3
+               earlier ((j - o) / s) xs₁
            else
              a0 j)
 
-def Stmt.select_current_trace_stride3_cases4 : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (P1 : Prop) (P2 : Prop) (P3 : Prop) (P4 : Prop) (X1_0 : Int) (X1_1 : Int) (X1_2 : Int) (X2_0 : Int) (X2_1 : Int) (X2_2 : Int) (X3_0 : Int) (X3_1 : Int) (X3_2 : Int) (X4_0 : Int) (X4_1 : Int) (X4_2 : Int) (j : Int),
-    (P4 ↔ ¬P1 ∧ ¬P2 ∧ ¬P3)
-      → current
-        (trace
-           a0
-           (butlast (counter 0 1 n))
-           (fun a k =>
-              if P1 then
-                fun j =>
-                  if j = 3 * k + 2 then
-                    X1_2
-                  else
-                    (fun j =>
-                       if j = 3 * k + 1 then
-                         X1_1
-                       else
-                         (fun j => if j = 3 * k then X1_0 else a j) j)
-                      j
-              else
-                if P2 then
-                  fun j =>
-                    if j = 3 * k + 2 then
-                      X2_2
-                    else
-                      (fun j =>
-                         if j = 3 * k + 1 then
-                           X2_1
-                         else
-                           (fun j => if j = 3 * k then X2_0 else a j) j)
-                        j
-                else
-                  if P3 then
-                    fun j =>
-                      if j = 3 * k + 2 then
-                        X3_2
-                      else
-                        (fun j =>
-                           if j = 3 * k + 1 then
-                             X3_1
-                           else
-                             (fun j => if j = 3 * k then X3_0 else a j) j)
-                          j
-                  else
-                    if P4 then
-                      fun j =>
-                        if j = 3 * k + 2 then
-                          X4_2
-                        else
-                          (fun j =>
-                             if j = 3 * k + 1 then
-                               X4_1
-                             else
-                               (fun j => if j = 3 * k then X4_0 else a j) j)
-                            j
-                    else
-                      unspecified))
-        j
-        = (if 0 ≤ j ∧ j < 3 * n then
-             if j % 3 = 0 then
-               if P1 then X1_0 else if P2 then X2_0 else if P3 then X3_0 else X4_0
+def Stmt.select_current_strides₃ : Prop :=
+  ∀ (a0 : Int → Int) (o : Int) (s : Int) (n : Int) (xs₀ : List Int) (xs₁ : List Int) (xs₂ : List Int) (j : Int) (hxs₀ : length xs₀ = n) (hxs₁ : length xs₁ = n) (hxs₂ : length xs₂ = n),
+    3 ≤ s
+      → current (strides₃ a0 (butlast (counter o s n)) xs₀ xs₁ xs₂) j
+        = (if 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < 3 then
+             if (j - o) % s = 0 then
+               earlier ((j - o) / s) xs₀
              else
-               if j % 3 = 1 then
-                 if P1 then
-                   X1_1
-                 else
-                   if P2 then X2_1 else if P3 then X3_1 else X4_1
+               if (j - o) % s = 1 then
+                 earlier ((j - o) / s) xs₁
                else
-                 if P1 then
-                   X1_2
-                 else
-                   if P2 then X2_2 else if P3 then X3_2 else X4_2
+                 earlier ((j - o) / s) xs₂
            else
              a0 j)
 
-def Stmt.select_current_trace_stride4_cases5 : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (P1 : Prop) (P2 : Prop) (P3 : Prop) (P4 : Prop) (P5 : Prop) (X1_0 : Int) (X1_1 : Int) (X1_2 : Int) (X1_3 : Int) (X2_0 : Int) (X2_1 : Int) (X2_2 : Int) (X2_3 : Int) (X3_0 : Int) (X3_1 : Int) (X3_2 : Int) (X3_3 : Int) (X4_0 : Int) (X4_1 : Int) (X4_2 : Int) (X4_3 : Int) (X5_0 : Int) (X5_1 : Int) (X5_2 : Int) (X5_3 : Int) (j : Int),
-    (P5 ↔ ¬P1 ∧ ¬P2 ∧ ¬P3 ∧ ¬P4)
-      → current
-        (trace
-           a0
-           (butlast (counter 0 1 n))
-           (fun a k =>
-              if P1 then
-                fun j =>
-                  if j = 4 * k + 3 then
-                    X1_3
-                  else
-                    (fun j =>
-                       if j = 4 * k + 2 then
-                         X1_2
-                       else
-                         (fun j =>
-                            if j = 4 * k + 1 then
-                              X1_1
-                            else
-                              (fun j => if j = 4 * k then X1_0 else a j) j)
-                           j)
-                      j
-              else
-                if P2 then
-                  fun j =>
-                    if j = 4 * k + 3 then
-                      X2_3
-                    else
-                      (fun j =>
-                         if j = 4 * k + 2 then
-                           X2_2
-                         else
-                           (fun j =>
-                              if j = 4 * k + 1 then
-                                X2_1
-                              else
-                                (fun j => if j = 4 * k then X2_0 else a j) j)
-                             j)
-                        j
-                else
-                  if P3 then
-                    fun j =>
-                      if j = 4 * k + 3 then
-                        X3_3
-                      else
-                        (fun j =>
-                           if j = 4 * k + 2 then
-                             X3_2
-                           else
-                             (fun j =>
-                                if j = 4 * k + 1 then
-                                  X3_1
-                                else
-                                  (fun j => if j = 4 * k then X3_0 else a j) j)
-                               j)
-                          j
-                  else
-                    if P4 then
-                      fun j =>
-                        if j = 4 * k + 3 then
-                          X4_3
-                        else
-                          (fun j =>
-                             if j = 4 * k + 2 then
-                               X4_2
-                             else
-                               (fun j =>
-                                  if j = 4 * k + 1 then
-                                    X4_1
-                                  else
-                                    (fun j => if j = 4 * k then X4_0 else a j) j)
-                                 j)
-                            j
-                    else
-                      if P5 then
-                        fun j =>
-                          if j = 4 * k + 3 then
-                            X5_3
-                          else
-                            (fun j =>
-                               if j = 4 * k + 2 then
-                                 X5_2
-                               else
-                                 (fun j =>
-                                    if j = 4 * k + 1 then
-                                      X5_1
-                                    else
-                                      (fun j => if j = 4 * k then X5_0 else a j)
-                                        j)
-                                   j)
-                              j
-                      else
-                        unspecified))
-        j
-        = (if 0 ≤ j ∧ j < 4 * n then
-             if j % 4 = 0 then
-               if P1 then
-                 X1_0
-               else
-                 if P2 then
-                   X2_0
-                 else
-                   if P3 then X3_0 else if P4 then X4_0 else X5_0
+def Stmt.select_current_strides₄ : Prop :=
+  ∀ (a0 : Int → Int) (o : Int) (s : Int) (n : Int) (xs₀ : List Int) (xs₁ : List Int) (xs₂ : List Int) (xs₃ : List Int) (j : Int) (hxs₀ : length xs₀ = n) (hxs₁ : length xs₁ = n) (hxs₂ : length xs₂ = n) (hxs₃ : length xs₃ = n),
+    4 ≤ s
+      → current (strides₄ a0 (butlast (counter o s n)) xs₀ xs₁ xs₂ xs₃) j
+        = (if 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < 4 then
+             if (j - o) % s = 0 then
+               earlier ((j - o) / s) xs₀
              else
-               if j % 4 = 1 then
-                 if P1 then
-                   X1_1
-                 else
-                   if P2 then
-                     X2_1
-                   else
-                     if P3 then X3_1 else if P4 then X4_1 else X5_1
+               if (j - o) % s = 1 then
+                 earlier ((j - o) / s) xs₁
                else
-                 if j % 4 = 2 then
-                   if P1 then
-                     X1_2
-                   else
-                     if P2 then
-                       X2_2
-                     else
-                       if P3 then X3_2 else if P4 then X4_2 else X5_2
+                 if (j - o) % s = 2 then
+                   earlier ((j - o) / s) xs₂
                  else
-                   if P1 then
-                     X1_3
-                   else
-                     if P2 then
-                       X2_3
-                     else
-                       if P3 then X3_3 else if P4 then X4_3 else X5_3
+                   earlier ((j - o) / s) xs₃
            else
              a0 j)
 
-def Stmt.select_current_trace_stride5_cases6 : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (P1 : Prop) (P2 : Prop) (P3 : Prop) (P4 : Prop) (P5 : Prop) (P6 : Prop) (X1_0 : Int) (X1_1 : Int) (X1_2 : Int) (X1_3 : Int) (X1_4 : Int) (X2_0 : Int) (X2_1 : Int) (X2_2 : Int) (X2_3 : Int) (X2_4 : Int) (X3_0 : Int) (X3_1 : Int) (X3_2 : Int) (X3_3 : Int) (X3_4 : Int) (X4_0 : Int) (X4_1 : Int) (X4_2 : Int) (X4_3 : Int) (X4_4 : Int) (X5_0 : Int) (X5_1 : Int) (X5_2 : Int) (X5_3 : Int) (X5_4 : Int) (X6_0 : Int) (X6_1 : Int) (X6_2 : Int) (X6_3 : Int) (X6_4 : Int) (j : Int),
-    (P6 ↔ ¬P1 ∧ ¬P2 ∧ ¬P3 ∧ ¬P4 ∧ ¬P5)
-      → current
-        (trace
-           a0
-           (butlast (counter 0 1 n))
-           (fun a k =>
-              if P1 then
-                fun j =>
-                  if j = 5 * k + 4 then
-                    X1_4
-                  else
-                    (fun j =>
-                       if j = 5 * k + 3 then
-                         X1_3
-                       else
-                         (fun j =>
-                            if j = 5 * k + 2 then
-                              X1_2
-                            else
-                              (fun j =>
-                                 if j = 5 * k + 1 then
-                                   X1_1
-                                 else
-                                   (fun j => if j = 5 * k then X1_0 else a j) j)
-                                j)
-                           j)
-                      j
-              else
-                if P2 then
-                  fun j =>
-                    if j = 5 * k + 4 then
-                      X2_4
-                    else
-                      (fun j =>
-                         if j = 5 * k + 3 then
-                           X2_3
-                         else
-                           (fun j =>
-                              if j = 5 * k + 2 then
-                                X2_2
-                              else
-                                (fun j =>
-                                   if j = 5 * k + 1 then
-                                     X2_1
-                                   else
-                                     (fun j => if j = 5 * k then X2_0 else a j) j)
-                                  j)
-                             j)
-                        j
-                else
-                  if P3 then
-                    fun j =>
-                      if j = 5 * k + 4 then
-                        X3_4
-                      else
-                        (fun j =>
-                           if j = 5 * k + 3 then
-                             X3_3
-                           else
-                             (fun j =>
-                                if j = 5 * k + 2 then
-                                  X3_2
-                                else
-                                  (fun j =>
-                                     if j = 5 * k + 1 then
-                                       X3_1
-                                     else
-                                       (fun j => if j = 5 * k then X3_0 else a j)
-                                         j)
-                                    j)
-                               j)
-                          j
-                  else
-                    if P4 then
-                      fun j =>
-                        if j = 5 * k + 4 then
-                          X4_4
-                        else
-                          (fun j =>
-                             if j = 5 * k + 3 then
-                               X4_3
-                             else
-                               (fun j =>
-                                  if j = 5 * k + 2 then
-                                    X4_2
-                                  else
-                                    (fun j =>
-                                       if j = 5 * k + 1 then
-                                         X4_1
-                                       else
-                                         (fun j =>
-                                            if j = 5 * k then X4_0 else a j)
-                                           j)
-                                      j)
-                                 j)
-                            j
-                    else
-                      if P5 then
-                        fun j =>
-                          if j = 5 * k + 4 then
-                            X5_4
-                          else
-                            (fun j =>
-                               if j = 5 * k + 3 then
-                                 X5_3
-                               else
-                                 (fun j =>
-                                    if j = 5 * k + 2 then
-                                      X5_2
-                                    else
-                                      (fun j =>
-                                         if j = 5 * k + 1 then
-                                           X5_1
-                                         else
-                                           (fun j =>
-                                              if j = 5 * k then X5_0 else a j)
-                                             j)
-                                        j)
-                                   j)
-                              j
-                      else
-                        if P6 then
-                          fun j =>
-                            if j = 5 * k + 4 then
-                              X6_4
-                            else
-                              (fun j =>
-                                 if j = 5 * k + 3 then
-                                   X6_3
-                                 else
-                                   (fun j =>
-                                      if j = 5 * k + 2 then
-                                        X6_2
-                                      else
-                                        (fun j =>
-                                           if j = 5 * k + 1 then
-                                             X6_1
-                                           else
-                                             (fun j =>
-                                                if j = 5 * k then X6_0 else a j)
-                                               j)
-                                          j)
-                                     j)
-                                j
-                        else
-                          unspecified))
-        j
-        = (if 0 ≤ j ∧ j < 5 * n then
-             if j % 5 = 0 then
-               if P1 then
-                 X1_0
-               else
-                 if P2 then
-                   X2_0
-                 else
-                   if P3 then
-                     X3_0
-                   else
-                     if P4 then X4_0 else if P5 then X5_0 else X6_0
+def Stmt.select_current_strides₅ : Prop :=
+  ∀ (a0 : Int → Int) (o : Int) (s : Int) (n : Int) (xs₀ : List Int) (xs₁ : List Int) (xs₂ : List Int) (xs₃ : List Int) (xs₄ : List Int) (j : Int) (hxs₀ : length xs₀ = n) (hxs₁ : length xs₁ = n) (hxs₂ : length xs₂ = n) (hxs₃ : length xs₃ = n) (hxs₄ : length xs₄ = n),
+    5 ≤ s
+      → current (strides₅ a0 (butlast (counter o s n)) xs₀ xs₁ xs₂ xs₃ xs₄) j
+        = (if 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < 5 then
+             if (j - o) % s = 0 then
+               earlier ((j - o) / s) xs₀
              else
-               if j % 5 = 1 then
-                 if P1 then
-                   X1_1
-                 else
-                   if P2 then
-                     X2_1
-                   else
-                     if P3 then
-                       X3_1
-                     else
-                       if P4 then X4_1 else if P5 then X5_1 else X6_1
+               if (j - o) % s = 1 then
+                 earlier ((j - o) / s) xs₁
                else
-                 if j % 5 = 2 then
-                   if P1 then
-                     X1_2
-                   else
-                     if P2 then
-                       X2_2
-                     else
-                       if P3 then
-                         X3_2
-                       else
-                         if P4 then X4_2 else if P5 then X5_2 else X6_2
+                 if (j - o) % s = 2 then
+                   earlier ((j - o) / s) xs₂
                  else
-                   if j % 5 = 3 then
-                     if P1 then
-                       X1_3
-                     else
-                       if P2 then
-                         X2_3
-                       else
-                         if P3 then
-                           X3_3
-                         else
-                           if P4 then X4_3 else if P5 then X5_3 else X6_3
+                   if (j - o) % s = 3 then
+                     earlier ((j - o) / s) xs₃
                    else
-                     if P1 then
-                       X1_4
-                     else
-                       if P2 then
-                         X2_4
-                       else
-                         if P3 then
-                           X3_4
-                         else
-                           if P4 then X4_4 else if P5 then X5_4 else X6_4
+                     earlier ((j - o) / s) xs₄
            else
              a0 j)
-
-def Stmt.select_current_trace_stride2_defaults : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (c : Int) (d : Int) (xs : List Int) (ys : List Int) (zs : List Int) (j : Int) (hxs : length xs = n) (hys : length ys = n) (hzs : length zs = n),
-    current
-      (trace
-         a0
-         (List.zip (butlast (counter 0 1 n)) (List.zip xs (List.zip ys zs)))
-         (fun a ⟨k, x, y, z⟩ =>
-            if x ≠ c ∧ y ≠ c then
-              fun j =>
-                if j = 2 * k + 1 then
-                  y
-                else
-                  (fun j => if j = 2 * k then x else a j) j
-            else
-              if x ≠ c ∧ y = c then
-                fun j =>
-                  if j = 2 * k + 1 then
-                    d
-                  else
-                    (fun j => if j = 2 * k then x else a j) j
-              else
-                if x = c ∧ z ≠ c then
-                  fun j =>
-                    if j = 2 * k + 1 then
-                      z
-                    else
-                      (fun j => if j = 2 * k then d else a j) j
-                else
-                  if x = c ∧ z = c then
-                    fun j =>
-                      if j = 2 * k + 1 then
-                        d
-                      else
-                        (fun j => if j = 2 * k then d else a j) j
-                  else
-                    unspecified))
-      j
-      = (if 0 ≤ j ∧ j < 2 * n then
-           if j % 2 = 0 then
-             if earlier (j / 2) xs ≠ c then earlier (j / 2) xs else d
-           else
-             if earlier (j / 2) xs ≠ c then
-               if earlier (j / 2) ys ≠ c then earlier (j / 2) ys else d
-             else
-               if earlier (j / 2) zs ≠ c then earlier (j / 2) zs else d
-         else
-           a0 j)
 
 def Stmt.select_current_trace_ahead : Prop :=
   ∀ (a0 : Int → Int) (n : Int) (m : Int) (F : Int → Int) (G : Int → Int) (j : Int),
@@ -2066,16 +1780,16 @@ def Stmt.current_trace_mod_add_cases : Prop :=
           % m
 
 noncomputable def squares (i : Int) (n : Int) : Int :=
-  sum (maps (butlast (counter i 1 n)) (fun k => k * k))
+  sum (elems (maps (butlast (counter i 1 n)) (fun k => k * k)))
 
 noncomputable def cubes (i : Int) (n : Int) : Int :=
-  sum (maps (butlast (counter i 1 n)) (fun k => k * k * k))
+  sum (elems (maps (butlast (counter i 1 n)) (fun k => k * k * k)))
 
 noncomputable def fourths (i : Int) (n : Int) : Int :=
-  sum (maps (butlast (counter i 1 n)) (fun k => k * k * k * k))
+  sum (elems (maps (butlast (counter i 1 n)) (fun k => k * k * k * k)))
 
 noncomputable def fifths (i : Int) (n : Int) : Int :=
-  sum (maps (butlast (counter i 1 n)) (fun k => k * k * k * k * k))
+  sum (elems (maps (butlast (counter i 1 n)) (fun k => k * k * k * k * k)))
 
 def Stmt.squares_zero : Prop :=
   ∀ (i : Int) (n : Int),

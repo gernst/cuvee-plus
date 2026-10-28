@@ -97,17 +97,50 @@ theorem upper_N (ar : Int → Int) (len y : Int) : upper ar len y = N.upper ar l
 theorem mods_N (i c m n : Int) : mods i c m n = N.mods i c m n.toNat := by
   simp only [mods, N.mods, counter_N]
 
+-- multisets: the multiset of the elements of a list is its class, whose aggregates are the folds of the list of
+-- Naturals.lean
+theorem elems_mk {α : Type} [Inhabited α] (xs : List α) : elems xs = Bag.mk xs := by
+  induction xs with
+  | nil => rfl
+  | cons y ys ih => rw [elems, ih]; rfl
+
+theorem sum_mk (xs : List Int) : sum (Bag.mk xs) = N.sum xs := by
+  induction xs with
+  | nil => rfl
+  | cons v vs ih => show v + sum (Bag.mk vs) = _; rw [ih, N.sum]
+
+theorem parity_mk (xs : List Int) : parity (Bag.mk xs) = N.parity xs := by
+  induction xs with
+  | nil => rfl
+  | cons v vs ih => show (if v % 2 = 0 then 1 else -1) + parity (Bag.mk vs) = _; rw [ih, N.parity]
+
+theorem count_mk {α : Type} [Inhabited α] (xs : List α) (e : α) : Bag.count (Bag.mk xs) e = N.count e xs := by
+  induction xs with
+  | nil => rfl
+  | cons v vs ih =>
+    have ih' : ((vs.count e : Nat) : Int) = N.count e vs := ih
+    show ((List.count e (v :: vs) : Nat) : Int) = _
+    rw [List.count_cons, N.count, Int.natCast_add, ih']
+    by_cases h : v = e <;> simp [h] <;> omega
+
+theorem sum_N (xs : List Int) : sum (elems xs) = N.sum xs := by rw [elems_mk, sum_mk]
+
+theorem parity_N (xs : List Int) : parity (elems xs) = N.parity xs := by rw [elems_mk, parity_mk]
+
+theorem count_N {α : Type} [Inhabited α] (xs : List α) (e : α) : Bag.count (elems xs) e = N.count e xs := by
+  rw [elems_mk, count_mk]
+
 theorem squares_N (i n : Int) : squares i n = N.squares i n.toNat := by
-  simp only [squares, N.squares, counter_N]
+  simp only [squares, N.squares, counter_N, sum_N]
 
 theorem cubes_N (i n : Int) : cubes i n = N.cubes i n.toNat := by
-  simp only [cubes, N.cubes, counter_N]
+  simp only [cubes, N.cubes, counter_N, sum_N]
 
 theorem fourths_N (i n : Int) : fourths i n = N.fourths i n.toNat := by
-  simp only [fourths, N.fourths, counter_N]
+  simp only [fourths, N.fourths, counter_N, sum_N]
 
 theorem fifths_N (i n : Int) : fifths i n = N.fifths i n.toNat := by
-  simp only [fifths, N.fifths, counter_N]
+  simp only [fifths, N.fifths, counter_N, sum_N]
 
 theorem series_N (x0 z a n : Int) : series x0 z a n = N.series x0 z a n.toNat := by
   simp only [series, N.series, counter_N]
@@ -329,23 +362,184 @@ theorem earlier_stores : Stmt.earlier_stores := by
 -- the lemmas of aggregation.dfy
 
 theorem current_sums : Stmt.current_sums := by
-  intro x values n hvalues; exact N.current_sums x values values.length rfl
+  intro x values n hvalues; simp only [sum_N] at *; exact N.current_sums x values values.length rfl
 
 theorem earlier_sums : Stmt.earlier_sums := by
-  intro j x values n hvalues ⟨hj, hjn⟩
+  intro j x values n hvalues ⟨hj, hjn⟩; simp only [sum_N] at *
   rw [earlier_N_nonneg j _ hj, prefix_N]
   exact N.earlier_sums j.toNat x values n.toNat (by omega) (by rw [N.integer_cast, N.integer_cast]; omega)
 
 theorem prefix_sums : Stmt.prefix_sums := by
   intro k x values n hvalues; rw [prefix_N, prefix_N]; exact N.prefix_sums k.toNat x values values.length rfl
 
-theorem sum_empty : Stmt.sum_empty := N.sum_empty
+-- the laws of the operations on multisets, over the lists of their classes
+theorem sum_append (xs ys : List Int) : N.sum (xs ++ ys) = N.sum xs + N.sum ys := by
+  induction xs with
+  | nil => simp [N.sum]
+  | cons v vs ih => simp only [List.cons_append, N.sum, ih]; omega
+
+theorem parity_append (xs ys : List Int) : N.parity (xs ++ ys) = N.parity xs + N.parity ys := by
+  induction xs with
+  | nil => simp [N.parity]
+  | cons v vs ih => simp only [List.cons_append, N.parity, ih]; omega
+
+theorem count_append {α : Type} [Inhabited α] (e : α) (xs ys : List α) :
+    N.count e (xs ++ ys) = N.count e xs + N.count e ys := by
+  induction xs with
+  | nil => simp [N.count]
+  | cons v vs ih => simp only [List.cons_append, N.count, ih]; omega
+
+-- a submultiset and the difference to it make up the multiset, since the difference cuts off at zero only below it
+theorem diff_append {α : Type} [Inhabited α] (xs ys : List α) (h : Bag.mk ys ≤ Bag.mk xs) :
+    Bag.mk (Bag.diff xs ys ++ ys) = Bag.mk xs := by
+  apply Quotient.sound
+  apply List.perm_iff_count.2
+  intro e
+  have he : ((ys.count e : Nat) : Int) ≤ ((xs.count e : Nat) : Int) := h e
+  rw [List.count_append, Bag.count_diff]
+  omega
+
+theorem sum_empty : Stmt.sum_empty := rfl
+
+theorem sum_single : Stmt.sum_single := by
+  intro x; show x + 0 = x; omega
+
+theorem sum_union : Stmt.sum_union := by
+  intro m n
+  induction m using Quotient.ind; induction n using Quotient.ind
+  exact (sum_mk _).trans ((sum_append _ _).trans (by rw [← sum_mk, ← sum_mk]; rfl))
+
+theorem sum_difference : Stmt.sum_difference := by
+  intro m n h
+  induction m using Quotient.ind; induction n using Quotient.ind
+  rename_i xs ys
+  have hs := congrArg sum (diff_append xs ys h)
+  rw [sum_mk, sum_mk, sum_append] at hs
+  show sum (Bag.mk (Bag.diff xs ys)) = sum (Bag.mk xs) - sum (Bag.mk ys)
+  rw [sum_mk, sum_mk, sum_mk]; omega
+
+theorem parity_empty : Stmt.parity_empty := rfl
+
+theorem parity_single : Stmt.parity_single := by
+  intro x; show (if x % 2 = 0 then 1 else -1) + 0 = _; omega
+
+theorem parity_union : Stmt.parity_union := by
+  intro m n
+  induction m using Quotient.ind; induction n using Quotient.ind
+  exact (parity_mk _).trans ((parity_append _ _).trans (by rw [← parity_mk, ← parity_mk]; rfl))
+
+theorem parity_difference : Stmt.parity_difference := by
+  intro m n h
+  induction m using Quotient.ind; induction n using Quotient.ind
+  rename_i xs ys
+  have hs := congrArg parity (diff_append xs ys h)
+  rw [parity_mk, parity_mk, parity_append] at hs
+  show parity (Bag.mk (Bag.diff xs ys)) = parity (Bag.mk xs) - parity (Bag.mk ys)
+  rw [parity_mk, parity_mk, parity_mk]; omega
+
+theorem multiplicity_empty : Stmt.multiplicity_empty := by
+  intro α _ e; rfl
+
+theorem multiplicity_single : Stmt.multiplicity_single := by
+  intro α _ v e
+  show Bag.count (Bag.mk [v]) e = _
+  rw [count_mk, N.count, N.count]; split <;> omega
+
+theorem multiplicity_union : Stmt.multiplicity_union := by
+  intro α _ m n e
+  induction m using Quotient.ind; induction n using Quotient.ind
+  exact (count_mk _ e).trans ((count_append e _ _).trans (by rw [← count_mk, ← count_mk]; rfl))
+
+theorem multiplicity_difference : Stmt.multiplicity_difference := by
+  intro α _ m n e h
+  induction m using Quotient.ind; induction n using Quotient.ind
+  rename_i xs ys
+  have he : ((ys.count e : Nat) : Int) ≤ ((xs.count e : Nat) : Int) := h e
+  show ((List.count e (Bag.diff xs ys) : Nat) : Int) = ((xs.count e : Nat) : Int) - ((ys.count e : Nat) : Int)
+  rw [Bag.count_diff]; omega
+
+theorem max_empty : Stmt.max_empty := by
+  intro x; rfl
+
+theorem max_single : Stmt.max_single := by
+  intro x v; rfl
+
+-- the maximum and the minimum over a union are the folds over the elements of the second operand first, since the
+-- fold is a right fold that does not depend on the order
+theorem max_union : Stmt.max_union := by
+  intro x m n
+  induction m using Quotient.ind; induction n using Quotient.ind
+  rename_i xs ys
+  show max x (Bag.mk (xs ++ ys)) = _
+  rw [show Bag.mk (xs ++ ys) = Bag.mk (ys ++ xs) from Quotient.sound List.perm_append_comm]
+  show List.foldr _ x (ys ++ xs) = _
+  rw [List.foldr_append]; rfl
+
+theorem min_empty : Stmt.min_empty := by
+  intro x; rfl
+
+theorem min_single : Stmt.min_single := by
+  intro x v; rfl
+
+theorem min_union : Stmt.min_union := by
+  intro x m n
+  induction m using Quotient.ind; induction n using Quotient.ind
+  rename_i xs ys
+  show min x (Bag.mk (xs ++ ys)) = _
+  rw [show Bag.mk (xs ++ ys) = Bag.mk (ys ++ xs) from Quotient.sound List.perm_append_comm]
+  show List.foldr _ x (ys ++ xs) = _
+  rw [List.foldr_append]; rfl
+
+-- a value read within a list occurs in it, and a value read at one of the keys among the values read there
+theorem count_earlier {α : Type} [Inhabited α] (xs : List α) :
+    ∀ (j : Int), 0 ≤ j → j < xs.length → 1 ≤ N.count (earlier j xs) xs := by
+  induction xs with
+  | nil => intro j h0 h1; simp at h1; omega
+  | cons x ys ih =>
+    intro j h0 h1
+    simp only [earlier, if_neg (show ¬j < 0 by omega)]
+    by_cases e : j = 0
+    · have := N.count_nonnegative x ys
+      rw [if_pos e, N.count, if_pos rfl]; omega
+    · rw [if_neg e, N.count]
+      have := ih (j - 1) (by omega) (by simp at h1; omega)
+      split <;> omega
+
+theorem count_select {β : Type} [Inhabited β] (a : Int → β) (k : Int) (keys : List Int) (h : occurs k keys) :
+    1 ≤ N.count (a k) (selects a keys) := by
+  induction keys with
+  | nil => exact absurd h (by simp [occurs])
+  | cons y ys ih =>
+    show 1 ≤ N.count (a k) (a y :: selects a ys)
+    have hn := N.count_nonnegative (a k) (selects a ys)
+    rw [N.count]
+    rcases h with e | h
+    · subst e; rw [if_pos rfl]; omega
+    · have := ih h; split <;> omega
+
+-- a single element is a submultiset if its multiplicity is positive
+theorem single_le {α : Type} [Inhabited α] (v : α) (xs : List α) (h : 1 ≤ N.count v xs) : {v} ≤ Bag.mk xs := by
+  intro e
+  show Bag.count (Bag.mk [v]) e ≤ Bag.count (Bag.mk xs) e
+  rw [count_mk, count_mk, N.count, N.count]
+  have := N.count_nonnegative e xs
+  by_cases ev : v = e
+  · subst ev; rw [if_pos rfl]; omega
+  · rw [if_neg ev]; omega
+
+theorem single_earlier_le_elems : Stmt.single_earlier_le_elems := by
+  intro α _ j xs ⟨h0, h1⟩
+  rw [elems_mk]; exact iff_true_intro (single_le _ _ (count_earlier xs j h0 h1))
+
+theorem single_select_le_elems : Stmt.single_select_le_elems := by
+  intro a k keys n hkeys h
+  rw [elems_mk]; exact iff_true_intro (single_le _ _ (count_select a k keys h))
 
 theorem sum_consts : Stmt.sum_consts := by
-  intro n x hn; rw [consts_N, N.sum_consts, N.integer_cast, Int.toNat_of_nonneg hn]
+  intro n x hn; simp only [sum_N] at *; rw [consts_N, N.sum_consts, N.integer_cast, Int.toNat_of_nonneg hn]
 
 theorem sum_counter : Stmt.sum_counter := by
-  intro i c n hn; rw [counter_N, N.sum_counter, N.integer_cast, Int.toNat_of_nonneg hn]
+  intro i c n hn; simp only [sum_N] at *; rw [counter_N, N.sum_counter, N.integer_cast, Int.toNat_of_nonneg hn]
 
 theorem counts_false : Stmt.counts_false := by
   intro x bs n hbs; exact N.counts_false x bs bs.length rfl
@@ -354,21 +548,22 @@ theorem counts_true : Stmt.counts_true := by
   intro x bs n hbs; exact N.counts_true x bs bs.length rfl
 
 theorem current_trace_step_or_keep : Stmt.current_trace_step_or_keep := by
-  intro x0 n a xs C hxs
+  intro x0 n a xs C hxs; simp only [count_N] at *
   rw [counter_N]
   exact N.current_trace_step_or_keep_gen a C _ xs x0 (by rw [N.length_butlast_counter]; omega)
 
 theorem current_trace_add_at : Stmt.current_trace_add_at := by
-  intro α _ a k values n hvalues; exact N.current_trace_add_at a k values values.length rfl
+  intro α _ a k values n hvalues; simp only [sum_N] at *; exact N.current_trace_add_at a k values values.length rfl
 
 theorem current_trace_histogram : Stmt.current_trace_histogram := by
-  intro c0 a n hs v hhs; rw [counter_N]; exact N.current_trace_histogram c0 a n.toNat hs v (by omega)
+  intro c0 a n hs v hhs; simp only [count_N] at *; rw [counter_N]
+  exact N.current_trace_histogram c0 a n.toNat hs v (by omega)
 
 theorem current_counts : Stmt.current_counts := by
-  intro α _ x e vs n hvs; exact N.current_counts x e vs vs.length rfl
+  intro α _ x e vs n hvs; simp only [count_N] at *; exact N.current_counts x e vs vs.length rfl
 
 theorem earlier_counts : Stmt.earlier_counts := by
-  intro α _ j x e vs n hvs ⟨hj, hjn⟩
+  intro α _ j x e vs n hvs ⟨hj, hjn⟩; simp only [count_N] at *
   rw [earlier_N_nonneg j _ hj, prefix_N]
   exact N.earlier_counts j.toNat x e vs n.toNat (by omega) (by rw [N.integer_cast, N.integer_cast]; omega)
 
@@ -404,16 +599,16 @@ theorem fold_selects_update {α β : Type} [Inhabited α] [Inhabited β] (z : In
       split <;> omega
 
 theorem sum_selects_update : Stmt.sum_selects_update := by
-  intro α _ a k v keys n hkeys hd
-  exact fold_selects_update 0 id sum rfl (fun _ _ => rfl) a k v keys hd
+  intro α _ a k v keys n hkeys hd; simp only [sum_N]
+  exact fold_selects_update 0 id N.sum rfl (fun _ _ => rfl) a k v keys hd
 
 theorem parity_selects_update : Stmt.parity_selects_update := by
-  intro α _ a k v keys n hkeys hd
-  exact fold_selects_update 0 (fun w => if w % 2 = 0 then 1 else -1) parity rfl (fun _ _ => rfl) a k v keys hd
+  intro α _ a k v keys n hkeys hd; simp only [parity_N]
+  exact fold_selects_update 0 (fun w => if w % 2 = 0 then 1 else -1) N.parity rfl (fun _ _ => rfl) a k v keys hd
 
 theorem count_selects_update : Stmt.count_selects_update := by
-  intro α β _ _ a k w e keys n hkeys hd
-  exact fold_selects_update 0 (fun u => if u = e then 1 else 0) (count e) rfl (fun _ _ => rfl) a k w keys hd
+  intro α β _ _ a k w e keys n hkeys hd; simp only [count_N]
+  exact fold_selects_update 0 (fun u => if u = e then 1 else 0) (N.count e) rfl (fun _ _ => rfl) a k w keys hd
 
 
 -- the lengths of the folds of aggregation.dfy
@@ -451,7 +646,7 @@ theorem sums_consts : Stmt.sums_consts := by
   intro x n c; rw [consts_N, counter_N]; exact N.sums_consts x n.toNat c
 
 theorem sum_cases_below : Stmt.sum_cases_below := by
-  intro n c d e P h
+  intro n c d e P h; simp only [sum_N] at *
   rw [counter_N]
   apply N.sum_cases_below n.toNat c d e P
   rw [N.integer_cast]
@@ -460,55 +655,93 @@ theorem sum_cases_below : Stmt.sum_cases_below := by
   · rw [Int.toNat_of_nonneg hn]; exact h
 
 theorem sum_mod_below : Stmt.sum_mod_below := by
-  intro n m e ⟨hn, h⟩
+  intro n m e ⟨hn, h⟩; simp only [sum_N] at *
   rw [counter_N]; apply N.sum_mod_below n.toNat m e; rw [N.integer_cast, Int.toNat_of_nonneg hn]; exact h
 
 theorem sum_neg : Stmt.sum_neg := by
-  intro values n hvalues; exact N.sum_neg values values.length rfl
+  intro values n hvalues; simp only [sum_N] at *; exact N.sum_neg values values.length rfl
 
 theorem sum_scale : Stmt.sum_scale := by
-  intro values a n hvalues; exact N.sum_scale values a values.length rfl
+  intro values a n hvalues; simp only [sum_N] at *; exact N.sum_scale values a values.length rfl
 
 theorem sum_add : Stmt.sum_add := by
-  intro xs ys n hxs hys; exact N.sum_add xs ys xs.length rfl (by omega)
+  intro xs ys n hxs hys; simp only [sum_N] at *; exact N.sum_add xs ys xs.length rfl (by omega)
 
 theorem sum_indicator_true : Stmt.sum_indicator_true := by
-  intro α _ xs P n hxs; exact N.sum_indicator_true xs P xs.length rfl
+  intro α _ xs P n hxs; simp only [sum_N, count_N] at *; exact N.sum_indicator_true xs P xs.length rfl
 
 theorem sum_indicator_false : Stmt.sum_indicator_false := by
-  intro α _ xs P n hxs; exact N.sum_indicator_false xs P xs.length rfl
+  intro α _ xs P n hxs; simp only [sum_N, count_N] at *; exact N.sum_indicator_false xs P xs.length rfl
 
 theorem count_consts : Stmt.count_consts := by
-  intro α _ n e v hn; rw [consts_N, N.count_consts, N.integer_cast, Int.toNat_of_nonneg hn]
+  intro α _ n e v hn; simp only [count_N] at *; rw [consts_N, N.count_consts, N.integer_cast, Int.toNat_of_nonneg hn]
 
 theorem count_true_below : Stmt.count_true_below := by
-  intro m i n h
+  intro m i n h; simp only [count_N] at *
   rw [counter_N]; exact N.count_true_below m i n.toNat (by rw [N.integer_cast]; omega)
 
 theorem count_true_above : Stmt.count_true_above := by
-  intro m i n h
+  intro m i n h; simp only [count_N] at *
   rw [counter_N, N.count_true_above m i n.toNat (by rw [N.integer_cast]; omega), N.integer_cast]; omega
 
-theorem count_nonnegative : Stmt.count_nonnegative := N.count_nonnegative
+theorem count_nonnegative : Stmt.count_nonnegative := by
+  intro α _ e vs; rw [count_N]; exact N.count_nonnegative e vs
 
 theorem count_remainder : Stmt.count_remainder := by
-  intro n m r ⟨hn, h⟩
+  intro n m r ⟨hn, h⟩; simp only [count_N] at *
   rw [counter_N, N.count_remainder n.toNat m r h, N.integer_cast, Int.toNat_of_nonneg hn]
 
 theorem count_false_true : Stmt.count_false_true := by
-  intro i c n hs P hhs hn
+  intro i c n hs P hhs hn; simp only [count_N] at *
   rw [counter_N, N.count_false_true i c n.toNat hs P (by omega), N.integer_cast, Int.toNat_of_nonneg hn]
 
 theorem count_true_eq : Stmt.count_true_eq := by
-  intro ks r hs F n hks hhs; exact N.count_true_eq ks r hs F ks.length rfl (by omega)
+  intro ks r hs F n hks hhs; simp only [count_N] at *; exact N.count_true_eq ks r hs F ks.length rfl (by omega)
 
-theorem current_maxs_initial : Stmt.current_maxs_initial := by
-  intro x values n hvalues; exact N.current_maxs_initial x values values.length rfl
+-- the final value of a trace is the left fold of its update over the dependency
+theorem current_trace_foldl {α β : Type} [Inhabited α] (x : α) (vs : List β) (f : α → β → α) :
+    current (trace x vs f) = vs.foldl f x := by
+  induction vs generalizing x with
+  | nil => rfl
+  | cons v vs ih => exact ih (f x v)
 
-theorem current_maxs_earlier : Stmt.current_maxs_earlier := by
-  intro k x values n hvalues ⟨hk, hkn⟩
-  rw [earlier_N_nonneg k _ hk]
-  exact N.current_maxs_earlier k.toNat x values n.toNat (by omega) (by rw [N.integer_cast, N.integer_cast]; omega)
+-- the prefix maxima and minima end in the maximum and the minimum of the multiset: their update is that of the fold
+-- of max and min, and the left fold is the right one over the reversed list, a permutation
+theorem maxs_max (x : Int) (values : List Int) : current (maxs x values) = max x (elems values) := by
+  have hf : (fun m v => if m < v then v else if v ≤ m then m else unspecified)
+      = (fun m v : Int => if m ≤ v then v else m) := by
+    funext m v; by_cases h : m < v
+    · rw [if_pos h, if_pos (by omega)]
+    · rw [if_neg h, if_pos (by omega)]; by_cases e : m = v
+      · rw [if_pos (by omega), e]
+      · rw [if_neg (by omega)]
+  rw [maxs, current_trace_foldl, hf, List.foldl_eq_foldr_reverse, elems_mk,
+    show Bag.mk values = Bag.mk values.reverse from Quotient.sound (List.reverse_perm values).symm]
+  rfl
+
+theorem mins_min (x : Int) (values : List Int) : current (mins x values) = min x (elems values) := by
+  have hf : (fun m v => if v < m then v else if m ≤ v then m else unspecified)
+      = (fun m v : Int => if m ≤ v then m else v) := by
+    funext m v; by_cases h : v < m
+    · rw [if_pos h, if_neg (by omega)]
+    · rw [if_neg h, if_pos (by omega), if_pos (by omega)]
+  rw [mins, current_trace_foldl, hf, List.foldl_eq_foldr_reverse, elems_mk,
+    show Bag.mk values = Bag.mk values.reverse from Quotient.sound (List.reverse_perm values).symm]
+  rfl
+
+theorem current_maxs : Stmt.current_maxs := by
+  intro x values n hvalues; exact maxs_max x values
+
+theorem current_mins : Stmt.current_mins := by
+  intro x values n hvalues; exact mins_min x values
+
+theorem max_initial : Stmt.max_initial := by
+  intro x values; rw [← maxs_max]; exact N.current_maxs_initial x values values.length rfl
+
+theorem max_earlier : Stmt.max_earlier := by
+  intro k x values ⟨hk, hkn⟩
+  rw [← maxs_max, earlier_N_nonneg k _ hk]
+  exact N.current_maxs_earlier k.toNat x values values.length rfl (by rw [N.integer_cast, N.integer_cast]; omega)
 
 -- a position below the cut and within the list is within the prefix
 theorem lt_length_prefix {α : Type} [Inhabited α] (k n : Nat) (xs : List α) (hn : k < n) (hxs : k < xs.length) :
@@ -524,28 +757,29 @@ theorem lt_length_prefix {α : Type} [Inhabited α] (k n : Nat) (xs : List α) (
       | zero => omega
       | succ j => have := ih j m (by omega) (by simp at hxs; omega); omega
 
-theorem current_maxs_prefix_earlier : Stmt.current_maxs_prefix_earlier := by
+theorem max_prefix_earlier : Stmt.max_prefix_earlier := by
   intro k x n xs hxs ⟨hk, hkn⟩
   rw [← earlier_prefix k n xs hkn]
-  exact current_maxs_earlier k x («prefix» n xs) («prefix» n xs).length rfl
+  exact max_earlier k x («prefix» n xs)
     ⟨hk, by rw [prefix_N]; have := lt_length_prefix k.toNat n.toNat xs (by omega) (by omega); omega⟩
 
-theorem current_mins_initial : Stmt.current_mins_initial := by
-  intro x values n hvalues; exact N.current_mins_initial x values values.length rfl
+theorem min_initial : Stmt.min_initial := by
+  intro x values; rw [← mins_min]; exact N.current_mins_initial x values values.length rfl
 
-theorem current_mins_earlier : Stmt.current_mins_earlier := by
-  intro k x values n hvalues ⟨hk, hkn⟩
-  rw [earlier_N_nonneg k _ hk]
-  exact N.current_mins_earlier k.toNat x values n.toNat (by omega) (by rw [N.integer_cast, N.integer_cast]; omega)
+theorem min_earlier : Stmt.min_earlier := by
+  intro k x values ⟨hk, hkn⟩
+  rw [← mins_min, earlier_N_nonneg k _ hk]
+  exact N.current_mins_earlier k.toNat x values values.length rfl (by rw [N.integer_cast, N.integer_cast]; omega)
 
-theorem current_mins_prefix_earlier : Stmt.current_mins_prefix_earlier := by
+theorem min_prefix_earlier : Stmt.min_prefix_earlier := by
   intro k x n xs hxs ⟨hk, hkn⟩
   rw [← earlier_prefix k n xs hkn]
-  exact current_mins_earlier k x («prefix» n xs) («prefix» n xs).length rfl
+  exact min_earlier k x («prefix» n xs)
     ⟨hk, by rw [prefix_N]; have := lt_length_prefix k.toNat n.toNat xs (by omega) (by omega); omega⟩
 
-theorem current_maxs_seeded_earlier : Stmt.current_maxs_seeded_earlier := by
+theorem max_seeded_earlier : Stmt.max_seeded_earlier := by
   intro j h i n xs ⟨hh, hj1, hj2⟩
+  rw [← maxs_max]
   by_cases e : j = h
   · subst e; exact N.current_maxs_initial _ _ _ rfl
   · rw [counter_N]
@@ -554,8 +788,9 @@ theorem current_maxs_seeded_earlier : Stmt.current_maxs_seeded_earlier := by
       (by rw [N.length_maps, N.length_butlast_counter]) (by rw [N.integer_cast, N.integer_cast]; omega)
     rwa [N.earlier_maps_counter _ _ _ _ (by omega), show i + ((j - i).toNat : Int) = j by omega] at hr
 
-theorem current_mins_seeded_earlier : Stmt.current_mins_seeded_earlier := by
+theorem min_seeded_earlier : Stmt.min_seeded_earlier := by
   intro j h i n xs ⟨hh, hj1, hj2⟩
+  rw [← mins_min]
   by_cases e : j = h
   · subst e; exact N.current_mins_initial _ _ _ rfl
   · rw [counter_N]
@@ -569,7 +804,7 @@ theorem compacts_N (c0 : Int → Int) (ks : List Int) (P : Int → Prop) : compa
   simp only [compacts, N.compacting, N.ite_not_else]
 
 theorem select_current_compacts_lower : Stmt.select_current_compacts_lower := by
-  intro c0 K n m x P ⟨hK, hm, hx0, hxm⟩
+  intro c0 K n m x P ⟨hK, hm, hx0, hxm⟩; simp only [count_N] at *
   subst hK hm
   rw [counter_N] at hxm ⊢
   rw [compacts_N]
@@ -577,7 +812,7 @@ theorem select_current_compacts_lower : Stmt.select_current_compacts_lower := by
   omega
 
 theorem select_current_compacts_upper : Stmt.select_current_compacts_upper := by
-  intro c0 K n m x P ⟨hK, hm, hx0, hxm⟩
+  intro c0 K n m x P ⟨hK, hm, hx0, hxm⟩; simp only [count_N] at *
   subst hK hm
   rw [counter_N] at hxm ⊢
   rw [compacts_N]
@@ -586,13 +821,13 @@ theorem select_current_compacts_upper : Stmt.select_current_compacts_upper := by
   omega
 
 theorem select_current_filters_above : Stmt.select_current_filters_above := by
-  intro c0 ks b F m x n hks ⟨hm, hx0, hxm⟩
+  intro c0 ks b F m x n hks ⟨hm, hx0, hxm⟩; simp only [count_N] at *
   rw [show filters_above c0 ks b F = N.filtering_above c0 0 ks b F by
     simp only [filters_above, N.filtering_above, N.ite_le_lt]]
   exact (N.filtering_above_from b F ks 0 c0 x).2 ⟨hx0, by omega⟩
 
 theorem select_current_filters_below : Stmt.select_current_filters_below := by
-  intro c0 K n b F m x ⟨hK, hm, hx0, hxm⟩
+  intro c0 K n b F m x ⟨hK, hm, hx0, hxm⟩; simp only [count_N] at *
   subst hK
   rw [counter_N] at hm ⊢
   rw [show filters_below c0 (butlast (N.counter 0 1 n.toNat)) b F
@@ -605,11 +840,11 @@ theorem select_current_filters_below : Stmt.select_current_filters_below := by
   exact (N.filtering_below_from b F _ 0 c0 x).2 ⟨hx0, by omega⟩
 
 theorem current_parities : Stmt.current_parities := by
-  intro x values n hvalues; exact N.current_parities x values values.length rfl
+  intro x values n hvalues; simp only [parity_N] at *; exact N.current_parities x values values.length rfl
 
 theorem select_current_trace_reset_add : Stmt.select_current_trace_reset_add := by
   intro a0 j n c G
-  rw [counter_N, N.select_current_trace_reset_add]
+  rw [sum_N, counter_N, N.select_current_trace_reset_add]
   exact ite_iff (by show n.toNat = 0 ↔ _; omega) _ _
 
 -- the reset and the guarded additions: after the reset at the iteration 0, each later iteration adds G k where P k holds
@@ -620,50 +855,50 @@ theorem reset_add_keep_later (j c : Int) (P : Int → Prop) (G : Int → Int) (m
         if k = 0 then fun j1 => if j1 = j then c else a j1
         else if 0 < k ∧ P k then fun j1 => if j1 = j then a j + G k else a j1
         else if 0 < k ∧ ¬P k then a else unspecified)) j
-      = x j + sum (maps (butlast (N.counter s 1 m)) (fun k => if 0 < k then if P k then G k else 0 else 0)) := by
+      = x j + N.sum (maps (butlast (N.counter s 1 m)) (fun k => if 0 < k then if P k then G k else 0 else 0)) := by
   induction m with
-  | zero => intro s x hs; simp [N.counter, butlast, trace, current, maps, sum]
+  | zero => intro s x hs; simp [N.counter, butlast, trace, current, maps, N.sum]
   | succ m ih =>
     intro s x hs
     rw [N.butlast_counter_succ, N.trace_cons, N.current_step_eq, ih (s + 1) _ (by omega)]
-    simp only [maps, sum, if_neg (show ¬s = 0 by omega), if_pos (show 0 < s by omega)]
+    simp only [maps, N.sum, if_neg (show ¬s = 0 by omega), if_pos (show 0 < s by omega)]
     by_cases hp : P s
     · simp only [hp, and_true, not_true_eq_false, and_false, if_pos (show 0 < s by omega), ↓reduceIte, eq_self]; omega
     · simp only [hp, and_true, not_false_eq_true, and_false, if_pos (show 0 < s by omega), ↓reduceIte]; omega
 
 theorem select_current_trace_reset_add_keep : Stmt.select_current_trace_reset_add_keep := by
   intro a0 j n c P G
-  rw [counter_N]
+  rw [counter_N, sum_N]
   by_cases hn : n ≤ 0
   · rw [if_pos hn, show n.toNat = 0 by omega]; rfl
   · rw [if_neg hn, show n.toNat = n.toNat - 1 + 1 by omega, N.butlast_counter_succ, N.trace_cons, N.current_step_eq,
       reset_add_keep_later j c P G _ (0 + 1) _ (by omega)]
-    simp only [maps, sum, ↓reduceIte, Int.lt_irrefl]
+    simp only [maps, N.sum, ↓reduceIte, Int.lt_irrefl]
     omega
 
 theorem select_current_trace_prefix_sums : Stmt.select_current_trace_prefix_sums := by
   intro b0 n j G
-  rw [counter_N, counter_N, N.select_current_trace_prefix_sums, N.integer_cast, N.natural_eq, counter_N]
+  rw [sum_N, counter_N, counter_N, N.select_current_trace_prefix_sums, N.integer_cast, N.natural_eq, counter_N]
   by_cases h1 : 0 ≤ j ∧ j ≤ n
   · rw [if_pos (by omega), if_pos h1]
   · rw [if_neg h1]
     by_cases h2 : 0 ≤ j ∧ j ≤ (n.toNat : Int)
-    · rw [if_pos h2, show j = 0 by omega]; simp [N.counter, butlast, maps, sum]
+    · rw [if_pos h2, show j = 0 by omega]; simp [N.counter, butlast, maps, N.sum]
     · rw [if_neg h2]
 
 theorem select_current_trace_prefix_sums_add : Stmt.select_current_trace_prefix_sums_add := by
   intro b0 n j G H
-  rw [counter_N, counter_N, N.select_current_trace_prefix_sums_add, N.integer_cast, N.natural_eq, counter_N]
+  rw [sum_N, counter_N, counter_N, N.select_current_trace_prefix_sums_add, N.integer_cast, N.natural_eq, counter_N]
   by_cases h1 : 0 ≤ j ∧ j ≤ n
   · rw [if_pos (by omega), if_pos h1]
   · rw [if_neg h1]
     by_cases h2 : 0 ≤ j ∧ j ≤ (n.toNat : Int)
-    · rw [if_pos h2, show j = 0 by omega]; simp [N.counter, butlast, maps, sum]
+    · rw [if_pos h2, show j = 0 by omega]; simp [N.counter, butlast, maps, N.sum]
     · rw [if_neg h2]
 
 theorem select_current_trace_recurrence : Stmt.select_current_trace_recurrence := by
   intro a0 n c j G
-  rw [counter_N, N.select_current_trace_recurrence, N.integer_cast, N.natural_eq, counter_N]
+  rw [sum_N, counter_N, N.select_current_trace_recurrence, N.integer_cast, N.natural_eq, counter_N]
   exact ite_iff (by omega) _ _
 
 -- the lemmas of arithmetic.dfy, which do not count
@@ -898,6 +1133,108 @@ theorem select_current_trace_shift : Stmt.select_current_trace_shift := by
   intro a i n j hn
   rw [counter_N, select_current_trace_shift_N, Int.toNat_of_nonneg hn]
 
+-- the permutations of aggregation.dfy, after the shift of arrays.dfy: equal multiplicities are equal multisets, a swap
+-- stores the values of two positions at each other, and the shift moves the values over the counter one position down
+theorem mk_eq_of_count {α : Type} [Inhabited α] (xs ys : List α) (h : ∀ e, N.count e xs = N.count e ys) :
+    Bag.mk xs = Bag.mk ys := by
+  apply Quotient.sound
+  apply List.perm_iff_count.2
+  intro e
+  have he := h e
+  rw [← count_mk, ← count_mk] at he
+  have : ((xs.count e : Nat) : Int) = ((ys.count e : Nat) : Int) := he
+  omega
+
+-- the multiplicities after a swap, over keys of any type, whose conditionals are those of the generic definitions
+theorem count_selects_swap {α β : Type} [Inhabited α] [Inhabited β] (a b : α → β) (p q : α) (keys : List α)
+    (hd : distincts keys) (hp : occurs p keys) (hq : occurs q keys)
+    (hb : ∀ j, b j = if j = q then a p else if j = p then a q else a j) (e : β) :
+    N.count e (selects b keys) = N.count e (selects a keys) := by
+  rw [show b = fun j => if j = q then a p else (fun j => if j = p then a q else a j) j from funext hb,
+    fold_selects_update 0 (fun u => if u = e then 1 else 0) (N.count e) rfl (fun _ _ => rfl) _ q (a p) keys hd,
+    if_pos hq,
+    fold_selects_update 0 (fun u => if u = e then 1 else 0) (N.count e) rfl (fun _ _ => rfl) a p (a q) keys hd, if_pos hp]
+  by_cases e1 : q = p
+  · subst e1; simp only [↓reduceIte]; omega
+  · simp only [if_neg e1]; omega
+
+theorem elems_selects_swap : Stmt.elems_selects_swap := by
+  intro a p q v w keys n hkeys ⟨hd, hp, hq, hv, hw⟩
+  rw [elems_mk, elems_mk]
+  apply mk_eq_of_count
+  apply count_selects_swap a _ p q keys hd hp hq
+  intro j
+  subst hv hw
+  by_cases h1 : j = q <;> by_cases h2 : j = p <;> simp [h1, h2]
+
+theorem butlast_counter_snoc (t : Nat) : ∀ (s : Int),
+    butlast (N.counter s 1 (t + 1)) = butlast (N.counter s 1 t) ++ [s + t] := by
+  induction t with
+  | zero => intro s; simp [N.counter, butlast]
+  | succ t ih =>
+    intro s
+    rw [N.butlast_counter_succ, ih (s + 1), N.butlast_counter_succ]
+    simp only [List.cons_append, List.cons.injEq, true_and]; push_cast; rw [Int.add_assoc, Int.add_comm 1]
+
+theorem selects_append {β : Type} [Inhabited β] (f : Int → β) (xs ys : List Int) :
+    selects f (xs ++ ys) = selects f xs ++ selects f ys := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => show f x :: selects f (xs ++ ys) = f x :: (selects f xs ++ selects f ys); rw [ih]
+
+theorem selects_succ_counter (a : Int → Int) (t : Nat) : ∀ (s : Int),
+    selects (fun j => a (j + 1)) (butlast (N.counter s 1 t)) = selects a (butlast (N.counter (s + 1) 1 t)) := by
+  induction t with
+  | zero => intro s; rfl
+  | succ t ih =>
+    intro s
+    rw [N.butlast_counter_succ, N.butlast_counter_succ]
+    show a (s + 1) :: selects (fun j => a (j + 1)) _ = a (s + 1) :: selects a _
+    rw [ih (s + 1)]
+
+-- the values of the shift over i, ..., i + t: those of the original at i + 1, ..., i + t, and the last one again
+theorem selects_shift (a : Int → Int) (i : Int) (t : Nat) :
+    selects (current (trace a (butlast (N.counter i 1 t)) (fun x k => fun j => if j = k then x (k + 1) else x j)))
+      (butlast (N.counter i 1 t)) = selects a (butlast (N.counter (i + 1) 1 t)) := by
+  rw [← selects_succ_counter]
+  apply N.maps_counter_congr_gen
+  intro k hk
+  rw [select_current_trace_shift_N, if_pos hk]
+
+-- the difference of the first element, which erases it
+theorem diff_single_head {α : Type} [Inhabited α] (x : α) (xs : List α) : Bag.diff (x :: xs) [x] = xs := by
+  rw [Bag.diff, Bag.diff, List.erase_cons_head]
+
+theorem elems_selects_shift : Stmt.elems_selects_shift := by
+  intro a i n m ⟨hn, hm⟩
+  obtain ⟨t, rfl⟩ : ∃ t : Nat, n = t := ⟨n.toNat, by omega⟩
+  subst hm
+  rw [counter_N, counter_N, Int.toNat_natCast, show ((t : Int) + 1).toNat = t + 1 by omega, elems_mk, elems_mk,
+    butlast_counter_snoc, selects_append, selects_shift, ← butlast_counter_snoc, N.butlast_counter_succ]
+  show Bag.mk (selects a (butlast (N.counter (i + 1) 1 t)) ++ [_])
+    = Bag.mk (Bag.diff (a i :: selects a (butlast (N.counter (i + 1) 1 t))) [a i] ++ [a (i + t)])
+  rw [diff_single_head]; dsimp only; rw [select_current_trace_shift_N, if_neg (by omega)]
+
+theorem elems_selects_rotate : Stmt.elems_selects_rotate := by
+  intro a i n m v ⟨hn, hm, hv⟩
+  obtain ⟨t, rfl⟩ : ∃ t : Nat, n = t := ⟨n.toNat, by omega⟩
+  subst hm hv
+  rw [counter_N, counter_N, Int.toNat_natCast, show ((t : Int) + 1).toNat = t + 1 by omega, elems_mk, elems_mk,
+    butlast_counter_snoc, selects_append]
+  have hc : selects (fun j => if j = i + t then a i
+      else current (trace a (butlast (N.counter i 1 t)) (fun x k => fun j => if j = k then x (k + 1) else x j)) j)
+      (butlast (N.counter i 1 t))
+      = selects (current (trace a (butlast (N.counter i 1 t)) (fun x k => fun j => if j = k then x (k + 1) else x j)))
+      (butlast (N.counter i 1 t)) := by
+    apply N.maps_counter_congr_gen
+    intro k hk
+    dsimp only; rw [if_neg (by omega)]
+  rw [hc, selects_shift, ← butlast_counter_snoc, N.butlast_counter_succ]
+  show Bag.mk (selects a (butlast (N.counter (i + 1) 1 t)) ++ [if i + t = i + t then a i else _])
+    = Bag.mk (a i :: selects a (butlast (N.counter (i + 1) 1 t)))
+  rw [if_pos rfl]
+  exact Quotient.sound List.perm_append_comm
+
 
 theorem select_store_other : Stmt.select_store_other := N.select_store_other
 
@@ -997,177 +1334,62 @@ theorem indexof_counter_step : Stmt.indexof_counter_step := by
       ⟨hd, h1, by rw [N.integer_cast, Int.toNat_of_nonneg hn]; exact h2, h3⟩, N.natural_eq,
       Int.toNat_of_nonneg (Int.ediv_nonneg (by omega) (by omega))]
 
-theorem select_current_trace_stride2 : Stmt.select_current_trace_stride2 := by
-  intro a0 n X Y j
-  rw [counter_N, N.select_current_trace_stride2, N.integer_cast]
-  exact ite_iff (by omega) _ _
-
-theorem select_current_trace_stride3 : Stmt.select_current_trace_stride3 := by
-  intro a0 n X Y Z j
-  rw [counter_N, N.select_current_trace_stride3, N.integer_cast]
-  exact ite_iff (by omega) _ _
-
-theorem select_current_trace_stride2_cases : Stmt.select_current_trace_stride2_cases := by
-  intro a0 n P Q R X1 Y1 X2 Y2 X3 Y3 j h
-  rw [counter_N, N.select_current_trace_stride2_cases a0 n.toNat P Q R X1 Y1 X2 Y2 X3 Y3 j h, N.integer_cast]
-  exact ite_iff (by omega) _ _
-
--- no steps leave the array as it is, where neither condition holds
--- strides of s positions per iteration, with values V d r at the offset r of the iteration of the dependency d: the
--- read at j is that of the iteration j / s at the offset j % s, by induction over the remaining iterations from t
-
-theorem emod_of_block (s t j : Int) (h1 : s * t ≤ j) (h2 : j < s * t + s) : j % s = j - s * t := by
-  have e : j = (j - s * t) + s * t := by omega
-  rw [e, Int.add_mul_emod_self_left, Int.emod_eq_of_lt (by omega) (by omega)]; omega
-
-theorem ediv_of_block (s t j : Int) (hs : 0 < s) (h1 : s * t ≤ j) (h2 : j < s * t + s) : j / s = t := by
-  have e : j = (j - s * t) + s * t := by omega
-  rw [e, Int.add_mul_ediv_left _ _ (by omega), Int.ediv_eq_zero_of_lt (by omega) (by omega)]; omega
-
-theorem stride_from {β : Type} [Inhabited β] (s : Int) (hs : 0 < s) (V : β → Int → Int)
+-- the stores of w adjacent cells from the positions of a counter by s ≥ w, with the values V d r at the offset r of
+-- the iteration of the dependency d: the read at j is that of the iteration (j - t) / s at the offset (j - t) % s if
+-- the offset is within the window, by induction over the remaining iterations from the position t
+theorem window_from {β : Type} [Inhabited β] (s w : Int) (hw : 0 < w) (hws : w ≤ s) (V : β → Int → Int)
     (U : (Int → Int) → Int × β → Int → Int)
-    (hU : ∀ a k d i, U a (k, d) i = if s * k ≤ i ∧ i < s * k + s then V d (i - s * k) else a i) (j : Int) (r : Nat) :
+    (hU : ∀ a p d i, U a (p, d) i = if p ≤ i ∧ i < p + w then V d (i - p) else a i) (j : Int) (r : Nat) :
     ∀ (b : Int → Int) (t : Int) (ds : List β), ds.length = r →
-    current (trace b (List.zip (butlast (N.counter t 1 r)) ds) U) j
-      = if s * t ≤ j ∧ j < s * t + s * r then V (N.earlier (j / s - t).toNat ds) (j % s) else b j := by
+    current (trace b (List.zip (butlast (N.counter t s r)) ds) U) j
+      = if t ≤ j ∧ j < t + s * r ∧ (j - t) % s < w then V (N.earlier ((j - t) / s).toNat ds) ((j - t) % s)
+        else b j := by
   induction r with
-  | zero => intro b t ds hds; simp only [N.counter, butlast, List.zip_nil_left, N.current_trace_nil]; rw [if_neg (by omega)]
+  | zero =>
+    intro b t ds hds
+    simp only [N.counter, butlast, List.zip_nil_left, N.current_trace_nil]; rw [if_neg (by omega)]
   | succ r ih =>
     intro b t ds hds
     cases ds with
     | nil => simp at hds
     | cons d ds =>
-      rw [N.butlast_counter_succ, List.zip_cons_cons, N.trace_cons, N.current_step_eq, ih _ _ ds (by simp at hds; omega),
-        hU]
-      have hm : s * (t + 1) = s * t + s := by rw [Int.mul_add, Int.mul_one]
-      have hr2 : s * ((r + 1 : Nat) : Int) = s * r + s := by rw [Int.natCast_add, Int.mul_add]; simp
-      rw [hr2]
+      rw [N.butlast_counter_succ, List.zip_cons_cons, N.trace_cons, N.current_step_eq,
+        ih _ _ ds (by simp at hds; omega), hU]
+      have hr : s * ((r + 1 : Nat) : Int) = s * r + s := by rw [Int.natCast_add, Int.mul_add]; simp
       have hsr : 0 ≤ s * (r : Int) := Int.mul_nonneg (by omega) (by omega)
-      by_cases h1 : s * (t + 1) ≤ j ∧ j < s * (t + 1) + s * r
-      · have hq : j / s - t = ((j / s - (t + 1)).toNat + 1 : Nat) := by
-          have : t + 1 ≤ j / s := by
-            have := Int.le_ediv_of_mul_le hs (show (t + 1) * s ≤ j by rw [Int.mul_comm]; omega)
-            exact this
-          omega
-        rw [if_pos h1, if_pos (by omega), hq, Int.toNat_natCast]; rfl
+      have hm : (j - (t + s)) % s = (j - t) % s := by
+        rw [show j - (t + s) = j - t - s by omega, Int.sub_emod_right]
+      rw [hr, hm]
+      by_cases h1 : t + s ≤ j ∧ j < t + s + s * r ∧ (j - t) % s < w
+      · have hq : (j - t) / s = (j - (t + s)) / s + 1 := by
+          rw [show j - t = (j - (t + s)) + s * 1 by omega, Int.add_mul_ediv_left _ _ (by omega)]
+        have hn : 0 ≤ (j - (t + s)) / s := Int.ediv_nonneg (by omega) (by omega)
+        rw [if_pos h1, if_pos ⟨by omega, by omega, h1.2.2⟩, hq, show ((j - (t + s)) / s + 1).toNat
+          = ((j - (t + s)) / s).toNat + 1 by omega]
+        rfl
       · rw [if_neg h1]
-        by_cases h2 : s * t ≤ j ∧ j < s * t + s
-        · rw [if_pos h2, if_pos (by omega), emod_of_block s t j h2.1 h2.2, ediv_of_block s t j hs h2.1 h2.2,
-            Int.sub_self, show (0 : Int).toNat = 0 from rfl]; rfl
-        · rw [if_neg h2, if_neg (by omega)]
+        by_cases h2 : t ≤ j ∧ j < t + w
+        · have he : (j - t) % s = j - t := Int.emod_eq_of_lt (by omega) (by omega)
+          have hd : (j - t) / s = 0 := Int.ediv_eq_zero_of_lt (by omega) (by omega)
+          rw [if_pos h2, if_pos ⟨h2.1, by omega, by omega⟩, he, hd]; rfl
+        · rw [if_neg h2, if_neg]
+          intro ⟨h3, h4, h5⟩
+          by_cases h6 : j - t < s
+          · rw [Int.emod_eq_of_lt (by omega) h6] at h5; omega
+          · exact h1 ⟨by omega, by omega, h5⟩
 
-theorem stride_read {β : Type} [Inhabited β] (s : Int) (hs : 0 < s) (V : β → Int → Int)
+-- the read of the final array of the stores at the positions of a counter from o by s, over integers
+theorem window_read {β : Type} [Inhabited β] (s w : Int) (hw : 0 < w) (hws : w ≤ s) (V : β → Int → Int)
     (U : (Int → Int) → Int × β → Int → Int)
-    (hU : ∀ a k d i, U a (k, d) i = if s * k ≤ i ∧ i < s * k + s then V d (i - s * k) else a i)
-    (a0 : Int → Int) (n j : Int) (ds : List β) (hds : ds.length = n) :
-    current (trace a0 (List.zip (butlast (counter 0 1 n)) ds) U) j
-      = if 0 ≤ j ∧ j < s * n then V (earlier (j / s) ds) (j % s) else a0 j := by
-  rw [counter_N, stride_from s hs V U hU j n.toNat a0 0 ds (by omega), Int.mul_zero, Int.zero_add,
-    Int.toNat_of_nonneg (by omega : (0 : Int) ≤ n), Int.sub_zero]
-  by_cases h : 0 ≤ j ∧ j < s * n
-  · rw [if_pos h, if_pos h, earlier_N_nonneg _ _ (Int.ediv_nonneg h.1 (by omega))]
-  · rw [if_neg h, if_neg h]
-
--- the version over the counter alone, whose values are the dependency
-theorem stride_read_counter (s : Int) (hs : 0 < s) (V : Int → Int)
-    (U : (Int → Int) → Int → Int → Int)
-    (hU : ∀ a k i, U a k i = if s * k ≤ i ∧ i < s * k + s then V (i - s * k) else a i)
-    (a0 : Int → Int) (n j : Int) :
-    current (trace a0 (butlast (counter 0 1 n)) U) j = if 0 ≤ j ∧ j < s * n then V (j % s) else a0 j := by
-  by_cases hn : n ≤ 0
-  · rw [counter_N, show n.toNat = 0 by omega]; simp only [N.counter, butlast, N.current_trace_nil]
-    rw [if_neg]; intro h; have : s * n ≤ 0 := Int.mul_nonpos_of_nonneg_of_nonpos (by omega) hn; omega
-  · have h := stride_read s hs (fun (_ : Int) r => V r) (fun a kd => U a kd.1) (fun a k d i => hU a k i) a0 n j
-      (butlast (counter 0 1 n)) (by rw [counter_N, N.length_butlast_counter]; omega)
-    rw [counter_N, N.trace_zip_self] at h
-    rw [counter_N]; exact h
-
--- the blocks of the strides 3, 4, 5: the nested stores of an iteration (blk) as one read by the offset (off)
-def blk3 (X0 X1 X2 : Int) (a : Int → Int) (k : Int) : Int → Int :=
-  fun j => if j = 3 * k + 2 then X2 else (fun j => if j = 3 * k + 1 then X1 else
-    (fun j => if j = 3 * k then X0 else a j) j) j
-
-def off3 (X0 X1 X2 : Int) (r : Int) : Int := if r = 0 then X0 else if r = 1 then X1 else X2
-
-theorem stride3_block (X0 X1 X2 : Int) : ∀ (a : Int → Int) (k i : Int),
-    blk3 X0 X1 X2 a k i = if 3 * k ≤ i ∧ i < 3 * k + 3 then off3 X0 X1 X2 (i - 3 * k) else a i := by
-  intro a k i; simp only [blk3, off3]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-
-def blk4 (X0 X1 X2 X3 : Int) (a : Int → Int) (k : Int) : Int → Int :=
-  fun j => if j = 4 * k + 3 then X3 else (fun j => if j = 4 * k + 2 then X2 else (fun j => if j = 4 * k + 1 then X1
-    else (fun j => if j = 4 * k then X0 else a j) j) j) j
-
-def off4 (X0 X1 X2 X3 : Int) (r : Int) : Int := if r = 0 then X0 else if r = 1 then X1 else if r = 2 then X2 else X3
-
-theorem stride4_block (X0 X1 X2 X3 : Int) : ∀ (a : Int → Int) (k i : Int),
-    blk4 X0 X1 X2 X3 a k i = if 4 * k ≤ i ∧ i < 4 * k + 4 then off4 X0 X1 X2 X3 (i - 4 * k) else a i := by
-  intro a k i; simp only [blk4, off4]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-
-def blk5 (X0 X1 X2 X3 X4 : Int) (a : Int → Int) (k : Int) : Int → Int :=
-  fun j => if j = 5 * k + 4 then X4 else (fun j => if j = 5 * k + 3 then X3 else (fun j => if j = 5 * k + 2 then X2
-    else (fun j => if j = 5 * k + 1 then X1 else (fun j => if j = 5 * k then X0 else a j) j) j) j) j
-
-def off5 (X0 X1 X2 X3 X4 : Int) (r : Int) : Int :=
-  if r = 0 then X0 else if r = 1 then X1 else if r = 2 then X2 else if r = 3 then X3 else X4
-
-theorem stride5_block (X0 X1 X2 X3 X4 : Int) : ∀ (a : Int → Int) (k i : Int),
-    blk5 X0 X1 X2 X3 X4 a k i = if 5 * k ≤ i ∧ i < 5 * k + 5 then off5 X0 X1 X2 X3 X4 (i - 5 * k) else a i := by
-  intro a k i; simp only [blk5, off5]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-
--- the cases are conditions on the context, not on the iteration: in each, the update is one block
-theorem select_current_trace_stride3_cases4 : Stmt.select_current_trace_stride3_cases4 := by
-  intro a0 n P1 P2 P3 P4 X1_0 X1_1 X1_2 X2_0 X2_1 X2_2 X3_0 X3_1 X3_2 X4_0 X4_1 X4_2 j hP
-  by_cases h1 : P1
-  · simp only [h1, ↓reduceIte]; exact stride_read_counter 3 (by decide) (off3 X1_0 X1_1 X1_2) (blk3 X1_0 X1_1 X1_2) (stride3_block X1_0 X1_1 X1_2) a0 n j
-  by_cases h2 : P2
-  · simp only [h1, h2, ↓reduceIte]; exact stride_read_counter 3 (by decide) (off3 X2_0 X2_1 X2_2) (blk3 X2_0 X2_1 X2_2) (stride3_block X2_0 X2_1 X2_2) a0 n j
-  by_cases h3 : P3
-  · simp only [h1, h2, h3, ↓reduceIte]
-    exact stride_read_counter 3 (by decide) (off3 X3_0 X3_1 X3_2) (blk3 X3_0 X3_1 X3_2) (stride3_block X3_0 X3_1 X3_2) a0 n j
-  have h4 : P4 := hP.2 ⟨h1, h2, h3⟩
-  simp only [h1, h2, h3, h4, ↓reduceIte]
-  exact stride_read_counter 3 (by decide) (off3 X4_0 X4_1 X4_2) (blk3 X4_0 X4_1 X4_2) (stride3_block X4_0 X4_1 X4_2) a0 n j
-
-theorem select_current_trace_stride4_cases5 : Stmt.select_current_trace_stride4_cases5 := by
-  intro a0 n P1 P2 P3 P4 P5 X1_0 X1_1 X1_2 X1_3 X2_0 X2_1 X2_2 X2_3 X3_0 X3_1 X3_2 X3_3 X4_0 X4_1 X4_2 X4_3
-    X5_0 X5_1 X5_2 X5_3 j hP
-  by_cases h1 : P1
-  · simp only [h1, ↓reduceIte]
-    exact stride_read_counter 4 (by decide) (off4 X1_0 X1_1 X1_2 X1_3) (blk4 X1_0 X1_1 X1_2 X1_3) (stride4_block X1_0 X1_1 X1_2 X1_3) a0 n j
-  by_cases h2 : P2
-  · simp only [h1, h2, ↓reduceIte]
-    exact stride_read_counter 4 (by decide) (off4 X2_0 X2_1 X2_2 X2_3) (blk4 X2_0 X2_1 X2_2 X2_3) (stride4_block X2_0 X2_1 X2_2 X2_3) a0 n j
-  by_cases h3 : P3
-  · simp only [h1, h2, h3, ↓reduceIte]
-    exact stride_read_counter 4 (by decide) (off4 X3_0 X3_1 X3_2 X3_3) (blk4 X3_0 X3_1 X3_2 X3_3) (stride4_block X3_0 X3_1 X3_2 X3_3) a0 n j
-  by_cases h4 : P4
-  · simp only [h1, h2, h3, h4, ↓reduceIte]
-    exact stride_read_counter 4 (by decide) (off4 X4_0 X4_1 X4_2 X4_3) (blk4 X4_0 X4_1 X4_2 X4_3) (stride4_block X4_0 X4_1 X4_2 X4_3) a0 n j
-  have h5 : P5 := hP.2 ⟨h1, h2, h3, h4⟩
-  simp only [h1, h2, h3, h4, h5, ↓reduceIte]
-  exact stride_read_counter 4 (by decide) (off4 X5_0 X5_1 X5_2 X5_3) (blk4 X5_0 X5_1 X5_2 X5_3) (stride4_block X5_0 X5_1 X5_2 X5_3) a0 n j
-
-theorem select_current_trace_stride5_cases6 : Stmt.select_current_trace_stride5_cases6 := by
-  intro a0 n P1 P2 P3 P4 P5 P6 X1_0 X1_1 X1_2 X1_3 X1_4 X2_0 X2_1 X2_2 X2_3 X2_4 X3_0 X3_1 X3_2 X3_3 X3_4
-    X4_0 X4_1 X4_2 X4_3 X4_4 X5_0 X5_1 X5_2 X5_3 X5_4 X6_0 X6_1 X6_2 X6_3 X6_4 j hP
-  by_cases h1 : P1
-  · simp only [h1, ↓reduceIte]
-    exact stride_read_counter 5 (by decide) (off5 X1_0 X1_1 X1_2 X1_3 X1_4) (blk5 X1_0 X1_1 X1_2 X1_3 X1_4) (stride5_block X1_0 X1_1 X1_2 X1_3 X1_4) a0 n j
-  by_cases h2 : P2
-  · simp only [h1, h2, ↓reduceIte]
-    exact stride_read_counter 5 (by decide) (off5 X2_0 X2_1 X2_2 X2_3 X2_4) (blk5 X2_0 X2_1 X2_2 X2_3 X2_4) (stride5_block X2_0 X2_1 X2_2 X2_3 X2_4) a0 n j
-  by_cases h3 : P3
-  · simp only [h1, h2, h3, ↓reduceIte]
-    exact stride_read_counter 5 (by decide) (off5 X3_0 X3_1 X3_2 X3_3 X3_4) (blk5 X3_0 X3_1 X3_2 X3_3 X3_4) (stride5_block X3_0 X3_1 X3_2 X3_3 X3_4) a0 n j
-  by_cases h4 : P4
-  · simp only [h1, h2, h3, h4, ↓reduceIte]
-    exact stride_read_counter 5 (by decide) (off5 X4_0 X4_1 X4_2 X4_3 X4_4) (blk5 X4_0 X4_1 X4_2 X4_3 X4_4) (stride5_block X4_0 X4_1 X4_2 X4_3 X4_4) a0 n j
-  by_cases h5 : P5
-  · simp only [h1, h2, h3, h4, h5, ↓reduceIte]
-    exact stride_read_counter 5 (by decide) (off5 X5_0 X5_1 X5_2 X5_3 X5_4) (blk5 X5_0 X5_1 X5_2 X5_3 X5_4) (stride5_block X5_0 X5_1 X5_2 X5_3 X5_4) a0 n j
-  have h6 : P6 := hP.2 ⟨h1, h2, h3, h4, h5⟩
-  simp only [h1, h2, h3, h4, h5, h6, ↓reduceIte]
-  exact stride_read_counter 5 (by decide) (off5 X6_0 X6_1 X6_2 X6_3 X6_4) (blk5 X6_0 X6_1 X6_2 X6_3 X6_4) (stride5_block X6_0 X6_1 X6_2 X6_3 X6_4) a0 n j
+    (hU : ∀ a p d i, U a (p, d) i = if p ≤ i ∧ i < p + w then V d (i - p) else a i)
+    (a0 : Int → Int) (o n j : Int) (ds : List β) (hds : ds.length = n) :
+    current (trace a0 (List.zip (butlast (counter o s n)) ds) U) j
+      = if 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < w then V (earlier ((j - o) / s) ds) ((j - o) % s)
+        else a0 j := by
+  rw [counter_N, window_from s w hw hws V U hU j n.toNat a0 o ds (by omega), Int.toNat_of_nonneg (by omega)]
+  by_cases h : 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < w
+  · rw [if_pos ⟨by omega, by omega, h.2.2⟩, if_pos h, earlier_N_nonneg _ _ (Int.ediv_nonneg h.1 (by omega))]
+  · rw [if_neg (fun h' => h ⟨by omega, by omega, h'.2.2⟩), if_neg h]
 
 -- the reads of a zip are the pairs of the reads, within the lists
 theorem earlier_zip {α β : Type} [Inhabited α] [Inhabited β] (xs : List α) (ys : List β) :
@@ -1186,19 +1408,101 @@ theorem earlier_zip {α β : Type} [Inhabited α] [Inhabited β] (xs : List α) 
       · simp only [e, ↓reduceIte]
         exact ih ys (k - 1) (by omega) (by simp at hkl; omega) (by simp at hl; omega)
 
--- the defaults: each iteration writes the positions 2 k and 2 k + 1 from its values x, y, z
-theorem select_current_trace_stride2_defaults : Stmt.select_current_trace_stride2_defaults := by
-  intro a0 n c d xs ys zs j hxs hys hzs
-  have hl : (List.zip xs (List.zip ys zs)).length = n := by
-    rw [N.length_zip_eq xs _ xs.length rfl (by rw [N.length_zip_eq ys zs ys.length rfl (by omega)]; omega)]; omega
-  rw [stride_read 2 (by decide)
-    (fun (t : Int × Int × Int) r => if r = 0 then (if t.1 ≠ c then t.1 else d)
-      else if t.1 ≠ c then (if t.2.1 ≠ c then t.2.1 else d) else (if t.2.2 ≠ c then t.2.2 else d))
-    _ (fun a k t i => by obtain ⟨x, y, z⟩ := t; dsimp only; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)) a0 n j _ hl]
-  by_cases h : 0 ≤ j ∧ j < 2 * n
-  · have hq : 0 ≤ j / 2 := Int.ediv_nonneg h.1 (by decide)
-    rw [if_pos h, if_pos h, earlier_zip xs _ (j / 2) hq (by omega) (by rw [N.length_zip_eq ys zs ys.length rfl (by omega)]; omega),
-      earlier_zip ys zs (j / 2) hq (by omega) (by omega)]
+-- the index of a read within the window is within the lists
+theorem window_index (s n j o : Int) (hs : 0 < s) (h : 0 ≤ j - o ∧ j - o < s * n) :
+    0 ≤ (j - o) / s ∧ (j - o) / s < n :=
+  ⟨Int.ediv_nonneg h.1 (by omega), Int.ediv_lt_of_lt_mul hs (by rw [Int.mul_comm]; exact h.2)⟩
+
+theorem select_current_strides₂ : Stmt.select_current_strides₂ := by
+  intro a0 o s n xs₀ xs₁ j h₀ h₁ hs
+  rw [strides₂, window_read s 2 (by decide) hs (fun (x : Int × Int) r => if r = 0 then x.1 else x.2) _
+    (fun a p x i => by
+      obtain ⟨x₀, x₁⟩ := x; dsimp only
+      by_cases e₁ : i = p + 1
+      · rw [if_pos e₁, if_pos (by omega), if_neg (by omega)]
+      · rw [if_neg e₁]; by_cases e₀ : i = p
+        · rw [if_pos e₀, if_pos (by omega), if_pos (by omega)]
+        · rw [if_neg e₀, if_neg (by omega)]) a0 o n j _
+    (by rw [N.length_zip_eq xs₀ xs₁ xs₀.length rfl (by omega)]; omega)]
+  by_cases h : 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < 2
+  · have hi := window_index s n j o (by omega) ⟨h.1, h.2.1⟩
+    rw [if_pos h, if_pos h, earlier_zip xs₀ xs₁ _ hi.1 (by omega) (by omega)]
+  · rw [if_neg h, if_neg h]
+
+theorem select_current_strides₃ : Stmt.select_current_strides₃ := by
+  intro a0 o s n xs₀ xs₁ xs₂ j h₀ h₁ h₂ hs
+  have l₁ := N.length_zip_eq xs₁ xs₂ xs₁.length rfl (by omega)
+  have l₀ := N.length_zip_eq xs₀ (List.zip xs₁ xs₂) xs₀.length rfl (by omega)
+  rw [strides₃, window_read s 3 (by decide) hs
+    (fun (x : Int × Int × Int) r => if r = 0 then x.1 else if r = 1 then x.2.1 else x.2.2) _
+    (fun a p x i => by
+      obtain ⟨x₀, x₁, x₂⟩ := x; dsimp only
+      by_cases e₂ : i = p + 2
+      · rw [if_pos e₂, if_pos (by omega), if_neg (by omega), if_neg (by omega)]
+      · rw [if_neg e₂]; by_cases e₁ : i = p + 1
+        · rw [if_pos e₁, if_pos (by omega), if_neg (by omega), if_pos (by omega)]
+        · rw [if_neg e₁]; by_cases e₀ : i = p
+          · rw [if_pos e₀, if_pos (by omega), if_pos (by omega)]
+          · rw [if_neg e₀, if_neg (by omega)]) a0 o n j _ (by omega)]
+  by_cases h : 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < 3
+  · have hi := window_index s n j o (by omega) ⟨h.1, h.2.1⟩
+    rw [if_pos h, if_pos h, earlier_zip xs₀ _ _ hi.1 (by omega) (by omega),
+      earlier_zip xs₁ xs₂ _ hi.1 (by omega) (by omega)]
+  · rw [if_neg h, if_neg h]
+
+theorem select_current_strides₄ : Stmt.select_current_strides₄ := by
+  intro a0 o s n xs₀ xs₁ xs₂ xs₃ j h₀ h₁ h₂ h₃ hs
+  have l₂ := N.length_zip_eq xs₂ xs₃ xs₂.length rfl (by omega)
+  have l₁ := N.length_zip_eq xs₁ (List.zip xs₂ xs₃) xs₁.length rfl (by omega)
+  have l₀ := N.length_zip_eq xs₀ (List.zip xs₁ (List.zip xs₂ xs₃)) xs₀.length rfl (by omega)
+  rw [strides₄, window_read s 4 (by decide) hs
+    (fun (x : Int × Int × Int × Int) r =>
+      if r = 0 then x.1 else if r = 1 then x.2.1 else if r = 2 then x.2.2.1 else x.2.2.2) _
+    (fun a p x i => by
+      obtain ⟨x₀, x₁, x₂, x₃⟩ := x; dsimp only
+      by_cases e₃ : i = p + 3
+      · rw [if_pos e₃, if_pos (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+      · rw [if_neg e₃]; by_cases e₂ : i = p + 2
+        · rw [if_pos e₂, if_pos (by omega), if_neg (by omega), if_neg (by omega), if_pos (by omega)]
+        · rw [if_neg e₂]; by_cases e₁ : i = p + 1
+          · rw [if_pos e₁, if_pos (by omega), if_neg (by omega), if_pos (by omega)]
+          · rw [if_neg e₁]; by_cases e₀ : i = p
+            · rw [if_pos e₀, if_pos (by omega), if_pos (by omega)]
+            · rw [if_neg e₀, if_neg (by omega)]) a0 o n j _ (by omega)]
+  by_cases h : 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < 4
+  · have hi := window_index s n j o (by omega) ⟨h.1, h.2.1⟩
+    rw [if_pos h, if_pos h, earlier_zip xs₀ _ _ hi.1 (by omega) (by omega),
+      earlier_zip xs₁ _ _ hi.1 (by omega) (by omega), earlier_zip xs₂ xs₃ _ hi.1 (by omega) (by omega)]
+  · rw [if_neg h, if_neg h]
+
+theorem select_current_strides₅ : Stmt.select_current_strides₅ := by
+  intro a0 o s n xs₀ xs₁ xs₂ xs₃ xs₄ j h₀ h₁ h₂ h₃ h₄ hs
+  have l₃ := N.length_zip_eq xs₃ xs₄ xs₃.length rfl (by omega)
+  have l₂ := N.length_zip_eq xs₂ (List.zip xs₃ xs₄) xs₂.length rfl (by omega)
+  have l₁ := N.length_zip_eq xs₁ (List.zip xs₂ (List.zip xs₃ xs₄)) xs₁.length rfl (by omega)
+  have l₀ := N.length_zip_eq xs₀ (List.zip xs₁ (List.zip xs₂ (List.zip xs₃ xs₄))) xs₀.length rfl (by omega)
+  rw [strides₅, window_read s 5 (by decide) hs
+    (fun (x : Int × Int × Int × Int × Int) r =>
+      if r = 0 then x.1 else if r = 1 then x.2.1 else if r = 2 then x.2.2.1 else if r = 3 then x.2.2.2.1
+      else x.2.2.2.2) _
+    (fun a p x i => by
+      obtain ⟨x₀, x₁, x₂, x₃, x₄⟩ := x; dsimp only
+      by_cases e₄ : i = p + 4
+      · rw [if_pos e₄, if_pos (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+      · rw [if_neg e₄]; by_cases e₃ : i = p + 3
+        · rw [if_pos e₃, if_pos (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega), if_pos (by omega)]
+        · rw [if_neg e₃]; by_cases e₂ : i = p + 2
+          · rw [if_pos e₂, if_pos (by omega), if_neg (by omega), if_neg (by omega), if_pos (by omega)]
+          · rw [if_neg e₂]; by_cases e₁ : i = p + 1
+            · rw [if_pos e₁, if_pos (by omega), if_neg (by omega), if_pos (by omega)]
+            · rw [if_neg e₁]; by_cases e₀ : i = p
+              · rw [if_pos e₀, if_pos (by omega), if_pos (by omega)]
+              · rw [if_neg e₀, if_neg (by omega)]) a0 o n j _ (by omega)]
+  by_cases h : 0 ≤ j - o ∧ j - o < s * n ∧ (j - o) % s < 5
+  · have hi := window_index s n j o (by omega) ⟨h.1, h.2.1⟩
+    rw [if_pos h, if_pos h, earlier_zip xs₀ _ _ hi.1 (by omega) (by omega),
+      earlier_zip xs₁ _ _ hi.1 (by omega) (by omega), earlier_zip xs₂ _ _ hi.1 (by omega) (by omega),
+      earlier_zip xs₃ xs₄ _ hi.1 (by omega) (by omega)]
   · rw [if_neg h, if_neg h]
 
 theorem select_current_trace_ahead : Stmt.select_current_trace_ahead := by

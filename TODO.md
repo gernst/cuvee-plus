@@ -50,15 +50,9 @@ tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s
       multisets since 0.53.0 (doc/teq.md, "Multisets"), which replaced the module `teq:multisets` and its twins; sums
       and averages proved; open: sep (a count by a predicate of C's signed `%`), the bitwise reductions (no folds),
       max (the maximum from the seed 0).
-- [ ] **Multisets, after 0.53.0:** the Lean model (lean.Printer rejects multisets, so `generate.py` cannot print
-      aggregation and series, and the test `Lean.statements` fails until it exists): the multiset as the quotient of
-      `List` by `List.Perm`, the aggregates lifted by `Quotient.lift`, the proofs by a sub-agent; `-fallback` lowers an
-      aggregate of a multiset as an uninterpreted function (examples/dafny/teq/fallback_fold.dfy,
+- [ ] **Multisets, after 0.53.0:** `-fallback` lowers an aggregate of a multiset as an uninterpreted function (examples/dafny/teq/fallback_fold.dfy,
       fallback_recursion.dfy), where it unfolded the sum of a list; the cloud run of 0.53.0 (120 s) lost
       standard_partial_init_ground and SV-LIB array_2-1 at the bound on the rewrite steps.
-- [ ] Strided stores: the shape lemmas of strides.dfy are consolidated into the folds `strides₂` to `strides₅` and
-      their reads (Oct 28); open are the Lean proofs of `select_current_strides₂` to `₅`, and lean/open.txt still
-      lists the removed select_current_trace_stride3_defaults to stride5_defaults.
 - [ ] functions_1-2 (false, lost in 0.52.16): `forall Result?: List<int> :: length(Result?) != 134217728` needs that a
       list of a given length exists, which neither the rules nor z3 decide. A predicate `haslength(n, xs)` that the
       engine drops when `xs` occurs nowhere else was considered and dropped by decision (Oct 28): one task, and a

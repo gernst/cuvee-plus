@@ -5,7 +5,7 @@
 -- over naturals at toNat)
 --
 -- the namespace TEQ.N shadows the names of TEQ that changed, so the proofs read as they were written; the functions
--- that did not change (trace, maps, sum, ...) are those of TEQ
+-- that did not change (trace, maps, ...) are those of TEQ
 import TEQ.Database
 
 open Classical
@@ -67,6 +67,23 @@ noncomputable def cutFrom (G : Int → Prop) (l : Int) (n : Nat) : Int :=
 
 noncomputable def cut (G : Int → Prop) (l : Int) (h : Int) : Int :=
   cutFrom G l (natural (h - l))
+
+-- the aggregates as the folds of lists that they were before the multisets (0.53.0), which Proofs.lean bridges to the
+-- aggregates of the multisets of the elements (sum_elems, parity_elems, count_elems)
+noncomputable def sum (values : List Int) : Int :=
+  match values with
+  | .nil => 0
+  | .cons v vs => v + sum vs
+
+noncomputable def parity (values : List Int) : Int :=
+  match values with
+  | .nil => 0
+  | .cons v vs => (if v % 2 = 0 then 1 else -1) + parity vs
+
+noncomputable def count {α : Type} [Inhabited α] (e : α) (vs : List α) : Int :=
+  match vs with
+  | .nil => 0
+  | .cons v ws => (if v = e then 1 else 0) + count e ws
 
 def Stmt.natural_integer : Prop :=
   ∀ (n : Nat),
@@ -996,83 +1013,6 @@ def Stmt.indexof_counter_step : Prop :=
   ∀ (j : Int) (i : Int) (d : Int) (n : Nat),
     0 < d ∧ i ≤ j ∧ j < i + integer n * d ∧ (j - i) % d = 0
       → indexof j (butlast (counter i d n)) = natural ((j - i) / d)
-
-def Stmt.select_current_trace_stride2 : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (X : Int) (Y : Int) (j : Int),
-    current
-      (trace
-         a0
-         (butlast (counter 0 1 n))
-         (fun a k =>
-            fun j =>
-              if j = 2 * k + 1 then
-                Y
-              else
-                (fun j => if j = 2 * k then X else a j) j))
-      j
-      = (if 0 ≤ j ∧ j < 2 * integer n then if j % 2 = 0 then X else Y else a0 j)
-
-def Stmt.select_current_trace_stride3 : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (X : Int) (Y : Int) (Z : Int) (j : Int),
-    current
-      (trace
-         a0
-         (butlast (counter 0 1 n))
-         (fun a k =>
-            fun j =>
-              if j = 3 * k + 2 then
-                Z
-              else
-                (fun j =>
-                   if j = 3 * k + 1 then
-                     Y
-                   else
-                     (fun j => if j = 3 * k then X else a j) j)
-                  j))
-      j
-      = (if 0 ≤ j ∧ j < 3 * integer n then
-           if j % 3 = 0 then X else if j % 3 = 1 then Y else Z
-         else
-           a0 j)
-
-def Stmt.select_current_trace_stride2_cases : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (P : Prop) (Q : Prop) (R : Prop) (X1 : Int) (Y1 : Int) (X2 : Int) (Y2 : Int) (X3 : Int) (Y3 : Int) (j : Int),
-    (R ↔ ¬P ∧ ¬Q)
-      → current
-        (trace
-           a0
-           (butlast (counter 0 1 n))
-           (fun a k =>
-              if P then
-                fun j =>
-                  if j = 2 * k + 1 then
-                    Y1
-                  else
-                    (fun j => if j = 2 * k then X1 else a j) j
-              else
-                if Q then
-                  fun j =>
-                    if j = 2 * k + 1 then
-                      Y2
-                    else
-                      (fun j => if j = 2 * k then X2 else a j) j
-                else
-                  if R then
-                    fun j =>
-                      if j = 2 * k + 1 then
-                        Y3
-                      else
-                        (fun j => if j = 2 * k then X3 else a j) j
-                  else
-                    unspecified))
-        j
-        = (if 0 ≤ j ∧ j < 2 * integer n then
-             if j % 2 = 0 then
-               if P then X1 else if Q then X2 else X3
-             else
-               if P then Y1 else if Q then Y2 else Y3
-           else
-             a0 j)
 
 def Stmt.select_current_trace_ahead : Prop :=
   ∀ (a0 : Int → Int) (n : Nat) (m : Int) (F : Int → Int) (G : Int → Int) (j : Int),
@@ -4227,100 +4167,6 @@ theorem trace_cons {α β : Type} (x : α) (d : β) (ds : List β) (f : α → �
 theorem current_step_eq {α : Type} [Inhabited α] (x : α) (t : Trace α) : current (.step x t) = current t := rfl
 
 theorem current_trace_nil {α β : Type} [Inhabited α] (x : α) (f : α → β → α) : current (trace x [] f) = x := rfl
-
-theorem stride2_from (X Y j : Int) (r : Nat) : ∀ (b : Int → Int) (s u : Int),
-    current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter u 1 r)))
-      (fun a ⟨k, i⟩ => fun j => if j = 2 * k + 1 then Y else (fun j => if j = 2 * k then X else a j) j)) j
-      = (if 2 * s ≤ j ∧ j < 2 * (s + r) then if j % 2 = 0 then X else Y else b j) := by
-  induction r with
-  | zero => intro b s u; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-  | succ r ih =>
-    intro b s u
-    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih]
-    dsimp only
-    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-
-theorem select_current_trace_stride2_zip (a0 : Int → Int) (n : Nat) (X Y j : Int) :
-    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
-      (fun a ⟨k, i⟩ => fun j => if j = 2 * k + 1 then Y else (fun j => if j = 2 * k then X else a j) j)) j
-      = (if 0 ≤ j ∧ j < 2 * integer n then if j % 2 = 0 then X else Y else a0 j) := by
-  rw [stride2_from, integer_cast]; simp only [Int.mul_zero, Int.zero_add]
-
-theorem select_current_trace_stride2 : Stmt.select_current_trace_stride2 := by
-  intro a0 n X Y j
-  have h := select_current_trace_stride2_zip a0 n X Y j
-  rw [trace_zip_self] at h
-  exact h
-
-theorem stride3_from (X Y Z j : Int) (r : Nat) : ∀ (b : Int → Int) (s u : Int),
-    current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter u 1 r)))
-      (fun a ⟨k, i⟩ => fun j => if j = 3 * k + 2 then Z else
-        (fun j => if j = 3 * k + 1 then Y else (fun j => if j = 3 * k then X else a j) j) j)) j
-      = (if 3 * s ≤ j ∧ j < 3 * (s + r) then if j % 3 = 0 then X else if j % 3 = 1 then Y else Z else b j) := by
-  induction r with
-  | zero => intro b s u; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-  | succ r ih =>
-    intro b s u
-    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih]
-    dsimp only
-    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-
-theorem select_current_trace_stride3_zip (a0 : Int → Int) (n : Nat) (X Y Z j : Int) :
-    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
-      (fun a ⟨k, i⟩ => fun j => if j = 3 * k + 2 then Z else
-        (fun j => if j = 3 * k + 1 then Y else (fun j => if j = 3 * k then X else a j) j) j)) j
-      = (if 0 ≤ j ∧ j < 3 * integer n then if j % 3 = 0 then X else if j % 3 = 1 then Y else Z else a0 j) := by
-  rw [stride3_from, integer_cast]; simp only [Int.mul_zero, Int.zero_add]
-
-theorem select_current_trace_stride3 : Stmt.select_current_trace_stride3 := by
-  intro a0 n X Y Z j
-  have h := select_current_trace_stride3_zip a0 n X Y Z j
-  rw [trace_zip_self] at h
-  exact h
-
-theorem stride2_cases_from (P Q : Prop) (X1 Y1 X2 Y2 X3 Y3 j : Int) (r : Nat) : ∀ (b : Int → Int) (s u : Int),
-    current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter u 1 r)))
-      (fun a ⟨k, i⟩ =>
-        if P then fun j => if j = 2 * k + 1 then Y1 else (fun j => if j = 2 * k then X1 else a j) j
-        else if Q then fun j => if j = 2 * k + 1 then Y2 else (fun j => if j = 2 * k then X2 else a j) j
-        else fun j => if j = 2 * k + 1 then Y3 else (fun j => if j = 2 * k then X3 else a j) j)) j
-      = (if 2 * s ≤ j ∧ j < 2 * (s + r) then
-           if j % 2 = 0 then (if P then X1 else if Q then X2 else X3) else (if P then Y1 else if Q then Y2 else Y3)
-         else b j) := by
-  induction r with
-  | zero => intro b s u; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-  | succ r ih =>
-    intro b s u
-    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih]
-    dsimp only
-    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-
-theorem select_current_trace_stride2_cases_complete (a0 : Int → Int) (n : Nat) (P Q R : Prop) (X1 Y1 X2 Y2 X3 Y3 j : Int) :
-    (R ↔ ¬P ∧ ¬Q) →
-    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter 0 1 n)))
-      (fun a ⟨k, i⟩ =>
-        if P then fun j => if j = 2 * k + 1 then Y1 else (fun j => if j = 2 * k then X1 else a j) j
-        else if Q then fun j => if j = 2 * k + 1 then Y2 else (fun j => if j = 2 * k then X2 else a j) j
-        else fun j => if j = 2 * k + 1 then Y3 else (fun j => if j = 2 * k then X3 else a j) j)) j
-      = (if 0 ≤ j ∧ j < 2 * integer n then
-           if j % 2 = 0 then (if P then X1 else if Q then X2 else X3) else (if P then Y1 else if Q then Y2 else Y3)
-         else a0 j) := by
-  intro _; rw [stride2_cases_from, integer_cast]; simp only [Int.mul_zero, Int.zero_add]
-
-theorem select_current_trace_stride2_cases : Stmt.select_current_trace_stride2_cases := by
-  intro a0 n P Q R X1 Y1 X2 Y2 X3 Y3 j hR
-  have e : ∀ (A B C z : Int → Int), (if P then A else if Q then B else if R then C else z)
-      = (if P then A else if Q then B else C) := by
-    intro A B C z
-    by_cases h1 : P
-    · simp [h1]
-    by_cases h2 : Q
-    · simp [h1, h2]
-    simp [h1, h2, hR.2 ⟨h1, h2⟩]
-  simp only [e]
-  have h := select_current_trace_stride2_cases_complete a0 n P Q R X1 Y1 X2 Y2 X3 Y3 j hR
-  rw [trace_zip_self] at h
-  exact h
 
 theorem ahead_from (m : Int) (F G : Int → Int) (j : Int) (r : Nat) : ∀ (b : Int → Int) (s : Int), s + r ≤ m →
     current (trace b (List.zip (butlast (counter s 1 r)) (butlast (counter s 1 r)))

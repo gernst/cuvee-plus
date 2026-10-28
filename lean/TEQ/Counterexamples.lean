@@ -32,13 +32,14 @@ example : ¬ (¬occurs (unspecified : Int) («prefix» 1 ([] : List Int)) ∧ (0
 -- than the iterations, which zip truncates
 
 -- sum_add
-example : ¬ (sum (maps (List.zip [(1 : Int)] ([] : List Int)) (fun ⟨v, w⟩ => v + w)) = sum [1] + sum []) :=
-  by simp [maps, sum]
+example : ¬ (sum (elems (maps (List.zip [(1 : Int)] ([] : List Int)) (fun ⟨v, w⟩ => v + w)))
+    = sum (elems [1]) + sum (elems [])) :=
+  by simp [maps, sum_N, N.sum]
 
 -- count_false_true
-example : ¬ (count False (maps (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨k, h⟩ => k < h))
-    = 1 - count True (maps (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨k, h⟩ => k < h))) :=
-  by simp [maps, count, counter, butlast]
+example : ¬ (Bag.count (elems (maps (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨k, h⟩ => k < h))) False
+    = 1 - Bag.count (elems (maps (List.zip (butlast (counter 0 1 1)) ([] : List Int)) (fun ⟨k, h⟩ => k < h))) True) :=
+  by simp [maps, count_N, N.count, counter, butlast]
 
 -- current_trace_increasing
 example : ¬ ((0 : Int) < 1 ∧ (0 : Int) < 1 ∧ (0 : Int) < 1 ∧ (0 : Int) < 1
@@ -72,8 +73,8 @@ example : ¬ ((0 : Int) ≤ 0 ∧ (0 : Int) ≤ 0
 
 -- sum_mod_below, where the bound of the sum is negative
 example : ¬ (0 < (2 : Int) ∧ (-1 : Int) * (2 - 1) ≤ -1
-    → sum (maps (butlast (counter 0 1 (-1))) (fun k => if 0 < k then k % 2 else 0)) ≤ -1) :=
-  by simp [counter, butlast, maps, sum]
+    → sum (elems (maps (butlast (counter 0 1 (-1))) (fun k => if 0 < k then k % 2 else 0))) ≤ -1) :=
+  by simp [counter, butlast, maps, sum_N, N.sum]
 
 -- current_mods_up and current_mods, where the counter goes back from i
 example : ¬ (0 ≤ (0 : Int) + (-1) * (-1) ∧ (0 : Int) + (-1) * (-1) < 5

@@ -6,12 +6,15 @@ The proofs of the lemmas of the stable modules of the database (`resources/cuvee
 `MODULES` of `scripts/lean/generate.py`), in Lean 4 without Mathlib, as the
 library `TEQ` of the Lake project at the root of the repository (`lakefile.toml`, `lean-toolchain`):
 
-- `TEQ/Semantics.lean` (by hand): the datatype of traces and the combinators `trace`, `maps`, `invs`.
+- `TEQ/Semantics.lean` (by hand): the datatype of traces and the combinators `trace`, `maps`, `invs`, and the model
+  of multisets, `Bag α`, the quotient of `List α` by `List.Perm` with its operations, and the aggregates `sum`,
+  `parity`, `max`, `min` (declared without a body in the modules) as the folds of the lists, lifted by `Quotient.lift`;
+  the generator checks their printed declarations and leaves them out (`AGGREGATES` of `generate.py`).
 - `TEQ/Database.lean` (generated): the functions of the modules as printed by `-print lean`, and each lemma as the
   proposition `Stmt.<name>`, its printed statement with the premises of `premises.txt`.
 - `TEQ/Naturals.lean` (by hand): in the namespace `TEQ.N`, the definitions by recursion on naturals (`counter`,
-  `consts`, `earlier`, `prefix`, `indexof`, `cutFrom`, `pow`, and those built on them), the statements over them, and
-  their proofs by induction.
+  `consts`, `earlier`, `prefix`, `indexof`, `cutFrom`, `pow`, and those built on them), the folds of lists `sum`,
+  `parity`, `count` that the aggregates of multisets lift, the statements over them, and their proofs by induction.
 - `TEQ/Proofs.lean` (by hand): the theorem `<name>` of each lemma, from the theorem `N.<name>` of Naturals.lean
   through one bridge per definition (the definition over integers is the one over naturals at `toNat`, e.g.
   `counter i c n = N.counter i c n.toNat`, since a count that is not positive is no step).

@@ -23,8 +23,8 @@ import scala.collection.mutable
 // (conditionals on propositions) and Mathlib for ℝ and Set;
 // booleans are propositions, arrays are functions, sequences are lists, tuples are products,
 // the built-in sorts and functions of the input languages are known to Lean (see Config.Lang.lean),
-// those without a counterpart are rejected, e.g. multisets, finite maps, and bitvectors;
-// traces and their combinators are the definitions of resources/cuvee/teq.lean
+// those without a counterpart are rejected, e.g. finite maps and bitvectors;
+// traces and their combinators, and multisets, are the definitions of lean/TEQ/Semantics.lean
 object Printer extends cuvee.pipe.Printer:
 
   // the keywords of Lean, which are escaped as names
@@ -430,6 +430,11 @@ object Printer extends cuvee.pipe.Printer:
       case Sets.subset(left, right)    => Some(("⊆", 50, Assoc.Non, List(left, right)))
       case Sets.proper(left, right)    => Some(("⊂", 50, Assoc.Non, List(left, right)))
 
+      // the union, difference, and submultisets of the multisets of Semantics.lean are its instances of +, -, and ≤
+      case Bags.union(left, right)     => Some(("+", 65, Assoc.Left, List(left, right)))
+      case Bags.minus(left, right)     => Some(("-", 65, Assoc.Left, List(left, right)))
+      case Bags.subbag(left, right)    => Some(("≤", 50, Assoc.Non, List(left, right)))
+
       // equality of propositions is equivalence
       case Eq(left, right) if left.typ == Sort.bool => Some(("↔", 20, Assoc.Non, List(left, right)))
       case Not(Eq(left, right))                     => Some(("≠", 50, Assoc.Non, List(left, right)))
@@ -463,6 +468,7 @@ object Printer extends cuvee.pipe.Printer:
       case Trace(_, _, _, _, _) | Maps(_, _, _) | Invs(_, _, _) | History(_, _) => max - 1
       case Component(_, _)                                  => max
       case Seqs.len(_) | Seqs.unit(_) | Seqs.empty() | Sets.empty() | Sets.singleton(_) => max
+      case Bags.make(_, Ints.one)                           => max
       case Distinct(exprs) if exprs.length > 2              => 35
       case As(_, _) | Is(_, _)                              => max
       case _ if prefix(expr).isDefined                      => prefix(expr).get._2
@@ -580,7 +586,24 @@ object Printer extends cuvee.pipe.Printer:
       case App(fun, _, _, _) if Fun.set.all.contains(fun) && infix(expr).isEmpty =>
         unsupported(expr)
 
-      case App(fun, _, _, _) if Fun.bag.all.contains(fun) || Fun.map.all.contains(fun) =>
+      // multisets are the quotients of lists by permutations of Semantics.lean, a single element {x} like a set
+      case Bags.empty() =>
+        text("∅")
+
+      case Bags.make(elem, Ints.one) =>
+        text("{") ~ doc(elem) ~ text("}")
+
+      case Bags.make(elem, count) =>
+        app(text("Bag.make"), List(elem, count))
+
+      // the multiplicity m[e] and its form of cvc5, (bag.count e m)
+      case Bags.select(bag, elem) =>
+        app(text("Bag.count"), List(bag, elem))
+
+      case Bags.count(elem, bag) =>
+        app(text("Bag.count"), List(bag, elem))
+
+      case App(fun, _, _, _) if (Fun.bag.all.contains(fun) && infix(expr).isEmpty) || Fun.map.all.contains(fun) =>
         unsupported(expr)
 
       case App(fun, _, _, _) if fun.name.index.isEmpty && (BitVecs.names.contains(fun.name.name) || fun.name.name.startsWith("_ ")) =>
@@ -808,7 +831,10 @@ object Printer extends cuvee.pipe.Printer:
       case Sort(Con(name_, arity), args) if isTuple(name_, arity) =>
         join(args.map(doc(_, 36)), text(" ×") ~ space)
 
-      case Sort(Con.bag | Con.map, _) =>
+      case Sort(Con.bag, List(elem)) =>
+        text("Bag") ~~ doc(elem, max)
+
+      case Sort(Con.map, _) =>
         unsupported(typ)
 
       case typ: Param =>
