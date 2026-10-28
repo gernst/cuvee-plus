@@ -172,6 +172,11 @@ by the simplifier in the context.
   its atoms, `A[eps(cᵢ => vᵢ)]` as the conjunction of `cᵢ ==> A[vᵢ]` (`Normalize.choices`, like `Normalize.lift` for
   `ite`): the choices appear once a higher-order variable of the rule, instantiated by an update, is beta-reduced and
   read; the cases stay as guards, nothing is merged.
+- **The bound on the steps**: every rewrite step counts against a bound per goal and per procedure (`-prove:steps`,
+  default 1000, `Context.withRules`), beyond which rewriting is reported not to terminate
+  ([steps.dfy](../examples/dafny/prove/steps.dfy)). A fact that equates a term with a literal is no rule of the context
+  (`Context.rule`): the classes and the simplex decide it, while as a rule it was applied again at every simplification
+  of a term that contains it, e.g. `length(Tmp?) == 5` of the lists of choices (string-1).
 - **Suspension** (`Context.active`): a rule is suspended while its left-hand side is matched and its conditions are
   evaluated, so a condition that mentions the rule's own term is not rewritten by it
   ([reentrant.dfy](../examples/dafny/prove/reentrant.dfy)); the components whose views are being computed are

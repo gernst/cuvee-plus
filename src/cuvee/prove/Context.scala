@@ -1,5 +1,6 @@
 package cuvee.prove
 
+import cuvee.Config
 import cuvee.core._
 
 // a sequent at the current position of the engine (see doc/prove.md)
@@ -61,7 +62,7 @@ case class Context(
 ):
   // the rewrite rules with a fresh number of steps and no memos, which are shared by the copies of this context, and
   // which guards against rules that do not terminate
-  def withRules(rules: List[Rule], steps: Int = 1000) =
+  def withRules(rules: List[Rule], steps: Int = Config.default.steps) =
     copy(rules = rules, steps = util.Ref(steps), applied = util.Ref(Map()), memos = util.Ref(Context.Memos()))
 
   // an expression seen through its class, never a variable: a variable matches only by a definition that is not a
@@ -259,9 +260,12 @@ object Context:
       case _                              => Nil
 
   // whether lhs == rhs is a rule of the context: rhs is ground and lhs is not;
-  // equations of variables are classes, those of arithmetic are normalized instead
+  // equations of variables are classes, those of arithmetic are normalized instead, and those with a literal are
+  // decided by the classes, whose root is the literal, and by the simplex, which bounds the term as an atom: as a rule,
+  // such a fact was applied again at every simplification of a term that contains it, e.g. length(Tmp?) == 5 of the
+  // lists of choices, hundreds of steps of the bound on the rewrite steps (string-1, standard_partial_init_ground)
   def rule(lhs: Expr, rhs: Expr): Boolean =
-    !lhs.isInstanceOf[Var] && !lhs.isArith && lhs.free.nonEmpty && rhs.free.isEmpty
+    !lhs.isInstanceOf[Var] && !lhs.isArith && lhs.free.nonEmpty && rhs.free.isEmpty && !rhs.isInstanceOf[Lit]
 
   // the negation in normal form, independent of a context: double negations are removed, and negated comparisons
   // are the other comparison with the arguments swapped, !(a < b) is b <= a

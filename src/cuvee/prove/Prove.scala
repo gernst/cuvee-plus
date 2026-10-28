@@ -18,7 +18,7 @@ object Prove extends Transform:
     val rules = Rules.from(state, prefix ++ cmds)
     val forward = Forward.from(prefix ++ cmds)
 
-    def fresh() = Context.empty(state).withRules(rules).copy(forward = forward)
+    def fresh() = Context.empty(state).withRules(rules, config.steps).copy(forward = forward)
 
     // procedures are simplified by symbolic execution (see Slice)
     val cmds_ =

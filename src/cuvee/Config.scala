@@ -98,6 +98,9 @@ case class Config(
     transforms: List[Transform] = Nil,
     // per query, in milliseconds
     timeout: Int = 1000,
+    // -prove:steps: the bound on the rewrite steps of -prove per goal and per procedure, beyond which rewriting is
+    // taken not to terminate (see Context.withRules)
+    steps: Int = 1000,
     // the data model of C for 32 or 64 bit Linux, ILP32 or LP64, i.e., the sizes of the integer types
     arch: Int = 64,
     // whether the nondeterministic values of C input range over all integers, instead of the values of their types,
@@ -311,6 +314,12 @@ object Config:
         val config_ = config.usingMath.having("teq").copy(slice = true)
         (if config_.transforms.contains(Prove) then config_ else config_.using(Prove), rest)
 
+  val steps_ =
+    flag("-prove:steps", "<n>", "the bound on the rewrite steps of -prove per goal (default 1000), beyond which it reports that rewriting does not terminate"):
+      case (config, n :: rest) if n.toIntOption.exists(_ > 0) =>
+        val config_ = config.copy(steps = n.toInt)
+        (config_, rest)
+
   val prove =
     flag("-prove", "prove the goals of -teq with the deduction engine of the package prove: congruence closure, a simplex, matching modulo the classes and the views of traces of several accumulators, forward lemmas (:fw)"):
       case (config, rest) =>
@@ -431,7 +440,7 @@ object Config:
   // the options in groups, in the order of doc/options.md, for -help
   val groups = List(
     "input" -> List(arch, unbounded, entry_, include, hybrid),
-    "transformations" -> List(implement, instrument, vcgen, teq, chc, flat, prove, slice, rules, fallback, split, monomorph, fuse),
+    "transformations" -> List(implement, instrument, vcgen, teq, chc, flat, prove, steps_, slice, rules, fallback, split, monomorph, fuse),
     "output" -> List(print_, quiet, linewidth, known_, output),
     "solvers and answers" -> List(z3, cvc5, timeout_, witness),
     "debugging" -> List(debug_)
@@ -496,7 +505,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.53.3"
+  val release = "0.53.4"
 
   def version() =
     println("Cuvée " + release)

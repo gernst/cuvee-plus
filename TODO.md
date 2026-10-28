@@ -198,7 +198,7 @@ Cleanup, none of it a bug.
 - A bound variable defined by an arithmetic equation is not eliminated (`y == x + 1`), nor a bound variable equal to
   a free one when it is the canonical member of the class (binders.smt2, normalize.smt2 of examples/smtlib/prove).
 - Performance: the simplex is rebuilt at every check that is not cached (an incremental tableau per context); the
-  step budget of 1000 per command is reported as non-termination; the negation of an integer equation asks for both
+  step budget of 1000 per command (`-prove:steps`) is reported as non-termination; the negation of an integer equation asks for both
   bounds; guard decisions are repeated without a cache; `Rewrite.conditions` simplifies conjuncts before
   instantiation; equations are matched in both orders; every round of `Simplify.apply` simplifies the whole formula
   again (standard_copy9_ground); non-termination is found only by the budget or a stack overflow after 8 to 13 s.

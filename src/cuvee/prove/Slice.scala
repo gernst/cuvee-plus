@@ -59,7 +59,7 @@ object Slice:
   // values are those of the caller; the precondition holds at the entry; the body stays a block
   def simplify(config: Config, state: State, rules: List[Rule], forward: List[Forward], cmd: DefineProc): DefineProc =
     val DefineProc(proc, body, attrs) = cmd
-    val ctx = Context.empty(state).withRules(rules).copy(forward = forward).neutral
+    val ctx = Context.empty(state).withRules(rules, config.steps).copy(forward = forward).neutral
     val entry = At(proc.name, ctx, Map(), Nil).havoc(proc.in ++ proc.out ++ body.free)
     val at = entry.assume(config, state, value(config, state, entry, state.annotated(attrs).requires))
     val (body_, _) = simplify(config, state, at, body)
