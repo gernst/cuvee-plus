@@ -3,17 +3,11 @@
 Proposals, plans and open points that are not implemented; a proposal is removed once it is implemented and
 documented in `doc/`.
 
-**Current work** (Oct 28, 2026; the order and the tasks in TODO.md, "Work queue: Now"):
-1. strided stores: remainders and division done (0.52.15, [prove-next.md](prove-next.md) section 2,
-   [engine-gaps.md](engine-gaps.md) gap 4); the folds `strides₂` to `strides₅` with values per case (0.53.1,
-   [conditional-stores.md](conditional-stores.md)), next cases instead of if-then-else
-   ([cases-and-folds.md](cases-and-folds.md)); open the iteration variables of nr2-nr5 (engine-gaps.md, gap 3);
-2. equalities from the simplex to the classes ([prove-next.md](prove-next.md) section 1): set aside, no open task;
-3. array-patterns (TODO.md): set aside, the cancellation is a pointwise relation of two arrays;
-4. reducer commutativity (doc/teq.md, "Multisets"): the aggregates over multisets (0.53.0); open sep, max, the
-   bitwise reductions.
+The open work and its order are the work queue of [TODO.md](../TODO.md); this directory holds the plans and the
+analyses behind its items. Files marked as history record what was tried and not taken.
 
-The other files below are not being worked on now.
+- [open-tasks.md](open-tasks.md): the open tasks of 0.53.10 with the expected verdict true by family, with the concept
+  each needs.
 
 - [portfolio.md](portfolio.md): a wrapper (portfolio.py) that runs fuzzing, cuvee-fallback, `-chc` and bounded
   unrolling in parallel on the native binary, with what each method is good at and the steps.
@@ -22,11 +16,9 @@ The other files below are not being worked on now.
 - [prove-next.md](prove-next.md): the plan (the regressions since 0.51.4, bounded unrolling for counterexamples and
   bounded proofs) and the open changes to the engine of `-prove`, ordered by expected gain.
 - [canonical.md](canonical.md): the open points of the canonical forms of the context and of the integer counts.
-- [database-review.md](database-review.md): the lemma database: what could be unified, candidates among the lemmas
-  of examples/dafny/algorithms, the lemmas that work around gaps of the engine.
-- [array-lemmas.md](array-lemmas.md): the open classes of SV-COMP Arrays (Oct 26, 2026), the lemmas added to the
-  database, the workarounds among them with the gaps of the engine they wait for, the plan for reducer
-  commutativity.
+- [database.md](database.md): the lemma database: the raw traces and their named folds, overlaps among the lemmas,
+  what could be unified, the workarounds for gaps of the engine, the candidates among the lemmas of the algorithms,
+  and the decisions (removed, kept, rejected, not taken).
 - [engine-gaps.md](engine-gaps.md): a plan to close the gaps of `-prove` behind the workarounds of the database
   (comparisons of conditionals, `-debug match`, iteration variables kept instead of literals, remainders and division,
   higher-order values at arithmetic arguments), the database work, and what is not done and why.
@@ -34,7 +26,7 @@ The other files below are not being worked on now.
   normal forms, equality, derived facts, alternatives in matching, memos and choices, with proposals to unify them.
 - [dnf-guards.md](dnf-guards.md): the cases of updates with conjunctive guards (DNF) instead of cases merged by
   equal results, the merging moved into the matcher for higher-order guard variables.
-- [conditional-stores.md](conditional-stores.md): guarded stores merged into stores of conditional values, in
+- [conditional-stores.md](conditional-stores.md) (history): guarded stores merged into stores of conditional values, in
   `-teq`, instead of `2^s` cases (the strided stores `pr3`-`pr5`).
 - [cases-and-folds.md](cases-and-folds.md): the plan after 0.53.1: cases instead of if-then-else in `maps` and at
   the reads of maps with cases, keys without values per case, the overlaps among the lemmas, and the raw traces of

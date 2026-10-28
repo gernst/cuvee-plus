@@ -1,8 +1,11 @@
 # Conditional stores instead of cases
 
-Current work, the third step of the strided stores (TODO.md, "Work queue: Now").
+**Status (Oct 28, 2026): history, not taken.** The merge of guarded stores into stores of conditional values was
+rejected by decision (only cases with equal results merge); the shape lemmas per number of cases described below
+were replaced in 0.53.1 by the folds `strides₂` to `strides₅` with one list of values per cell, synthesized per case
+by the matcher ([cases-and-folds.md](cases-and-folds.md)). Kept for the experiments and the reasons.
 
-**The cases in the synthesized maps (Oct 28, 2026, implemented, not yet measured).** Neither a merge in the simplifier
+**The cases in the synthesized maps (Oct 28, 2026, implemented; on the cloud from 0.53.6 on, pr3-pr5, pnr2, pnr3 proved by 0.53.10).** Neither a merge in the simplifier
 nor a lemma per number of cases: the strided stores are the folds `strides₂` to `strides₅` with one list of values per
 cell (strides.dfy), and the matcher matches a pattern without cases against the cases of an update one by one, where
 the bound variables of the synthesized dependencies take a value per case and the map gets the cases of the update
@@ -29,7 +32,7 @@ after simplification); both keep the cases. It works in principle: a goal of the
 46 s (10 s with the shape lemma). But its pattern matches every trace of an array over a counter, whose quantified
 conditions are then evaluated at every read; pr3 and nr2 do not finish in 90 s. A cheap first condition that recognizes
 an update writing only its window, decided from its shape, would make it the principled form; by decision (Oct 28), the
-module takes shapes per number of cases instead (`select_current_trace_stride3_cases4` to `stride5_cases6`,
+module took shapes per number of cases instead, removed in 0.53.1 (`select_current_trace_stride3_cases4` to `stride5_cases6`,
 `select_current_trace_stride2_defaults`): pr3 (55 s) and pnr2 (73 s) proved on the cloud at 120 s, pr4 at the limit of
 120 s, pr5 in 485 s (within the 15 min of the competition). Rejected by decision (Oct 27,
 2026): merging the cases in the simplifier (`Simplify.eps`), even restricted to chains of stores at the same indices

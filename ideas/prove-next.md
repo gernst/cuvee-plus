@@ -20,7 +20,7 @@ are recovered. Open, against 0.51.4 (Oct 26, 2026, 0.52.4 at 120 s, checked at 1
 | cohendiv-ll (fallback) | true 116 s | timeout | `current(trace(b…))` with `pow` |
 | max20-1 (fallback, Arrays) | true 82 s | timeout | reads of the array trace |
 
-Work again (cloud, Oct 26, 2026, 0.52.4 with the database of that day, 120 s, ideas/array-lemmas.md): array_2-1-simple
+Work again (cloud, Oct 26, 2026, 0.52.4 with the database of that day, 120 s, the database additions of that day): array_2-1-simple
 (false, 26 s) and array_2-2-simple (28 s), without any of the new rules, presumably by the removal of
 `store_occurs_selects`, whose instances came back at every read of a store; theatreSquare with the fallback (61 s).
 sum_by_3, sum_by_3_abstracted and sum_array-2-2 (TODO.md, "Lost tasks") are solved by 0.52.4 itself.
@@ -66,6 +66,9 @@ target than their speed.
 
 ### A2. Tasks lost since 0.52.4 (Oct 28, 2026)
 
+(History; of the tasks below, nested_4 is proved since 0.53.10 and nested3-1_abstracted with fallback; the open ones
+are in the work queue of TODO.md.)
+
 The tasks that at least one of the runs of Oct 26 to 28 solved (the runs of the comparison of TODO.md; "last solved
 by" in their order), but ffb2ad81 (0.52.16 with teq:multisets, cloud, Ryzen, 120 s, one core) did not. The column "0.52.17"
 is the run of fa09ee89 under the same configuration.
@@ -105,6 +108,34 @@ pr5 are true locally in 88 s and on the cloud in 485 s (15 min).
 - Left, lost with the lengths of the lists of choices (0.52.16): functions_1-2 (a list of a given length must exist);
   z3 does not show that either, left as it is.
 
+### A3. Tasks lost in 0.53.6 to 0.53.13 (Oct 28, 2026)
+
+The complete cloud runs of Oct 28 (Ryzen, 120 s, one core, priority LOW; all nine sets of `xml/cuvee.xml`; 0.53.13
+also with `xml/cuvee-fallback.xml`, both of the uncommitted working tree that became 0.53.13). Losses against the
+version before, and against the fallback run of 0.52.17 (`splitfb`) for the fallback; "unknown" is a real loss,
+"timeout" one at the limit.
+
+| Task | Verdict | Solved by | Lost in | 0.53.13 | 0.53.13 with fallback |
+|---|---|---|---|---|---|
+| array-tiling/mbpr4 (Arrays, MonoCera-Forall) | true | 0.53.5 | 0.53.6 | unknown | true |
+| reducercommutativity/sep05-1, sep10-2 | true | fallback 0.52.17 (z3, about 100 s) | fallback 0.53.13 | unknown | unknown |
+| nla-digbench-scaling/cohencu-ll_valuebound2, 5, 10, 20 | true | fallback 0.52.17 | fallback 0.53.13 | unknown | unknown |
+| array-multidimensional/add-2-n-u | true | 0.53.5, fallback 0.52.17 | 0.53.6 | timeout | timeout |
+| nla-digbench-scaling/cohendiv-ll_valuebound2 | true | fallback 0.52.17 | fallback 0.53.13 | timeout | timeout |
+| loops/string-1 | true | 0.53.7 | 0.53.9 | timeout | timeout |
+| nla-digbench-scaling/divbin_unwindbound1 | true | 0.53.10 | 0.53.13 | timeout | timeout |
+
+- Recovered in the same runs: SV-LIB bhmr2007, loopv1, loopv3 (lost in 0.53.6, proved again by 0.53.9);
+  standard_partition_ground-2 (lost in 0.53.7, 0.53.9); pr4, pr5, array_monotonic, large_const (lost in 0.53.9,
+  0.53.10).
+- pr4 in 0.53.9: the same 41 rewrite steps as 0.53.7, then goals that lifted a choice by residues of `i % 4` with an
+  extra case for no guard (`MINVAL <= unspecified`, `unspecified == 0`), which nothing decided; 0.53.10 lifts with
+  the guards assumed complete and disjoint, and proves it in 13 s.
+- At the limit, not losses: string-1 (73 s with 15 min, 0.53.9), divbin_unwindbound1 (93 to 112 s when solved).
+- With fallback, the losses are of z3 on the lowered goals: sep and cohencu were proved by z3 in 0.52.17 and are
+  `unknown` now, so the goals that reach `-fallback` changed (the aggregates over multisets of 0.53.0, which lower as
+  uninterpreted functions, or the lifting of choices); not analyzed yet. mbpr4 is proved by z3, not by the rules.
+
 ### B. Bounded unrolling for counterexamples and bounded proofs
 
 **Symptom.** Cuvée finds a counterexample only by evaluating a remaining goal of pure arithmetic at small values
@@ -124,7 +155,7 @@ Run with growing k (1, 2, 4, 8, ...) within the time limit, by `-vcgen` and z3, 
 false tasks on Loops, about 25 on Arrays, plus the `_unwindbound` true tasks with small bounds and the literal sizes
 of reducercommutativity.
 
-Sections 1 and 2 are current work (TODO.md, "Work queue: Now"), before plans A and B.
+Section 1 is set aside and section 2 done in part (0.52.15); what is open is in the work queue of TODO.md.
 
 ## 1. Equalities from the simplex to the classes (set aside, Oct 27)
 

@@ -98,4 +98,4 @@ What the work on these examples taught, as far as it holds for `-prove` (the dat
 - max_element with `exists` (no witness).
 - The algorithms that still copy the predicates of `teq:sorted` (rule 3 above).
 - The matcher gaps that the lemmas work around: TODO.md ("Simplifier and rewriting") and
-  [ideas/database-review.md](../ideas/database-review.md).
+  [ideas/database.md](../ideas/database.md).

@@ -117,8 +117,8 @@ they are functions of the multiset of a list (`sum(elems(xs))`, `elems(xs)[e]`),
 swap, a rotation) preserves that multiset: one lemma per kind of permutation serves all aggregates. There are no
 aggregates over lists (0.53.0; before, the module `multisets` converted the folds of lists and doubled the lemmas that
 consume them). The aggregates have no body; the laws of the operations on multisets (empty, single, union,
-difference) characterize them, and `elems` unfolds on constructors only. Open: the bitwise reductions, sep (a count
-by C's signed `%`, no `parity`), reducercommutativity max, the fallback (`-fallback` lowers an aggregate of a multiset
+difference) characterize them, and `elems` unfolds on constructors only. Open: xor (only `band` and `bor` are folds), sep (a
+count by C's signed `%`, no `parity`), reducercommutativity max, the fallback (`-fallback` lowers an aggregate of a multiset
 as an uninterpreted function, where it unfolded the sum of a list). In Lean, a multiset is a list up to permutation
 (the semantics in Lean, below). Not taken: splitting lists at
 positions (by decision), and `perm` of `sorted` (a fact the goal does not contain, without the direction towards the

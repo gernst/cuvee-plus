@@ -25,7 +25,8 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 - Limits during development: the CPU `AMD Ryzen 7 PRO 5750G with Radeon Graphics` or
   `Intel Core i7-6700 @ 3.40 GHz` (the i7-10700 does not work), `-T 120s`, the core and memory of the definitions;
   the standard sets are Arrays, Loops and the four of MonoCera, with `cuvee.xml` and `cuvee-fallback.xml`; new runs
-  with `--vcloudPriority URGENT`. Results of different CPUs are not comparable in time.
+  with `--vcloudPriority` one of `IDLE`, `LOW`, `HIGH`, `URGENT` (there is no `NORMAL`). Results of different CPUs are
+  not comparable in time.
 - Check the first log files of a run for a missing jar (`Unable to access jarfile`) and crashes
   (`Exception in thread`, `OutOfMemoryError`).
 

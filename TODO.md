@@ -6,101 +6,72 @@ tasks.
 ## Work queue: database and engine
 
 Priority: more correct results, `true` first; speed only where a task times out that would succeed. Changed
-benchmarks are not rerun with Cuvée.
+benchmarks are not rerun with Cuvée. Each change is checked on its tasks first, then by one cloud run of Arrays and
+Loops (no task lost). The state is that of the cloud runs of 0.53.13 (Oct 28, 2026, Ryzen, 120 s, one core, with and
+without `-fallback`); the open tasks with the verdict true by family, with the concept each needs, are in
+[ideas/open-tasks.md](ideas/open-tasks.md), the losses of the versions of Oct 28 in ideas/prove-next.md, A3.
 
-### Now (chosen Oct 27, 2026)
-
-In this order; each is checked on its tasks first, then by one cloud run of Arrays and Loops (no task lost). Open
-tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s, one core).
-
-- [ ] **Ground terms in the canonical form** (Oct 28): since 0.53.5, a term whose class has a literal as its root is
-      written as that literal (`Classes.ground`; cloud, 120 s: Arrays 190/62, Loops 225/33, +standard_partial_init_ground,
-      string-1, divbin_unwindbound1, no losses); open: ground roots that are no literals (terms over constants), which
-      rank behind the variables now (`Classes.rank`), as the second step; `-prove:steps 10000` lost nothing on 0.53.4.
-- [ ] **Strided stores** (array-tiling, 22 of 29 open: `pr2`-`pr5`, `mbpr2`-`mbpr5`, `pnr2`-`pnr5`, `nr2`-`nr5`,
-      `tcpy`, ...). Three gaps, in this order:
-      1. done (0.52.15): the parity of successors, `(p + c) % m` from a known `p % m` for `m <= 4`, the case split on
-         `p % m` (pr2, mbpr2-mbpr4);
-      2. done (0.52.15): the definition of div and mod in the simplex (tcpy, diff-2-n-u); no forward lemmas for
-         division;
-      3. the 2^s cases of s conditional stores: the folds `strides₂` to `strides₅` with one list of values per cell
-         (strides.dfy, Oct 28), synthesized by the matcher with the cases of the update, constant offsets of the
-         positions cancelled in sums, conditionals lifted over equations; synthetic tasks of the shapes of pr2 and
-         pnr2 proved (examples/dafny/teq/strides.dfy); to be measured on the cloud, including whether `stores` with
-         values per case loses tasks (rew, the conditional-store lemmas); the Lean proofs of the new lemmas are open
-         (the generated files still state the shape lemmas);
-      4. open: nr2-nr5, whose inner loop over two positions leaves cases that store at `2 * k` and `2 * k + 1`, the
-         iteration variable written as the literal it equals in each case (ideas/engine-gaps.md, gap 3); no evaluation
-         of concrete traces, by decision.
+- [ ] **Ground roots that are no literals.** Since 0.53.5 a term whose class has a literal as its root is written as
+      that literal (`Classes.ground`); a root that is a ground term over constants is not, since such terms rank
+      behind the variables (`Classes.rank`). Difficult: ranking them before the variables changes the root of many
+      classes, and a change of the order of roots lost 30 tasks of Loops before (ideas/engine-gaps.md, gap 3).
+- [ ] **Strided stores** (array-tiling): open nr2-nr5, mbpr4, mods, modsf; pnr4, pnr5, mbpr5 time out at 120 s
+      (pnr4 in 514 s with 15 min). Difficult: the inner loop of nr2-nr5 over two positions leaves cases that store at
+      `2 * k` and `2 * k + 1`, with the iteration variable written as the literal it equals in each case
+      (ideas/engine-gaps.md, gap 3; no evaluation of concrete traces, by decision); mbpr4 needs the case `i == 2` of
+      `0 < i < 3` after the choices are lifted out of an atom, which the case split of `-prove` does not take (z3
+      proves it with `-fallback`); mods and modsf have conditional stores without a fixed number of cases
+      (ideas/cases-and-folds.md, section 6).
 - [ ] **Equalities from the simplex to the classes** (ideas/prove-next.md, section 1): two counts known equal only
       by inequalities stay different terms (`n₂ == SIZE == n₃` by the exit test and the bound of the iteration
-      constraint). The general exchange of all equalities lost 21 results of Arrays and 13 of Loops; instead, the
-      equation `i == N` at the exit of a loop whose counter the test bounds, stated once per loop, or on demand where
-      two atoms of the same function differ only in counts. The zero_sum tasks are solved by `-teq` now (18 of 18);
-      measure on zero_sum1 with `-slice`, standard_maxInArray_ground and standard_minInArray_ground-2, then look for
-      the tasks of Arrays and Loops whose remaining goal compares such terms. Oct 27: the three are solved (0.52.14),
-      and a search of the remaining goals of the cloud logs found no task of this kind; set aside until one shows up.
-- [ ] **array-patterns** (37 tasks, 30 true, none solved: 20 unknown, 17 timeouts): a loop `while(1)` stores at a
-      nondeterministic index into two arrays (`array1[index] = f(index)`, `array2[index] = g(index)` or kept), and a
-      final loop sums both arrays, bounded by a closed form. Plan: the goals after `-teq -prove` of array1 and
-      array10 first; then the value of a cell after stores at a list of keys (`if occurs(k, keys) then ... else
-      a0[k]`, teq.dfy), a pointwise bound of the sum of both arrays per cell (the cancelling pairs), and a bound of
-      a sum by a pointwise bound over a counter; lemmas local to the tasks first, into the database once two tasks
-      share them; why 17 time out. Oct 27: the goal of array1 is the sum over a range of two arrays after stores at
-      repeating keys, related pointwise (`array2[N - 1 - j] == -array1[j]`); the updates of sums of selects
-      (`sum_selects_update`, restored in 0.52.16) decide the last iteration; multisets do not give the rest (the
-      relation is pointwise, and the last write per key has no closed form); set aside by decision.
-- [ ] **Reducer commutativity** (reducercommutativity 28, array-crafted bAnd, bor, xor 15): the aggregates are over
-      multisets since 0.53.0 (doc/teq.md, "Multisets"), which replaced the module `teq:multisets` and its twins; sums
-      and averages proved; open: sep (a count by a predicate of C's signed `%`), the bitwise reductions (no folds),
-      max (the maximum from the seed 0).
-- [ ] **Multisets, after 0.53.0:** `-fallback` lowers an aggregate of a multiset as an uninterpreted function (examples/dafny/teq/fallback_fold.dfy,
-      fallback_recursion.dfy), where it unfolded the sum of a list; the cloud run of 0.53.0 (120 s) lost
-      standard_partial_init_ground and SV-LIB array_2-1 at the bound on the rewrite steps.
+      constraint). Difficult: the general exchange of all equalities lost 21 results of Arrays and 13 of Loops, by
+      timeouts; the alternative is the equation `i == N` at the exit of a loop whose counter the test bounds, once per
+      loop, or on demand where two atoms of the same function differ only in counts. No open task of this kind is
+      known (a search of the remaining goals of the cloud logs, Oct 27).
+- [ ] **array-patterns** (37 tasks, 30 true, none proved): a loop `while(1)` stores at a nondeterministic index into
+      two arrays (`array1[index] = f(index)`, `array2[index] = g(index)` or kept), and a final loop sums both
+      arrays, bounded by a closed form. Difficult: the sums of the two arrays are related pointwise
+      (`array2[N - 1 - j] == -array1[j]`), not by a permutation, so the multisets do not give it, and the last write
+      per key has no closed form; the updates of sums of selects (`sum_selects_update`) decide only the last
+      iteration. Steps: the goals after `-teq -prove` of array1 and array10; the value of a cell after stores at a
+      list of keys, a pointwise bound of the sum of both arrays per cell, a bound of a sum by a pointwise bound over a
+      counter; why 17 time out.
+- [ ] **Reducer commutativity** (reducercommutativity, array-crafted bAnd, bor, xor): sums, averages, bAnd1-4 and
+      bor1-4 are proved (aggregates over multisets, doc/teq.md, "Multisets"); open xor, bAnd5 and bor5 (a variable
+      `N`), sep, max. Difficult: sep counts by a predicate of C's signed `%`, which is no `parity`; max ends in
+      "rewriting does not terminate" (bugs.md).
+- [ ] **The fallback of the aggregates over multisets**: `-fallback` lowers an aggregate of a multiset as an
+      uninterpreted function (examples/dafny/teq/fallback_fold.dfy, fallback_recursion.dfy), where it unfolded the
+      sum of a list. With fallback, 0.53.13 lost sep05-1, sep10-2 and cohencu-ll_valuebound2 to 20 against 0.52.17
+      (proved by z3 then, `unknown` now): the goals that reach `-fallback` changed, by the multisets or the lifting
+      of choices; not analyzed.
 - [ ] functions_1-2 (false, lost in 0.52.16): `forall Result?: List<int> :: length(Result?) != 134217728` needs that a
       list of a given length exists, which neither the rules nor z3 decide. A predicate `haslength(n, xs)` that the
       engine drops when `xs` occurs nowhere else was considered and dropped by decision (Oct 28): one task, and a
       special case of the engine for one function of the database.
+- [ ] **Regressions since 0.51.4** (ideas/prove-next.md, plan A): linear_sea.ch (one of two), geo1, prodbin-ll
+      (valuebound1; 2, 5, 10 with fallback), cohendiv-ll (with fallback only). Difficult: few rewrite steps, and the
+      profile in plan A (side conditions of rules, hashes of terms, the simplex, `Context.fix`) suggests speedups are
+      not worthwhile; unsigned arithmetic with division (linear_sea.ch, geo1, prodbin) is for the database.
+- [ ] **Tasks at the time limit** (solved in some runs, 73 to 120 s, alternating): string-1 (73 s with 15 min),
+      divbin_unwindbound1, divbin2_unwindbound1, add-2-n-u, cohendiv-ll_valuebound2, nested3-1_abstracted (with
+      fallback); diff-2-n-u ends in "rewriting does not terminate". They need speed, not lemmas.
+- [ ] **Rounds that do not settle**: with 15 min, 116 tasks end at the bound on the rewrite steps (ideas/prove-next.md,
+      plan A, section 4), e.g. fermat1, egcd2, mannadiv. Difficult: the rounds of simplification do not reach a
+      fixpoint, which is a larger target than their speed; `-prove:steps 10000` lost nothing on 0.53.4 but gains
+      little.
+- [ ] **The cost of `-prove`**: forward instances are simplified at every firing; a memo of them was measured and
+      costs more (Oct 27), so the remedy is fewer forward lemmas, rules on the atoms of the goals instead.
+- [ ] partial_mod_count_2 to 5 (true; partial_mod_count_1 is proved): conditional stores whose second value is not a
+      constant, then a count of zeros.
+- [ ] Counterexamples by concrete evaluation of `sum`, `map`, `counter` for a literal `n` (30 unsafe array-fpi
+      tasks, e.g. brs2f); bounded unrolling for counterexamples (ideas/prove-next.md, plan B).
+- [ ] Arrays (ideas/database.md, "Workarounds"): the gaps of the engine behind the workarounds in the database (compactions and
+      filters, copies from both ends, cases split at a position), each listed with its tasks; then replace the
+      workarounds by their plain forms (ideas/engine-gaps.md).
 - [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
       standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
-- [ ] Tasks lost in 0.53.6 (cloud, Oct 28, against 0.53.5; ending in unknown, not timeouts; the lifting by polarity
-      of ideas/cases-and-folds.md, section 9, recovers bhmr2007 and loopv1 locally, mbpr4 open): array-tiling/mbpr4
-      (Arrays and MonoCera), SV-LIB bhmr2007, loopv1, loopv3. The choices lifted out of atoms (`Simplify.atom`)
-      turn definitions with a choice, e.g. `a == consts`-values of guards that do not depend on the iteration
-      (`maps_const`, `sums_consts`), into conjunctions of implications `(c ==> a == n) && (!c ==> a == 2 * n)`,
-      which the case split of `-prove` does not take apart (nor `-split`, tried), while the conditionals of 0.53.5
-      were split; in mbpr4 the lifted goal needs the case `i == 2` of `0 < i < 3`. Proposed, not tried: lift a
-      choice out of an atom into the nested conditional `ite(c₁, A[v₁], ... A[unspecified])` instead
-      (ideas/cases-and-folds.md, section 2). No removed lemma is involved (`scripts/missing.py`).
-- [ ] Tasks lost since 0.52.4 (ideas/prove-next.md, A2, the table of Oct 28): brs2-brs5
-      (`select_current_trace_reset_add_keep`) and ps2-ps6 valuebound1 (`square_eq_self`, the case split on
-      two-element intervals) recovered in 0.52.17, pr3 by its shape; open: mods, modsf, functions_1-2, and those at
-      the limit.
-- [ ] Regressions since 0.51.4 (ideas/prove-next.md, plan A, with a table per task): rewnifrev, linear_sea.ch, geo1,
-      prodbin, cohendiv-ll, max20-1 (array_2-*-simple and theatreSquare work again, Oct 26). Few rewrite steps; the
-      profile in plan A (side conditions of rules, hashes of terms, the simplex, `Context.fix`) suggests speedups are
-      likely not worthwhile; repeated reads of counters (rewnifrev) and unsigned arithmetic with division (linear_sea.ch,
-      geo1, prodbin) are relevant for the database. More time (15 min) and its 116 tasks at the step bound:
-      ideas/prove-next.md, plan A.
-      Experiments of Oct 26, 2026: the portfolio (ideas/portfolio.md), -slice alone (ideas/slice.md).
-      rewnifrev (Oct 28): `select_current_trace_ahead_down` never matched, since the canonical forms write its guard
-      and the cell ahead over the first counter; restated so (strides.dfy, examples/dafny/teq/ahead_down.dfy); rewnifrev
-      correct locally in 11 s (unknown with 0.53.11), to be confirmed on the cloud.
-- [ ] ps2-ll_unwindbound1 times out at 60 s.
-- [ ] Recurrences in arrays: `ifcomp` (`c[j] == j^3`, a sum of squares with exact division by 6 as a forward lemma),
-      `pcomp`, `sqm-if`, `nsqm-if`, `condm`.
-- [ ] Counterexamples by concrete evaluation of `sum`, `map`, `counter` for a literal `n` (30 unsafe array-fpi tasks,
-      e.g. brs2f).
-- [ ] Lost tasks: in-de52, in-de62 (more loops than the depth of the case splits).
-- [ ] partial_mod_count_* (true): conditional stores whose second value is not a constant, then a count of zeros.
-- [ ] Arrays (ideas/array-lemmas.md, Oct 26): the gaps of the engine behind the workarounds in the database
-      (compactions and filters, copies from both ends, cases split at a position), each listed with its tasks; then
-      replace the workarounds by their plain forms; plan in ideas/engine-gaps.md (division and parity: "Now").
-- [ ] Deferred: the cost of `-prove` (forward instances are simplified at every firing; a memo of them was measured
-      and costs more, Oct 27, so the remedy is fewer forward lemmas: rules on the atoms of the goals); the rest of nla-digbench (geo1,
-      geo3, cohencu); the non-terminations at the bound on the steps (fermat1, egcd2, mannadiv); equalities from the
-      simplex to the classes (ideas/prove-next.md).
 - [ ] Last: integrate the results into doc/paper/cuvee.tex (`scripts/paper.py`), `scripts/out/experiments.pdf`,
       ideas/experiments.md, doc/array-algorithms; commit all the work, then a single push.
 

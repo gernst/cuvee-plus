@@ -1,8 +1,8 @@
 # The gaps of the engine behind the workarounds of the database
 
 A plan (Oct 26, 2026) to close the gaps of `-prove` for which the database has workarounds, such that the lemmas can be
-stated in their plain forms. The workarounds are listed in [database-review.md](database-review.md) ("Workarounds for
-gaps of the engine") and [array-lemmas.md](array-lemmas.md). The examples of the workarounds (examples/c/teq,
+stated in their plain forms. The workarounds are listed in [database.md](database.md) ("Workarounds for gaps of the
+engine"). The examples of the workarounds (examples/c/teq,
 examples/dafny/teq) are the regression tests: after a workaround is replaced by its plain form they stay `correct`,
 their `_wrong` variants `unknown`.
 
@@ -161,20 +161,7 @@ debug line; until then the two lemmas stay.
 
 ## Database work (no change of the engine)
 
-- Done (Oct 27): the four forward lemmas whose triggers are any read and whose other variables are bound by
-  conditions alone (search.dfy: `earlier_agree_prefix`, `earlier_not_occurs_prefix`, `earlier_above_iterations`,
-  `select_not_occurs_selects`) are rules on the comparisons of the reads (`earlier_eq_prefix`,
-  `earlier_eq_not_occurs_prefix`, `earlier_above_iterations`, `select_eq_not_occurs_selects`), as
-  `invs_select_store_ne` for the sentinel, and the fold `agree_prefix` is the equation of prefixes
-  (`invs_agree_prefix`). With `current_trace_step_or_keep` and on 0.52.13, the VerifierCloud (Ryzen, 120 s) gains 5
-  tasks of Arrays and 5 of Loops and loses none. Caveats: the binding of `n` takes the first matching fact; a rule is
-  stated in the orientation of the atom as the goals contain it (`j < earlier(j, ts)`, not `earlier(j, ts) <= j`),
-  since negations are not normalized into the other comparison everywhere; `earlier_eq_not_occurs_prefix` needs
-  `n <= length xs` (Lean, lean/premises.txt), which the loop provides.
-- The comments of the review of Oct 26 (updated Oct 28 from the `:used` lists of the cloud run of 0.53.10, where
-  `invs_not_or` is unused and removed): usage annotations out of date (`current_maxs_earlier`, `current_mins_earlier`
-  unused since the prefix variants; `count_consts`, `count_true_eq`, `counts`, `invs_not_or` no longer used by the
-  tasks named), module headers.
+In [database.md](database.md) (Oct 28).
 
 ## Not done, and why
 

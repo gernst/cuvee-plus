@@ -121,11 +121,7 @@ the contexts that `-teq` builds, as far as the reasons go.
   `fermat1-ll_unwindbound1` is `unknown`, 627 s). Still wrong in the 15-minute runs of 0.42.1 (5 of them, the
   others time out); a rerun with 0.42.2 is pending, which may also lose correct results that came from such
   contradictions.
-- **The published SV-COMP archive** (0.41.4, 10.5281/zenodo.23317707) predates the entry points (25c90e96):
-  `-teq` checks functions out of the context of their calls and answers `incorrect` for `sanfoundry_24-1` and
-  `verifythis/lcp` (wrong false). Fixed in the code; the archive is wrong until a new version is published (see
-  the SV-COMP tool entry in TODO.md).
-- **Vacuous proofs of the examples** (the former examples/dafny/algorithms/NOTES.md (doc/algorithms.md, History), finding 13; `pending/first_duplicate`):
+- **Vacuous proofs of the examples** (the former examples/dafny/algorithms/NOTES.md (doc/algorithms.md, History), finding 13; the former `pending/first_duplicate`, removed Oct 28, 2026):
   the entry below. Neither case reproduces with 0.46.7 (Oct 13, 2026): `fd2_d3.dfy` prepended to
   `program_wrong.dfy` and `program2_wrong.dfy` (with `-include` of `aggregation`, `arrays`, `search`,
   `counters`, which the migration requires) leaves a goal under `-teq -simplify` and `-teq -prove`, and `vac.dfy`
@@ -214,7 +210,9 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   the values of a store, is not normalized by any rule and came back at every read of every store; on a sum over five
   elements after a swap (the shape of reducercommutativity sum*), the run ended in 19 s with `unknown` instead of a
   timeout without it. Its task, standard_sentinel-2, and loop-acceleration/array_4 are proved by the rule
-  `invs_select_store_ne` on the iteration constraint of the search instead. The other reducers are not rerun yet.
+  `invs_select_store_ne` on the iteration constraint of the search instead. Status of the reducers in 0.53.13
+  (Oct 28, 2026): sum*, avg*, bAnd1-4, bor1-4 are proved (aggregates over multisets); max* ends in "rewriting does
+  not terminate"; xor*, bAnd5, bor5 are `unknown`.
 
 - A rule whose left-hand side is a comparison of two open variables, e.g.
   `j < n` with a side condition `invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: P(k, h))`,
@@ -271,7 +269,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   the reads of a combinator context are normalized by the rules without an `invs` condition only, since a chain of
   different rules with `invs` conditions nests through the contexts of the facts they are matched against, and the
   reads are cached by the dependencies and the definitions of the traces, since the contexts of a fact are rebuilt
-  at every position at which a condition is matched against it; the six cycles of `pending/` and of this entry
+  at every position at which a condition is matched against it; the six cycles of the former `pending/` and of this entry
   terminate, none of them closes its goal, see doc/prove.md):
   1. A reentrance guard for conditional rules: while the side condition of a rule is decided, the rule is not
      applied inside, e.g. a set of such rules in the context that `Rewrite.apply` skips; this cuts the recursion
@@ -376,6 +374,10 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
 
 ## Fixed
 
+- **The published SV-COMP archive** (0.41.4, 10.5281/zenodo.23317707) predated the entry points (25c90e96):
+  `-teq` checked functions out of the context of their calls and answered `incorrect` for `sanfoundry_24-1` and
+  `verifythis/lcp` (wrong false). Fixed in the code, and the archives since 0.50.18 contain the fix (0.52.17,
+  10.5281/zenodo.23713558, is the one in fm-tools).
 - **A rule with more dependencies than the expression aborts the run with "type mismatch"** (found Oct 28, 2026,
   0.53.6): when the direct match fails, `Rewrite.combinator` retries with the further dependencies of the pattern
   sharing the bound variable of the first ("front"); a local of another type, e.g. the boolean guard `g` of a fold
