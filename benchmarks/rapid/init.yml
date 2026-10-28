@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the RAPID benchmark init, adjusted to the Boogie frontend of Cuvée (see README.md)
+input_files: 'init.bpl'
+
+properties:
+  - property_file: properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: Boogie

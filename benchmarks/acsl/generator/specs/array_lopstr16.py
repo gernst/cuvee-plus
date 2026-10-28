@@ -1,0 +1,33 @@
+A = lambda lo, hi, body: f'\\forall integer t; {lo} <= t < {hi} ==> {body}'
+M = 1000000
+ok = lambda arr: f'({arr} != \\null && {arr}->n == 0) ==> {arr}->p != \\null'
+SPECS = {
+ 'base_case.i': {'loops': [[f'0 <= i <= {M}', A('0', 'i', '\\valid(a[t]) && (a[t]->n == 0 ==> a[t]->p != \\null)'), f'assigns i, a[0..{M-1}]'],
+   [f'0 <= i <= {M}', A('0', M, '\\valid(a[t]) && (a[t]->n == 0 ==> a[t]->p != \\null)'), 'assigns i']]},
+ 'break-1.i': {'loops': [[f'0 <= i <= {M}', A('0', 'i', 's[t].n != \\null'), f'assigns i, s[0..{M-1}].n'],
+   [f'0 <= i <= {M}', f'c <= 5 ==> ({A("0", M, "s[t].n != \\null")})', 'assigns i']]},
+ 'break-2.i': {'loops': [[f'0 <= i <= {M//2 + 1}', A('0', 'i', 's[t].n == 10'), f'assigns i, s[0..{M//2}].n'],
+   [f'0 <= i <= {M}', A('0', M//2 + 1, 's[t].n == 10'), 'assigns i']]},
+ 'flag_loopdep.i': {'loops': [['0 <= i <= size', A('0', 'i', 'a[t].n != \\null'), 'assigns i, a[0..size-1].n'],
+   [f'0 <= i <= {M}', 'flag == 0 || flag == 1', 'i > 0 ==> flag == 1', A('0', M, 'a[t].n != \\null'), 'assigns i, flag'],
+   [f'0 <= i <= {M}', 'flag == 1', 'assigns i']],
+   'funcs': {'init': ['requires size >= 0', 'requires \\valid(a + (0..size-1))', 'assigns a[0..size-1].n', 'ensures \\forall integer t; 0 <= t < size ==> a[t].n != \\null']}},
+ 'flag_loopdep_simple.i': {'loops': [['0 <= i <= size', 'assigns i, a[0..size-1].n'],
+   [f'0 <= i <= {M}', 'flag == 0 || flag == 1', f'flag == 0 ==> ({A("0", "i", "a[t].n == 0")})', 'assigns i, flag'],
+   [f'0 <= i <= {M}', f'flag == 0 ==> ({A("0", M, "a[t].n == 0")})', 'assigns i']],
+   'funcs': {'init': ['requires size >= 0', 'requires \\valid(a + (0..size-1))', 'assigns a[0..size-1].n']}},
+ 'motivex.i': {'loops': [[f'0 <= i <= {M}', A('0', 'i', 'a[t].p == a[t].q'), f'assigns i, a[0..{M-1}]'],
+   [f'0 <= i <= {M}', A('0', 'i', 'a[t].p == a[t].q || a[t].q == a[t].p * a[t].p'), A('i', M, 'a[t].p == a[t].q'), f'assigns i, a[0..{M-1}]'],
+   [f'0 <= i <= {M}', A('0', M, 'a[t].p == a[t].q || a[t].q == a[t].p * a[t].p'), 'assigns i']],
+   'note': 'the array has 10000 elements but the loops run to 1000000, which ACSL cannot excuse'},
+ 'partial_lesser_bound-1.i': {'loops': [['0 <= i <= 10000000', A('0', 'i', 'a[t] == 0'), 'assigns i, a[0..9999999]'],
+   ['0 <= i <= 5000000', A('0', 'i', 'a[t] == 10'), 'assigns i, a[0..4999999]'], ['0 <= i <= 5000000', A('0', 5000000, 'a[t] == 10'), 'assigns i']]},
+ 'partial_lesser_bound.i': {'loops': [[f'0 <= i <= {M}', A('0', 'i', 'a[t] == \\null'), f'assigns i, a[0..{M-1}]'],
+   [f'0 <= i <= {M//2}', A('0', 'i', 'a[t] != \\null'), f'assigns i, a[0..{M//2-1}]'], [f'0 <= i <= {M//2}', A('0', M//2, 'a[t] != \\null'), 'assigns i']]},
+ 'scalar_loopdep.i': {'loops': [['0 <= i <= 100000', 'y == 100 + i', A('0', 'i', 'a[t].n == 100 + t'), 'assigns i, x, y, a[0..99999].n'],
+   ['0 <= i <= 100000', A('0', 100000, 'a[t].n >= 100'), 'assigns i']]},
+ 'single_elem_safe.i': {'loops': [[f'0 <= i <= {M}', A('0', 'i', ok('a[t]')), f'assigns i, a[0..{M-1}]'],
+   [f'0 <= i <= {M}', A('0', M, f't != 3 ==> ({ok("a[t]")})'), 'assigns i']]},
+ 'sum_multi_array.i': {'loops': [[f'0 <= i <= {M}', f'assigns i, a[0..{M-1}].n, b[0..{M-1}].n'],
+   [f'0 <= i <= {M}', A('0', 'i', 'c[t].n == a[t].n + b[t].n'), f'assigns i, c[0..{M-1}].n'], [f'0 <= i <= {M}', A('0', M, 'c[t].n == a[t].n + b[t].n'), 'assigns i']]},
+}

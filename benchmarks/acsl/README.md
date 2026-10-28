@@ -6,8 +6,8 @@ task by task, in the programs of the tasks expected `true`: loop invariants,
 contracts, and logic functions, such that Cuvée can check the expected
 verdict by verification conditions (`-vcgen -z3`, with `-split` for the tasks of
 [Loops-split.set](Loops-split.set)).
-The generator of the annotations and the results of its checks are in `generator/`, which is not tracked
-(its README; absolute paths).
+The annotations are generated from tables by the generator in [generator/](generator/README.md), which also
+checks them.
 
 - **1204 tasks with `unreach-call`**, the same as the C categories
   `C.unreach-call.Arrays` (440, 320 true) and `C.unreach-call.Loops` (764,

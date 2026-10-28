@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the RAPID benchmark in_place_max, adjusted to the Boogie frontend of Cuvée (see README.md)
+input_files: 'in_place_max.bpl'
+
+properties:
+  - property_file: properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: Boogie

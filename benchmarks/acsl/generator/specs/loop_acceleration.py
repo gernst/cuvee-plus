@@ -1,0 +1,42 @@
+A = lambda lo, hi, body: f'\\forall integer t; {lo} <= t < {hi} ==> {body}'
+L = lambda *cl: {'loops': [list(cl)]}
+F = lambda spec, why: dict(spec, note='expected verdict false (' + why + ')')
+pow2 = ' || '.join(f'(x == {k} && y == {2**k})' for k in range(7))
+copy = [['0 <= i <= 2048', 'assigns i, A[0..2047], B[0..2047]'], ['0 <= i <= 2048', A('0', 'i', 'B[t] == A[t]'), 'assigns i, tmp, B[0..2047]']]
+SPECS = {
+ 'array_1-1.c': F(L('0 <= i <= 1024', A('0', 'i', 'A[t] == t'), 'assigns i, A[0..1023]'), 'A[1023] == 1023 after the loop'),
+ 'array_1-2.c': L('0 <= i <= 1024', A('0', 'i', 'A[t] == t'), 'assigns i, A[0..1023]'),
+ 'array_2-1.i': F({'loops': copy}, 'B is a copy of A'), 'array_2-2.i': {'loops': copy},
+ 'array_2-1-simple.i': F({'loops': copy[1:]}, 'B is a copy of A'), 'array_2-2-simple.i': {'loops': copy[1:]},
+ 'array_3-1.i': {'loops': [['0 <= i <= 1024', 'assigns i, A[0..1023]'], ['0 <= i <= 1023', 'assigns i']]},
+ 'array_3-2.i': F({'loops': [['0 <= i <= 1024', 'assigns i, A[0..1023]'], ['0 <= i <= 1024', 'assigns i']]}, 'the first zero may lie beyond the middle'),
+ 'array_4.i': {'loops': [['0 <= i <= 1023', 'assigns i, A[0..1022]'], ['0 <= i <= 1023', 'A[1023] == 0', 'assigns i']]},
+ 'const_1-1.c': L('y <= 1024', 'y > 0 ==> x == 0', 'x == 0 || x == 1', 'assigns x, y'),
+ 'const_1-2.c': F(L('y <= 1024', 'y > 0 ==> x == 0', 'x == 0 || x == 1', 'assigns x, y'), 'x == 0 after the loop'),
+ 'const_1-2_abstracted.c': F({'loops': []}, 'x == 0 after the accelerated loop'),
+ 'diamond_1-1.c': L('x <= 100', 'y % 2 == 0 ==> x % 2 == 0', 'y % 2 != 0 ==> x <= 99', 'assigns x'),
+ 'diamond_1-2.c': F(L('x <= 100', 'assigns x'), 'the parities differ at the end'),
+ 'diamond_2-2.c': L('y % 2 == 0 ==> x % 2 == 0', 'y % 2 != 0 ==> (x == 0 || x % 2 == 1)', 'assigns x'),
+ 'functions_1-1.c': dict(L('x % 2 == 0', 'x <= 0x10000000', 'assigns x'), funcs={'f': ['requires z <= 4294967293', 'assigns \\nothing', 'ensures \\result == z + 2']}),
+ 'functions_1-2.c': F(dict(L('x % 2 == 0', 'x <= 0x10000000', 'assigns x'), funcs={'f': ['requires z <= 4294967293', 'assigns \\nothing', 'ensures \\result == z + 2']}), 'x is even'),
+ 'multivar_1-1.c': L('x == y', 'assigns x, y'),
+ 'multivar_1-2.c': F(L('y == (x + 1) % 4294967296', 'assigns x, y'), 'y == x + 1 throughout'),
+ 'nested_1-1.c': {'loops': [['x <= 0x0fffffff', 'assigns x, y'], ['0 <= y <= 10', 'x < 0x0fffffff', 'assigns y']]},
+ 'nested_1-2.c': F({'loops': [['x <= 0x0fffffff', 'assigns x, y'], ['0 <= y <= 10', 'x < 0x0fffffff', 'assigns y']]}, 'x == 0x0fffffff is odd'),
+ 'overflow_1-1.c': L('x % 2 == 0', 'assigns x'),
+ 'phases_1-1.c': L('x <= 0x10000000', 'x >= 0xfff0 ==> x % 2 == 0', 'assigns x'),
+ 'phases_1-2.c': F(L('x <= 0x0fffffff', 'x >= 0xfff1 ==> x % 2 == 1', 'assigns x'), 'x == 0x0fffffff is odd'),
+ 'phases_2-1.c': F(L('1 <= x <= y', 'assigns x'), 'x == y after the loop'),
+ 'phases_2-2.c': L('1 <= x <= y', 'assigns x'),
+ 'simple_1-1_abstracted.c': F({'loops': []}, 'x is even'), 'simple_1-1.c': F(L('x % 2 == 0', 'x <= 0x10000000', 'assigns x'), 'x is even'),
+ 'simple_1-2_abstracted.c': {'loops': []}, 'simple_1-2.c': L('x % 2 == 0', 'x <= 0x10000000', 'assigns x'),
+ 'simple_2-1_abstracted.c': {'loops': []}, 'simple_2-1.c': L('assigns x'),
+ 'simple_2-2.c': F(L('x <= 0x0fffffff || x == \\at(x, Pre)', 'assigns x'), 'x == 0x0fffffff after the loop'),
+ 'simple_3-1.c': F(L('x % 2 == 0', 'x <= N + 1', 'assigns x'), 'x is even'), 'simple_3-2.c': L('x % 2 == 0', 'x <= N + 1', 'assigns x'),
+ 'simple_4-1_abstracted.c': F({'loops': []}, 'x is odd'), 'simple_4-1.c': F(L('x % 2 == 1', 'x >= 1', 'assigns x'), 'x is odd'),
+ 'simple_4-2_abstracted.c': {'loops': []}, 'simple_4-2.c': L('x % 2 == 0', 'assigns x'),
+ 'underapprox_1-1.c': F(L('0 <= x <= 6', pow2, 'assigns x, y'), 'y == 64 after the loop'),
+ 'underapprox_1-2.c': L('0 <= x <= 6', pow2, 'assigns x, y'),
+ 'underapprox_2-1.c': F(L('0 <= x <= 6', 'assigns x, y'), 'x == 6 after the loop'),
+ 'underapprox_2-2.c': L('0 <= x <= 6', 'assigns x, y'),
+}

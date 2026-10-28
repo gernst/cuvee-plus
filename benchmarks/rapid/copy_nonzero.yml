@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the RAPID benchmark copy_nonzero, adjusted to the Boogie frontend of Cuvée (see README.md)
+input_files: 'copy_nonzero.bpl'
+
+properties:
+  - property_file: properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: Boogie

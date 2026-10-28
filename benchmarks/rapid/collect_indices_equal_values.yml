@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the RAPID benchmark collect_indices_equal_values, adjusted to the Boogie frontend of Cuvée (see README.md)
+input_files: 'collect_indices_equal_values.bpl'
+
+properties:
+  - property_file: properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: Boogie

@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+# the RAPID benchmark init_non_constant, adjusted to the Boogie frontend of Cuvée (see README.md)
+input_files: 'init_non_constant.bpl'
+
+properties:
+  - property_file: properties/unreach-call.prp
+    expected_verdict: true
+
+options:
+  language: Boogie
