@@ -4,7 +4,7 @@
 
 (assert (= (* x x) (+ y 1)))
 
-(assert (= 0 y))
+(assert (= y 0))
 
 (assert (= x y))
 

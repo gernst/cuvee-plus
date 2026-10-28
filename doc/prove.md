@@ -104,7 +104,10 @@ binders, derivatives, and `old`; `Split` uses it.
 - **Helpers.** Every kind of expression has a helper that builds the result from simplified subterms (`and`, `not`,
   `eq_`, `ite`, `trace`, `maps`, `invs`, ...). Each normalizes its own constructor in one step and builds with the
   other helpers; the outer loop iterates. `nary` simplifies each argument of `and` and `or` assuming the others;
-  `and` extracts disjuncts common to all conjuncts, `or` dually.
+  `and` extracts disjuncts common to all conjuncts, `or` dually. `ite` is its result if both results are equal in the
+  context (`eq_`), e.g. `x % 2 == 0` in both branches of the remainder of C. An equation on Int or Real of monomials
+  of one sign has them on the left (`Simplify.eq`), so `p == 0` and `-p == 0` are one equation; of both signs it keeps
+  its orientation, which decides the variable it defines.
 - **Cases with equal results** are merged (`Simplify.eps`), only these: two results equal as they are, or equal under
   the guard of one of the cases, an equation, in whose context both are brought into canonical form
   (`Classes.normalize`) and compared by `eq_`; the other result is then the value of both cases, e.g. `k` of
@@ -185,7 +188,10 @@ by the simplifier in the context.
   match as it is, is matched by its alternatives, group by
   group, lazily (`Rewrite.alternatives`): the definitions of a variable, the structural view of a component, and only
   then its projected view, which costs a simplification.
-- **Side conditions** are taken in order: a closed one is decided, an open one is matched against the facts, which
+- **Side conditions** are proved like goals, at a positive position (`Rewrite.holds`), e.g. `0 < N || 0 <= N` where
+  `0 < N` is known; in an inconsistent context none holds, since every one would there and the rules would apply
+  without end at an unreachable position (swap.dfy), which is still simplified otherwise (0.52.3). They are taken in
+  order: a closed one is decided, an open one is matched against the facts, which
   binds the variables that occur only in conditions; so conjuncts that bind variables come first in a lemma. A closed
   condition is first looked up among the facts modulo the classes and the canonical forms of binders
   (`Rewrite.known`). The choices that appear once a higher-order variable of the rule, instantiated by an update, is

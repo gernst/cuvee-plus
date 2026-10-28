@@ -312,6 +312,14 @@ noncomputable def elems {α : Type} [Inhabited α] (xs : List α) : Bag α :=
   | .nil => ∅
   | .cons y ys => {y} + elems ys
 
+axiom bitand : Int → Int → Int
+
+axiom bitor : Int → Int → Int
+
+axiom band : Bag Int → Int
+
+axiom bor : Bag Int → Int
+
 def Stmt.sum_empty : Prop :=
   sum ∅ = 0
 
@@ -566,24 +574,6 @@ def Stmt.sums_consts : Prop :=
   ∀ (x : Int) (n : Int) (c : Int),
     sums x (butlast (consts n c)) = counter x c n
 
-def Stmt.sum_above : Prop :=
-  ∀ (n : Int) (hs : List Int) (V : Int → Int → Int) (e : Int) (hhs : length hs = n),
-    0 < n
-      ∧ invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => e ≤ n * V k h)
-      → e
-        ≤ sum
-          (elems
-             (maps (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => V k h)))
-
-def Stmt.sum_below : Prop :=
-  ∀ (n : Int) (hs : List Int) (V : Int → Int → Int) (e : Int) (hhs : length hs = n),
-    0 ≤ e
-      ∧ invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => n * V k h ≤ e)
-      → sum
-        (elems
-           (maps (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => V k h)))
-        ≤ e
-
 def Stmt.sum_mod_below : Prop :=
   ∀ (n : Int) (m : Int) (e : Int),
     0 ≤ n ∧ 0 < m ∧ n * (m - 1) ≤ e
@@ -712,6 +702,12 @@ def Stmt.min_seeded_earlier : Prop :=
         (elems (maps (butlast (counter i 1 n)) (fun v => earlier v xs)))
         ≤ earlier j xs
 
+noncomputable def bands (x : Int) (values : List Int) : Trace Int :=
+  trace x values (fun r v => bitand r v)
+
+noncomputable def bors (x : Int) (values : List Int) : Trace Int :=
+  trace x values (fun r v => bitor r v)
+
 def Stmt.elems_selects_swap : Prop :=
   ∀ (a : Int → Int) (p : Int) (q : Int) (v : Int) (w : Int) (keys : List Int) (n : Int) (hkeys : length keys = n),
     distincts keys ∧ occurs p keys ∧ occurs q keys ∧ v = a q ∧ w = a p
@@ -731,15 +727,12 @@ def Stmt.elems_selects_shift : Prop :=
         = elems (selects a (butlast (counter i 1 m))) - {a i} + {a (i + n)}
 
 def Stmt.elems_selects_rotate : Prop :=
-  ∀ (a : Int → Int) (i : Int) (n : Int) (m : Int) (v : Int),
-    0 ≤ n ∧ m = n + 1 ∧ v = a i
+  ∀ (a : Int → Int) (i : Int) (n : Int) (m : Int) (l : Int) (v : Int),
+    0 ≤ n ∧ m = n + 1 ∧ l = i + n ∧ v = a i
       → elems
         (selects
            (fun j =>
-              if j = i + n then
-                v
-              else
-                current (shifts a (butlast (counter i 1 n))) j)
+              if j = l then v else current (shifts a (butlast (counter i 1 n))) j)
            (butlast (counter i 1 m)))
         = elems (selects a (butlast (counter i 1 m)))
 
@@ -1796,6 +1789,37 @@ def Stmt.select_current_trace_ahead : Prop :=
                F (j - 1)
              else
                if ¬(0 ≤ j ∧ j < n) ∧ ¬(j = n ∧ 0 < j ∧ j < m) then
+                 a0 j
+               else
+                 unspecified)
+
+def Stmt.select_current_trace_ahead_down : Prop :=
+  ∀ (a0 : Int → Int) (n : Int) (s : Int) (d : Int) (P : Int → Prop) (F : Int → Int) (G : Int → Int) (j : Int),
+    d = s - 1
+      → current
+        (trace
+           a0
+           (List.zip (butlast (counter 0 1 n)) (butlast (counter s (-1) n)))
+           (fun a ⟨k, i⟩ =>
+              if P k then
+                fun j =>
+                  if j = i then
+                    G i
+                  else
+                    (fun j => if j = d - k then F k else a j) j
+              else
+                if ¬P k then
+                  fun j => if j = i then G i else a j
+                else
+                  unspecified))
+        j
+        = (if s - n < j ∧ j ≤ s then
+             G j
+           else
+             if j = s - n ∧ 0 < n ∧ P (n - 1) then
+               F (n - 1)
+             else
+               if ¬(s - n < j ∧ j ≤ s) ∧ ¬(j = s - n ∧ 0 < n ∧ P (n - 1)) then
                  a0 j
                else
                  unspecified)

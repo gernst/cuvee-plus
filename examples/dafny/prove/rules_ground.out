@@ -6,6 +6,6 @@ function f(x: int): int
 function g(x: int): int
 
 function h(b: box, c: box, x: int): bool {
-  box_v(b) == 0 && 1 == f(x) ==> g(box_v(c)) == g(0)
+  box_v(b) == 0 && f(x) == 1 ==> g(box_v(c)) == g(0)
 }
 

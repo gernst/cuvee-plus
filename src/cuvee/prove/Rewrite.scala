@@ -130,10 +130,14 @@ object Rewrite:
   // side conditions and the guards of updates are decided by the simplifier in the context,
   // whose applications of rules count only if the condition holds (see Context.applied); the choices that appear once
   // the higher-order variables of the rule are beta-reduced are lifted out of the atoms by the simplifier (see
-  // Simplify.atom)
+  // Simplify.atom); a condition is proved like a goal, at a positive position, such that a disjunction holds if the
+  // negation of its other disjuncts contradicts the facts, e.g. 0 < N || 0 <= N where 0 < N; in an inconsistent context
+  // no condition holds, since every one would there, and the rules would apply without end at an unreachable position
+  // (swap.dfy), which the simplifier still simplifies (see Simplify.simplify)
   def holds(config: Config, state: State, ctx: Context, phi: Expr): Boolean =
     val applied = ctx.applied.value
-    val result = phi == True || Simplify.simplify(config, state, ctx.neutral, phi) == True
+    val result =
+      phi == True || !ctx.inconsistent && Simplify.simplify(config, state, ctx.neutral.copy(polarity = Some(true)), phi) == True
     if !result then ctx.applied := applied
     result
 

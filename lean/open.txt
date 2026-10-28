@@ -1,3 +1,23 @@
 # the lemmas of the stable modules without a proof in Lean, which the generator removes from the modules before
 # printing (scripts/lean/generate.py): a line `name -- why`; each line is a lemma that is assumed, not checked
-select_current_trace_ahead_down -- restated over the first counter with a guard P (Oct 28, rewnifrev), the proof of the former version in Naturals.lean (N.select_current_trace_ahead_down) to be adapted
+band_empty -- new (Oct 28): band, bor and the bit operations need their model in Semantics.lean (Int.land, Int.lor)
+band_single -- new (Oct 28), as band_empty
+band_union -- new (Oct 28), as band_empty
+bor_empty -- new (Oct 28), as band_empty
+bor_single -- new (Oct 28), as band_empty
+bor_union -- new (Oct 28), as band_empty
+length_bands -- new (Oct 28), as band_empty
+current_bands -- new (Oct 28), as band_empty
+earlier_bands -- new (Oct 28), as band_empty
+length_bors -- new (Oct 28), as band_empty
+current_bors -- new (Oct 28), as band_empty
+earlier_bors -- new (Oct 28), as band_empty
+band_seed_selects -- new (Oct 28), as band_empty
+band_seed_earlier -- new (Oct 28), as band_empty
+bor_seed_selects -- new (Oct 28), as band_empty
+bor_seed_earlier -- new (Oct 28), as band_empty
+sum_parity_indicator -- new (Oct 28): the sum of 1 and -1 by parity as the parity of the values
+sum_mod_multiples -- new (Oct 28): a sum of multiples of m is one
+select_current_tiles -- new (Oct 28): the tiles of an outer loop over the stores of an inner one
+sum_above -- the condition 0 < n weakened to 0 < n || e <= 0 (Oct 28, loopv1); the former proof to be adapted
+sum_below -- the condition 0 <= e weakened to 0 < n || 0 <= e (Oct 28); the former proof to be adapted

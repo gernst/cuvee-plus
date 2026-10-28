@@ -203,7 +203,7 @@ object Decisions extends TestSuite:
 
     // a bound n <= m is an equation if m <= n is known, which is then substituted
     test("bounds to equations"):
-      simplify(Context.empty(State.empty).assume(Ints.le(n, Ints.zero)), Ints.le(Ints.zero, n)) ==> Eq(Ints.zero, n)
+      simplify(Context.empty(State.empty).assume(Ints.le(n, Ints.zero)), Ints.le(Ints.zero, n)) ==> Eq(n, Ints.zero)
       val x = Var("x", Sort.int)
       val goal = All(List(x), Not(And(List(Ints.le(Ints.zero, x), Ints.le(x, Ints.zero), Not(Eq(Ints.mod(x, lit(2)), Ints.zero))))))
       simplify(Context.empty(State.empty).copy(polarity = Some(true)), goal) ==> True

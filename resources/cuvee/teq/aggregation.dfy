@@ -1,10 +1,11 @@
-// aggregation: sums, parities, counts, maxima and minima as folds of the multiset of the values (the multisets of the
-// core, cvc5's bags), since none of them depends on the order, and the prefix traces of a list that compute them, with
-// their acceleration (current, earlier); linearity of sums, indicators, and bounds; permutations of arrays (a swap, a
-// rotation) as lemmas on the multisets of their values, such that an aggregate of a permuted array is the same term as
-// that of the original; compactions and filters (stores at counted positions); an optional module over teq.dfy
-// (-include teq:aggregation); a constant sequence of a dependency is ⌊consts(n, c)⌋ (consts_choice of teq.dfy), whose
-// sum is sum_consts; the bounds of counts and of the prefix maxima and minima by their initial value are forward lemmas
+// aggregation: sums, parities, counts, maxima, minima, and the bitwise conjunction and disjunction as folds of the
+// multiset of the values (the multisets of the core, cvc5's bags), since none of them depends on the order, and the
+// prefix traces of a list that compute them, with their acceleration (current, earlier); linearity of sums,
+// indicators, and bounds; permutations of arrays (a swap, a rotation) as lemmas on the multisets of their values,
+// such that an aggregate of a permuted array is the same term as that of the original; compactions and filters
+// (stores at counted positions); an optional module over teq.dfy (-include teq:aggregation); a constant sequence of a
+// dependency is ⌊consts(n, c)⌋ (consts_choice of teq.dfy), whose sum is sum_consts; the bounds of counts and of the
+// prefix maxima and minima by their initial value are forward lemmas
 
 // the multiset of the elements of a list, the counterpart of Dafny's multiset(s) for the lists of the database (a
 // datatype, not seq); two lists have the same one exactly if one is a permutation of the other
@@ -27,6 +28,18 @@ function {:teq} parity(m: multiset<int>): int
 function {:teq} max(x: int, m: multiset<int>): int
 
 function {:teq} min(x: int, m: multiset<int>): int
+
+// the bitwise conjunction and disjunction of the elements, whose empty values are all ones and zero; over the bit
+// operations of C, declared here as in its prelude (resources/cuvee/c/prelude.bpl), with the same formal parameters,
+// such that the declaration of the prelude, which comes first, stays (State.declare), and marked as part of teq, such
+// that the output does not declare them twice; their lemmas rely on bitand and bitor being associative and commutative
+function {:teq} bitand(a: int, b: int): int
+
+function {:teq} bitor(a: int, b: int): int
+
+function {:teq} band(m: multiset<int>): int
+
+function {:teq} bor(m: multiset<int>): int
 
 // the aggregates of the operations on multisets, always towards the arithmetic of the integers; the difference of the
 // core cuts off at zero (cvc5's bag.difference_subtract), hence only of a submultiset; the maximum and the minimum not
@@ -88,6 +101,24 @@ lemma {:rw} {:teq} min_single(x: int, v: int)
 
 lemma {:rw} {:teq} min_union(x: int, m: multiset<int>, n: multiset<int>)
   ensures min(x, m + n) == min(min(x, m), n)
+
+lemma {:rw} {:teq} band_empty()
+  ensures band(multiset{}) == -1
+
+lemma {:rw} {:teq} band_single(x: int)
+  ensures band(multiset{x}) == x
+
+lemma {:rw} {:teq} band_union(m: multiset<int>, n: multiset<int>)
+  ensures band(m + n) == bitand(band(m), band(n))
+
+lemma {:rw} {:teq} bor_empty()
+  ensures bor(multiset{}) == 0
+
+lemma {:rw} {:teq} bor_single(x: int)
+  ensures bor(multiset{x}) == x
+
+lemma {:rw} {:teq} bor_union(m: multiset<int>, n: multiset<int>)
+  ensures bor(m + n) == bitor(bor(m), bor(n))
 
 // a value read at a position of a list is among its values
 lemma {:rw} {:teq} single_earlier_le_elems<a>(j: int, xs: List<a>)
@@ -263,16 +294,26 @@ lemma {:rw} {:teq} sums_consts(x: int, n: int, c: int)
 
 // a sum of the values over a counter of n iterations is at least, or at most, e if each value times n is, whatever the
 // cases of the values (they are decided case by case in the condition, see Simplify.atom), e.g. 0 < sum of positive
-// values; at least needs an iteration, since the empty sum 0 satisfies the condition vacuously; the left-hand sides
-// are comparisons, whose constants bind e; the values may read further dependencies hs, e.g. the choices of a loop
-// (from loop-invgen/large_const, MonoCera: brs2-brs5, ms2-ms5)
+// values; for no iteration, where the condition holds vacuously, the sum is 0, hence the bound e <= 0 or 0 <= e; the
+// left-hand sides are comparisons, whose constants bind e, and a strict comparison is matched as the negation of the
+// other bound, e.g. sum < 0 is decided by the bound 0 from below (loopv1); the values may read further dependencies
+// hs, e.g. the choices of a loop
+// (from loop-invgen/large_const, loopv1, MonoCera: brs2-brs5, ms2-ms5)
 lemma {:rw} {:teq} sum_above(n: int, hs: List<int>, V: (int, int) -> int, e: int)
-  requires 0 < n && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: e <= n * V(k, h))
+  requires 0 < n || e <= 0
+  requires invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: e <= n * V(k, h))
   ensures e <= sum(elems(maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: V(k, h))))
 
 lemma {:rw} {:teq} sum_below(n: int, hs: List<int>, V: (int, int) -> int, e: int)
-  requires 0 <= e && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: n * V(k, h) <= e)
+  requires 0 < n || 0 <= e
+  requires invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: n * V(k, h) <= e)
   ensures sum(elems(maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: V(k, h)))) <= e
+
+// a sum of multiples of m is one, e.g. of the steps 6 or 3 of i in loopv1 modulo 3
+// (from loopv1)
+lemma {:rw} {:teq} sum_mod_multiples(n: int, hs: List<int>, V: (int, int) -> int, m: int)
+  requires 0 < m && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: V(k, h) % m == 0)
+  ensures sum(elems(maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: V(k, h)))) % m == 0
 
 // a sum of the remainders k % m of the iterations k from 0 is at most n (m - 1), which sum_below does not decide,
 // since n * (k % m) is not linear
@@ -304,6 +345,13 @@ lemma {:rw} {:teq} sum_indicator_true<a>(xs: List<a>, P: a -> bool)
 lemma {:rw} {:teq} sum_indicator_false<a>(xs: List<a>, P: a -> bool)
   ensures sum(elems(maps(for xs yield x :: case P(x) => 0 case !P(x) => 1)))
     == elems(maps(for xs yield x :: P(x)))[false]
+
+// a sum of 1 for the even values and -1 for the odd ones is their parity, whose permutations are lemmas on the
+// multiset of the values (parity_selects_update), e.g. ret++ or ret-- by x[i] % 2 == 0
+// (from reducercommutativity sep; examples/c/teq/sep_parity.c)
+lemma {:rw} {:teq} sum_parity_indicator<a>(xs: List<a>, F: a -> int)
+  ensures sum(elems(maps(for xs yield x :: case F(x) % 2 == 0 => 1 case !(F(x) % 2 == 0) => -1)))
+    == parity(elems(maps(for xs yield x :: F(x))))
 
 lemma {:rw} {:teq} count_consts<a>(n: int, e: a, v: a)
   requires 0 <= n
@@ -390,6 +438,61 @@ lemma {:rw} {:teq} min_seeded_earlier(j: int, h: int, i: int, n: int, xs: List<i
   requires h == i - 1 && h <= j < i + n
   ensures min(earlier(h, xs), elems(maps(for ⌊counter(i, 1, n)⌋ yield v :: earlier(v, xs)))) <= earlier(j, xs)
 
+// the bitwise folds, res = res & x[i] and res = res | x[i], whose final value combines the initial one with the
+// aggregate of the values
+// (from reducercommutativity, array-crafted bAnd, bor; examples/c/teq/bit_aggregates.c)
+function {:teq} {:fold} bands(x: int, values: List<int>): Trace<int>
+{
+  trace(x, for values do r, v :: bitand(r, v))
+}
+
+lemma {:rw} {:teq} length_bands(x: int, values: List<int>)
+  ensures length(⌊bands(x, values)⌋) == length(values)
+
+lemma {:rw} {:teq} current_bands(x: int, values: List<int>)
+  ensures current(bands(x, values)) == bitand(x, band(elems(values)))
+
+lemma {:rw} {:teq} earlier_bands(j: int, x: int, values: List<int>)
+  ensures earlier(j, ⌊bands(x, values)⌋) == bitand(x, band(elems(prefix(j, values))))
+
+function {:teq} {:fold} bors(x: int, values: List<int>): Trace<int>
+{
+  trace(x, for values do r, v :: bitor(r, v))
+}
+
+lemma {:rw} {:teq} length_bors(x: int, values: List<int>)
+  ensures length(⌊bors(x, values)⌋) == length(values)
+
+lemma {:rw} {:teq} current_bors(x: int, values: List<int>)
+  ensures current(bors(x, values)) == bitor(x, bor(elems(values)))
+
+lemma {:rw} {:teq} earlier_bors(j: int, x: int, values: List<int>)
+  ensures earlier(j, ⌊bors(x, values)⌋) == bitor(x, bor(elems(prefix(j, values))))
+
+// the seed: a fold that starts from the first element, res = x[0], over the others, is the aggregate of all, such
+// that the aggregates of an array and of a permutation of it, whose first elements differ, are the same term; over the
+// reads of an array, whose first read is a condition, as it is evaluated before the lemma matches, and over the values
+// of a list, as the reads of an array of stores become (select_current_stores)
+lemma {:rw} {:teq} band_seed_selects(a: array<int, int>, q: int, n: int, v: int)
+  requires 0 <= n && v == a[q - 1]
+  ensures bitand(v, band(elems(selects(a, ⌊counter(q, 1, n)⌋))))
+    == band(elems(selects(a, ⌊counter(q - 1, 1, n + 1)⌋)))
+
+lemma {:rw} {:teq} band_seed_earlier(xs: List<int>, n: int)
+  requires 0 <= n
+  ensures bitand(earlier(0, xs), band(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(k + 1, xs)))))
+    == band(elems(prefix(n + 1, xs)))
+
+lemma {:rw} {:teq} bor_seed_selects(a: array<int, int>, q: int, n: int, v: int)
+  requires 0 <= n && v == a[q - 1]
+  ensures bitor(v, bor(elems(selects(a, ⌊counter(q, 1, n)⌋))))
+    == bor(elems(selects(a, ⌊counter(q - 1, 1, n + 1)⌋)))
+
+lemma {:rw} {:teq} bor_seed_earlier(xs: List<int>, n: int)
+  requires 0 <= n
+  ensures bitor(earlier(0, xs), bor(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(k + 1, xs)))))
+    == bor(elems(prefix(n + 1, xs)))
+
 // permutations: a swap of two positions among distinct keys preserves the multiset of the values read there; the values
 // are conditions, since the simplifier evaluates the reads of the swap before the lemma matches
 // (from reducercommutativity, array-crafted bAnd, bor, xor)
@@ -407,11 +510,12 @@ lemma {:rw} {:teq} elems_selects_shift(a: array<int, int>, i: int, n: int, m: in
   ensures elems(selects(current(shifts(a, ⌊counter(i, 1, n)⌋)), ⌊counter(i, 1, m)⌋))
     == elems(selects(a, ⌊counter(i, 1, m)⌋)) - multiset{a[i]} + multiset{a[i + n]}
 
-// a rotation by one over the positions i, ..., i + n: the shift, then the old first element stored at the end
-// (from reducercommutativity, array-crafted bAnd, bor, xor)
-lemma {:rw} {:teq} elems_selects_rotate(a: array<int, int>, i: int, n: int, m: int, v: int)
-  requires 0 <= n && m == n + 1 && v == a[i]
-  ensures elems(selects(current(shifts(a, ⌊counter(i, 1, n)⌋))[i + n := v],
+// a rotation by one over the positions i, ..., i + n: the shift, then the old first element stored at the end, whose
+// position l is a variable, since i + n does not match a literal (unused in 0.53.10 as i + n)
+// (from reducercommutativity, array-crafted bAnd, bor; examples/c/teq/bit_aggregates.c)
+lemma {:rw} {:teq} elems_selects_rotate(a: array<int, int>, i: int, n: int, m: int, l: int, v: int)
+  requires 0 <= n && m == n + 1 && l == i + n && v == a[i]
+  ensures elems(selects(current(shifts(a, ⌊counter(i, 1, n)⌋))[l := v],
                         ⌊counter(i, 1, m)⌋))
     == elems(selects(a, ⌊counter(i, 1, m)⌋))
 

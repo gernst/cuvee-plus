@@ -79,6 +79,20 @@ lemma {:rw} {:teq} select_current_strides₅(a0: array<int, int>, o: int, s: int
          case j - o < 0 || s * n <= j - o || 5 <= (j - o) % s => a0[j]
        }
 
+// tiles: an outer loop whose iteration k stores the values V(k) at the m cells m k, ..., m k + m - 1 by an inner
+// loop, whose stores are folded (stores over the counter of the inner loop), the general form of the strided stores of
+// a constant width without an inner loop; the cell j belongs to the tile j / m at its position j % m
+// (from nr3-nr5 of SV-COMP, array-tiling; examples/c/teq/tiles.c)
+lemma {:rw} {:teq} select_current_tiles(a0: array<int, int>, n: int, m: int, hs: List<int>, V: (int) -> List<int>,
+    j: int)
+  requires 0 < m
+  ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs do b, k, h ::
+            current(stores(b, maps(for ⌊counter(0, 1, m)⌋ yield l :: l + m * k), V(k)))))[j]
+    == if {
+         case 0 <= j && j < m * n => earlier(j % m, V(j / m))
+         case !(0 <= j && j < m * n) => a0[j]
+       }
+
 // a loop whose iteration k stores F(k) at k + 1 and then G(k) at k, except in the last one, k + 1 == m, which stores
 // at k only, leaves G(j) at j < n, since the iteration j writes it last; at n, there is F(n - 1) if n < m, the guards
 // cover all iterations only for n <= m

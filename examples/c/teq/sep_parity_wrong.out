@@ -1,0 +1,93 @@
+(declare-datatype
+  Ptr
+  (par
+    (a)
+    ((null) (ptr (addr Int)))))
+
+(declare-datatype Void ((void)))
+
+(define-fun truth ((x Int)) Bool (not (= x 0)))
+
+(define-fun number ((b Bool)) Int (ite b 1 0))
+
+(define-fun
+  quot
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (div a b) (- (div (- a) b))))
+
+(define-fun
+  rem
+  ((a Int) (b Int))
+  Int
+  (ite (<= 0 a) (mod a b) (- (mod (- a) b))))
+
+(define-fun uchar ((x Int)) Int (mod x 256))
+
+(define-fun ushort ((x Int)) Int (mod x 65536))
+
+(define-fun uint ((x Int)) Int (mod x 4294967296))
+
+(define-fun
+  ulonglong
+  ((x Int))
+  Int
+  (mod x 18446744073709551616))
+
+(declare-fun bitand (Int Int) Int)
+
+(declare-fun bitor (Int Int) Int)
+
+(declare-fun bitxor (Int Int) Int)
+
+(declare-fun bitnot (Int) Int)
+
+(declare-fun shl (Int Int) Int)
+
+(declare-fun shr (Int Int) Int)
+
+(goal
+  (forall
+    ((K$22 (Trace Int)) (Tmp?$19 (List Int)) (ret$40 Int) (ret$74 Int))
+    (=>
+      (and
+        (= K$22 (counter 0 1 10))
+        (invs
+          ((k$21 (butlast K$22))
+            (tmp$18 Tmp?$19))
+          (<=
+            0
+            (+ tmp$18 2147483648)))
+        (invs
+          ((k$21 (butlast K$22))
+            (tmp$18 Tmp?$19))
+          (<= tmp$18 2147483647))
+        (= (length Tmp?$19) 10)
+        (=
+          ret$40
+          (parity (elems Tmp?$19)))
+        (or
+          (and
+            (=
+              (mod (earlier 0 Tmp?$19) 2)
+              0)
+            (<
+              0
+              (mod (earlier 1 Tmp?$19) 2))
+            (=
+              ret$74
+              (+
+                (parity (elems Tmp?$19))
+                2)))
+          (and
+            (<
+              0
+              (mod (earlier 0 Tmp?$19) 2))
+            (=
+              (mod (earlier 1 Tmp?$19) 2)
+              0)
+            (=
+              (+ ret$74 2)
+              (parity (elems Tmp?$19))))))
+      (= ret$40 ret$74))))
+

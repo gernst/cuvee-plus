@@ -188,6 +188,11 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 
 ## Non-termination and timeouts
 
+- **"rewriting does not terminate" on the reducercommutativity max tasks** (0.53.10 cloud run, Oct 28, 2026):
+  reducercommutativity/max05-1, max10-1, max20-1, max40-1, max60-2, array-patterns/array8_pattern, and
+  nla-digbench-scaling/geo1-ll_unwindbound5, geo1-ll_valuebound50 (all expected true) end in this error instead of an
+  answer; the logs show no goal before it. Not yet reproduced or traced locally.
+
 - **`-prove` is slower than the former `-simplify` on polynomial loops** (Oct 13, 2026, 0.46.5 to 0.46.9, measured locally and on
   the cloud at 60 s): nla-digbench-scaling/bresenham-ll_valuebound1 takes 8 s with teq.dfy alone, 11 s with
   `teq:arithmetic` and `teq:unsigned`, 46 s with `teq:aggregation` in addition (the other modules add 0 to 4 s); of

@@ -54,9 +54,10 @@ object Simplify:
   // a formula that is known from the context is replaced by its truth value (only formulas, which not applies to);
   // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already, and a
   // term with a literal in its class is that literal
-  // an expression in an inconsistent context is unreachable, any value is right there, and it stays as it is, since
-  // every side condition holds and the rules would apply without end, e.g. to the reads of the history of a trace in
-  // the dead branch of a decided test (swap.dfy); formulas are decided by their polarity first (see implied)
+  // an expression in an inconsistent context is unreachable, any value is right there: formulas are decided by their
+  // polarity (see implied), other expressions are still simplified, since a term left as it is would block the rules
+  // elsewhere (a beta-redex for an affine body), and no rule applies there, since no side condition holds (see
+  // Rewrite.holds)
   def simplify(config: Config, state: State, ctx: Context, expr: Expr): Expr =
     decide(config, state, ctx, expr) match
       case Some(true)  => True
@@ -681,6 +682,8 @@ object Simplify:
       case (True, _, _)       => left
       case (False, _, _)      => right
       case _ if left == right => left
+      // results equal in the context whatever the test, e.g. x % 2 == 0 and 0 == x % 2 of the remainder of C
+      case _ if eq_(config, state, ctx.neutral, left, right) == True => left
       case (_, True, False)   => test
       case (_, False, True)   => not(config, state, ctx, test)
       case _                  => Ite(test, left, right)
@@ -954,14 +957,18 @@ object Simplify:
 
   // equations 0 == p on Int or Real are constants if p is, otherwise they are re-arranged like comparisons,
   // the result is an equation as built by eq_, e.g. by the one-point rule,
-  // which applies also to a variable for which the equation can be solved, e.g. n + x == 40 for x (see Poly.solution)
+  // which applies also to a variable for which the equation can be solved, e.g. n + x == 40 for x (see Poly.solution);
+  // p and -p are the same equation if all monomials have the same sign, which are then written on the left, e.g.
+  // x % 2 == 0 for both x % 2 == 0 and -(x % 2) == 0 of the remainder of C; an equation of monomials of both signs
+  // keeps its orientation, which decides the variable that it defines, e.g. X == 2 * n + -10, not 2 * n == X + 10
   def eq(config: Config, state: State, ctx: Context, ring: Ring, poly: Poly): Expr =
     if poly.monos.isEmpty
     then if poly.const.isZero then True else False
     else if poly.solution(ctx.order.rank, (x, rest) => point(ctx, x, rest.toExpr(ring))).nonEmpty
     then True
     else
-      val (left, right) = poly.sides
+      val poly_ = if poly.monos.forall(_.factor.isPositive) then -poly else poly
+      val (left, right) = poly_.sides
       eq_(config, state, ctx, left.toExpr(ring), right.toExpr(ring))
 
   // on Int, n + 1 <= m is n < m, 0 <= p is rounded (see Poly.floor), e.g. 2 * n + 1 <= 52 is n <= 25,

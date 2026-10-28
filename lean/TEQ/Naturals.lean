@@ -872,27 +872,6 @@ def Stmt.select_current_trace_ahead : Prop :=
            else
              if j = integer n ∧ 0 < j ∧ j < m then F (j - 1) else a0 j)
 
-def Stmt.select_current_trace_ahead_down : Prop :=
-  ∀ (a0 : Int → Int) (n : Nat) (s : Int) (F : Int → Int) (G : Int → Int) (j : Int),
-    current
-      (trace
-         a0
-         (List.zip (butlast (counter 0 1 n)) (butlast (counter s (-1) n)))
-         (fun a ⟨k, i⟩ =>
-            if 1 ≤ i then
-              fun j =>
-                if j = i then
-                  G i
-                else
-                  (fun j => if j = i + -1 then F i else a j) j
-            else
-              if i < 1 then fun j => if j = i then G i else a j else unspecified))
-      j
-      = (if s - integer n < j ∧ j ≤ s then
-           G j
-         else
-           if j = s - integer n ∧ 0 ≤ j ∧ 0 < integer n then F (j + 1) else a0 j)
-
 noncomputable def mods (i : Int) (c : Int) (m : Int) (n : Nat) : Trace Int :=
   trace i (butlast (counter 0 1 n)) (fun x k => (x + c) % m)
 
@@ -3549,34 +3528,31 @@ theorem select_current_trace_ahead : Stmt.select_current_trace_ahead := by
   rw [trace_zip_self] at h
   exact h
 
-theorem ahead_down_from (F G : Int → Int) (j : Int) (r : Nat) : ∀ (b : Int → Int) (t s : Int),
+-- the trace over the first counter k from t and the down counter i from s, which stores G i at i and, where P k,
+-- F k at d - k = i - 1 before: the cells above s - r hold G, the cell s - r holds F of the last iteration L where
+-- P L, the others are those of b; the cell d - k of an iteration is that of i of the next, which overwrites it
+theorem ahead_down_from (P : Int → Prop) (F G : Int → Int) (d j : Int) (r : Nat) : ∀ (b : Int → Int) (t s L : Int),
+    d = s + t - 1 → L = t + r - 1 →
     current (trace b (List.zip (butlast (counter t 1 r)) (butlast (counter s (-1) r)))
       (fun a ⟨k, i⟩ =>
-        if 1 ≤ i then fun j => if j = i then G i else (fun j => if j = i + -1 then F i else a j) j
-        else fun j => if j = i then G i else a j)) j
-      = (if s - r < j ∧ j ≤ s then G j else if j = s - r ∧ 0 ≤ j ∧ 0 < r then F (j + 1) else b j) := by
+        if P k then fun j => if j = i then G i else (fun j => if j = d - k then F k else a j) j
+        else if ¬P k then fun j => if j = i then G i else a j else unspecified)) j
+      = (if s - r < j ∧ j ≤ s then G j else if j = s - r ∧ 0 < r ∧ P L then F L else b j) := by
   induction r with
-  | zero => intro b t s; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+  | zero => intro b t s L hd hL; simp only [counter, butlast, List.zip_nil_left, current_trace_nil]; (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
   | succ r ih =>
-    intro b t s
-    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq, ih]
+    intro b t s L hd hL
+    rw [butlast_counter_succ, butlast_counter_succ, List.zip_cons_cons, trace_cons, current_step_eq,
+      ih _ (t + 1) (s + -1) L (by omega) (by omega)]
     dsimp only
-    (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-
-theorem select_current_trace_ahead_down_complete (a0 : Int → Int) (n : Nat) (s : Int) (F G : Int → Int) (j : Int) :
-    current (trace a0 (List.zip (butlast (counter 0 1 n)) (butlast (counter s (-1) n)))
-      (fun a ⟨k, i⟩ =>
-        if 1 ≤ i then fun j => if j = i then G i else (fun j => if j = i + -1 then F i else a j) j
-        else fun j => if j = i then G i else a j)) j
-      = (if s - integer n < j ∧ j ≤ s then G j
-         else if j = s - integer n ∧ 0 ≤ j ∧ 0 < integer n then F (j + 1) else a0 j) := by
-  rw [ahead_down_from, integer_cast]
-  (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
-
-theorem select_current_trace_ahead_down : Stmt.select_current_trace_ahead_down := by
-  intro a0 n s F G j
-  simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
-  exact select_current_trace_ahead_down_complete a0 n s F G j
+    by_cases hr : r = 0
+    · subst hr
+      obtain rfl : L = t := by omega
+      by_cases hP : P L <;> simp only [hP, and_true, and_false, not_false_eq_true, ↓reduceIte] <;>
+        (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
+    · by_cases hP : P L <;> by_cases hQ : P t <;>
+        simp only [hP, hQ, and_true, and_false, not_false_eq_true, ↓reduceIte] <;>
+        (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega | (congr 1; omega)
 
 -- unsigned.dfy: the counters modulo m, by induction over the steps, whose values are the remainders of those of the
 -- counter, (a % m + c) % m = (a + c) % m; the products n * c are atoms of omega, with the facts it needs about them
