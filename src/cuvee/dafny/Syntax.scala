@@ -85,6 +85,11 @@ object App extends ((String, List[Expr]) => Expr)
 // guard true for a plain expression), one per accumulator, whose number is that of the initial values
 case class Combinator(kind: String, inits: List[Expr], deps: List[Expr], bound: List[String], updates: List[List[(Expr, Expr)]]) extends Expr
 object Combinator extends ((String, List[Expr], List[Expr], List[String], List[List[(Expr, Expr)]]) => Expr)
+
+// a choice among guarded cases as a term, if { case p => x case q => y }, as the printer writes the cases of an update
+// outside of a combinator
+case class Choice(cases: List[(Expr, Expr)]) extends Expr
+object Choice extends ((List[(Expr, Expr)]) => Expr)
 object Ite extends ((Expr, Expr, Expr) => Expr)
 object Match extends ((Expr, List[(Expr, Expr)]) => Expr)
 object Inner extends ((Expr, List[Access]) => Expr)

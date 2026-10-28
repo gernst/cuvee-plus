@@ -799,6 +799,9 @@ class Parser(var state: State):
         val right_ = resolve(scope, right)
         state.exprs.app("ite", List(test_, left_, right_))
 
+      case Choice(cases) =>
+        update(scope, cases)
+
       case Ex(bound, body) =>
         val bound_ = bound.map(resolve(scope, _))
         val scope_ = scope ++ bound_

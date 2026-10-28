@@ -197,6 +197,11 @@ object Grammar:
   val ite =
     Ite(P("if" ~ expr ~ "then" ~ expr ~ (("else" ~ expr) | true_)))
 
+  // guarded cases as a term, like the alternatives of Dafny's if statement, tried before ite, without committing until
+  // the first case, so that if a then b else c and a set as the test, if {x} <= s then ..., are left to ite
+  val choice =
+    Choice(P("if" ?~ ("{" ?~ (guarded.+ ~ "}"))))
+
   // constructors applied to patterns, and tuples of patterns, which are parenthesized inside of other patterns
   val pat: Parser[Expr] =
     P(Tuple(P(parens(pat ~+ ","))) | App(P(id ~ (parens(pat ~* ",") | nil))))
@@ -256,7 +261,7 @@ object Grammar:
     Butlast(P("⌊" ~ expr ~ "⌋"))
 
   val atom: Parser[Expr] =
-    P(lambda | diff | tuple | seq | set | bag | map | len | butlast | lit | bind | let | ite | match_ | combinator | app)
+    P(lambda | diff | tuple | seq | set | bag | map | len | butlast | lit | bind | let | choice | ite | match_ | combinator | app)
 
   val inner: Parser[Expr] =
     Inner(P(atom ~ access.*))

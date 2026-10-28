@@ -5,9 +5,9 @@ documented in `doc/`.
 
 **Current work** (Oct 28, 2026; the order and the tasks in TODO.md, "Work queue: Now"):
 1. strided stores: remainders and division done (0.52.15, [prove-next.md](prove-next.md) section 2,
-   [engine-gaps.md](engine-gaps.md) gap 4); the cases of conditional stores by shape lemmas per number of cases
-   (0.52.17, [conditional-stores.md](conditional-stores.md); pnr3-pnr5, mods, modsf open); open the iteration
-   variables of nr2-nr5 (engine-gaps.md, gap 3);
+   [engine-gaps.md](engine-gaps.md) gap 4); the folds `strides₂` to `strides₅` with values per case (0.53.1,
+   [conditional-stores.md](conditional-stores.md)), next cases instead of if-then-else
+   ([cases-and-folds.md](cases-and-folds.md)); open the iteration variables of nr2-nr5 (engine-gaps.md, gap 3);
 2. equalities from the simplex to the classes ([prove-next.md](prove-next.md) section 1): set aside, no open task;
 3. array-patterns (TODO.md): set aside, the cancellation is a pointwise relation of two arrays;
 4. reducer commutativity (doc/teq.md, "Multisets"): the aggregates over multisets (0.53.0); open sep, max, the
@@ -36,6 +36,9 @@ The other files below are not being worked on now.
   equal results, the merging moved into the matcher for higher-order guard variables.
 - [conditional-stores.md](conditional-stores.md): guarded stores merged into stores of conditional values, in
   `-teq`, instead of `2^s` cases (the strided stores `pr3`-`pr5`).
+- [cases-and-folds.md](cases-and-folds.md): the plan after 0.53.1: cases instead of if-then-else in `maps` and at
+  the reads of maps with cases, keys without values per case, the overlaps among the lemmas, and the raw traces of
+  the database that could become named folds.
 - [iterator-profiles.md](iterator-profiles.md): the loop patterns of LoopAnnotator (ASE 2026, iterator
   profiles) read against TEQs: what is covered (counters, conditional stores, sums, searches), what needs new
   lemmas (enumerations of set bits as in `for_each_cpu`, wrap-around, halving, reads of `a[i-1]` as chains),

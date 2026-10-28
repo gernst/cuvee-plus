@@ -1,0 +1,14 @@
+goal
+  forall N: int, S₃₂: int, K₂₇: Trace<int>, S₂₉: Trace<int>, V?₂₄: List<int> ::
+    0 < N
+      && K₂₇ == counter(0, 1, N)
+      && S₂₉
+        == trace(0, for ⌊K₂₇⌋, V?₂₄
+                 do S₂₁, k₂₆, v₂₃ ::
+                   case v₂₃ == 0 => S₂₁ + 4000
+                   case v₂₃ == 1 => S₂₁
+                   case v₂₃ != 0 && v₂₃ != 1 => S₂₁ + 10000)
+      && S₃₂ == current(S₂₉)
+      && length(V?₂₄) == N
+      ==> 0 < S₃₂
+

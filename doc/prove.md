@@ -132,10 +132,20 @@ binders, derivatives, and `old`; `Split` uses it.
   are remainders modulo `k` or the accumulator, with an initial value in range, assumes the range of its accumulator
   (`wrapped`) ([remainders.dfy](../examples/dafny/prove/remainders.dfy), `examples/c/teq/unsigned_*.c`).
 - **Reads after writes** `a[i := v][j]` are decided when `i == j` follows from the context or is denied by it.
+- **Cases rather than conditionals.** The conditionals of the update of a `maps` are lifted into cases, as those of
+  traces (`Simplify.maps`, `Simplify.choices`), so a map has one form whether its values come from conditionals or
+  from the cases of an update; so are choices nested in a term of an update, `R[eps(cᵢ => vᵢ)]` as
+  `case cᵢ => R[vᵢ]`, e.g. the read of a map with cases added to an accumulator. A choice in an atom, e.g. the
+  element `earlier(j, maps(...))` of a map with cases compared with a value, is lifted out of the atom into cases,
+  `A[eps(cᵢ => vᵢ)]` as the conjunction of
+  `cᵢ ==> A[vᵢ]` (`Simplify.atom`, `Normalize.choices`), e.g. `(e != c ==> e != c) && (e == c ==> d != c)`; a choice
+  inside a list or a trace stays, since it is the value of all elements, e.g. `consts(n, eps(...))` of guards that do
+  not depend on the iteration, whose equation defines a trace in the classes.
 - **Conditionals in equations** are lifted over them, `ite(c, a, b) == d` is `ite(c, a == d, b == d)`, whose branches
-  are decided under the test, e.g. `(if x != c then x else d) != c` for `c != d`. The element `earlier(j, maps(...))`
-  of a map whose update has cases is these cases as conditionals, `unspecified` where no guard holds; whether cases and
-  conditionals should leave other atoms as well is open.
+  are decided under the test; they come from the conditionals of programs, while the right-hand sides of the lemmas of
+  the database are choices (`if { case 0 <= j < n => ... case !(0 <= j < n) => a0[j] }`, whose guards are exhaustive
+  and disjoint). Whether cases and conditionals should leave comparisons and products as well is open
+  ([cases-and-folds.md](../ideas/cases-and-folds.md)).
 - **Derivatives** follow the rules of dL ([hybrid.md](hybrid.md)); the body of a derivative is simplified with the
   facts that do not mention the variables it differentiates by.
 
@@ -165,7 +175,9 @@ by the simplifier in the context.
   case, the dependency is synthesized as a map whose update has the cases of the expression with these values, e.g.
   `b[p := x₀]` against `case P => a[k := 7] case !P => a[k := 0]` gives `maps(... :: case P => 7 case !P => 0)`; the
   other variables are instantiated alike in all cases, and a guard that reads the accumulator excludes the map like a
-  value. A term that a pattern does not match as it is, is matched by its alternatives, group by
+  value; a variable in the index of a store takes no value per case, since the keys must stay one sequence, e.g. a
+  counter, not `case k != c => k case k == c => c` (copysome2-1, `stores_cases_point`). A term that a pattern does not
+  match as it is, is matched by its alternatives, group by
   group, lazily (`Rewrite.alternatives`): the definitions of a variable, the structural view of a component, and only
   then its projected view, which costs a simplification.
 - **Side conditions** are taken in order: a closed one is decided, an open one is matched against the facts, which

@@ -153,6 +153,20 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 
 ## Errors and crashes
 
+- **The expected outputs of examples/dafny/algorithms are stale** (found Oct 28, 2026): 16 of them (argmax,
+  bubble_sort, count_occurrences, counting_sort, distinct, first_duplicate, insertion_sort, insertion_sort2,
+  max_element, merge, partition, prefix_sums, reverse, selection_sort, three_way_partition, and cocktail_sort.err)
+  still contain the naturals of the database before the integer counts (last regenerated with 0.50.9, Oct 23), so
+  `-test` fails on them with "unknown type Nat" while parsing, with every current jar; `CUVEE_ALGORITHMS=1 mill -i
+  test` is affected, the default test run is not. To regenerate deliberately after checking the answers, which are
+  unchanged for bubble_sort, insertion_sort, insertion_sort2 (correct) and selection_sort (unknown) as of 0.53.5.
+
+- **The C parser rejects declarations of structs** (found Oct 28, 2026, in 0.52.17 and 0.53.5): `struct S { int *p;
+  int n; };` is a parse error (`List(unit, top, global, sized, base, 'boolean')`), so array-lopstr16/single_elem_safe
+  and array-industry-pattern/array_of_struct_single_elem_init are not analyzed at all. They were the users of the
+  lemma `select_store_other`, which was removed, since the simplifier now decides its statement by itself
+  (`Simplify.select` with the facts).
+
 - `-teq` overflows the stack (an uncaught `StackOverflowError` in `Subst`) on
   a loop body with ten conditionals in sequence, presumably from the 2^10
   paths of its symbolic execution (see
@@ -361,6 +375,13 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
   ours, removed since); SV-LIB has no translation of it.
 
 ## Fixed
+
+- **`-prove` does not terminate on a goal of several negated conjunctions** (found Oct 28, 2026, in 0.52.17 and
+  0.53.1): `ensures !(x == c && d == c) && !(y == c && d == c)` hangs in `Normalize.goal`, which moves the negated
+  conjuncts to the front of the succedents one by one, rebuilt the conjunction in the reversed order, and normalized
+  the reordered goal again, back and forth without end. Exposed by the choices lifted out of atoms (the remaining goal
+  of examples/dafny/teq/strides.dfy, `defaults_wrong`). Fixed on Oct 28, 2026: the succedents are taken in their
+  order (examples/dafny/prove/negated_conjunctions.dfy).
 
 - **`maps_earlier` without its length premise proves a false program** (found Oct 26, 2026, 0.51.1, also in 0.50.18,
   the version of fm-tools): `-svcomp` answers `correct` for a variant of `array-crafted/zero_sum1` whose second loop

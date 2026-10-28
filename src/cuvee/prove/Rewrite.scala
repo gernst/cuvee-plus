@@ -744,6 +744,10 @@ object Rewrite:
   ): List[Subst[Type, Expr]] =
     val direct = matchesExpr(config, state, ctx, params, vars, locals, pat, None, bound, avoid, arg, subst)
 
+    // the indices of stores take no value per case: the keys stay one sequence, e.g. a counter, which the reads need,
+    // not a choice of positions, e.g. k and c of case k != c => a[k := F(k)] case k == c => a[c := F(c)]
+    val keys = indices(pat)
+
     // the matches of the cases in order, each from the instances of the others without those of `fresh`, with the
     // instances of `fresh` per case
     def each(updates: List[Upd], subst: Subst[Type, Expr]): List[(Subst[Type, Expr], List[Map[Var, Expr]])] =
@@ -770,14 +774,20 @@ object Rewrite:
           then unmatched
           else
             val instances = results.flatten
-            val instance =
-              if instances.distinct.length == 1
-              then instances.head
-              else Eps((updates zip instances).map((upd, inst) => Upd(upd.cond, inst)))
-            for
-              subst1 <- bind(state, params, x, instance, subst)
-              subst2 <- choose(rest, updates, values, subst1)
-            yield subst2
+            if instances.distinct.length == 1
+            then
+              for
+                subst1 <- bind(state, params, x, instances.head, subst)
+                subst2 <- choose(rest, updates, values, subst1)
+              yield subst2
+            else if keys.contains(x)
+            then unmatched
+            else
+              val instance = Eps((updates zip instances).map((upd, inst) => Upd(upd.cond, inst)))
+              for
+                subst1 <- bind(state, params, x, instance, subst)
+                subst2 <- choose(rest, updates, values, subst1)
+              yield subst2
 
     (pat, arg) match
       case (_: Eps, _) =>
@@ -791,6 +801,13 @@ object Rewrite:
 
       case _ =>
         direct
+
+  // the variables in the indices of the stores of a pattern, not below binders
+  def indices(expr: Expr): Set[Var] =
+    expr match
+      case Store(base, index, value) => index.free ++ indices(base) ++ indices(value)
+      case App(_, _, _, args)        => args.flatMap(indices).toSet
+      case _                         => Set()
 
   // the pattern `tr` of a read of a component against the trace `s` that the read reads (see matches_)
   def component(

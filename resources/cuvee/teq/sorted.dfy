@@ -62,40 +62,29 @@ function {:teq} {:fold} swap(a: array<int, int>, p: int, q: int): array<int, int
 // the elements of a swap, since the folded term hides the stores from the reads of arrays
 lemma {:rw} {:teq} select_swap(a: array<int, int>, p: int, q: int, j: int)
   ensures swap(a, p, q)[j]
-    == if j == q then a[p] else if j == p then a[q] else a[j]
+    == if {
+      case j == q => a[p]
+      case j != q && j == p => a[q]
+      case j != q && j != p => a[j]
+    }
 
 // a swap preserves the permutation
 lemma {:rw} {:teq} perm_swap(a: array<int, int>, b: array<int, int>, p: int, q: int)
   ensures perm(swap(a, p, q), b) <==> perm(a, b)
 
 // a trace of swaps at positions that depend on the state and the iteration preserves the permutation, a higher-order
-// pattern; for one and for two dependencies
+// pattern; two dependencies, which also cover a trace of one, whose bound variable both take (Rewrite.combinator)
 // (from perm, selection_sort)
-lemma {:rw} {:teq} perm_swaps_one(a: array<int, int>, b: array<int, int>, ks: List<int>,
-                                  P: (array<int, int>, int) -> int, Q: (array<int, int>, int) -> int)
-  ensures perm(current(trace(a, for ks do x, k :: swap(x, P(x, k), Q(x, k)))), b)
-    <==> perm(a, b)
-
 lemma {:rw} {:teq} perm_swaps(a: array<int, int>, b: array<int, int>, ks: List<int>, hs: List<int>,
                               P: (array<int, int>, int, int) -> int, Q: (array<int, int>, int, int) -> int)
   ensures perm(current(trace(a, for ks, hs do x, k, h :: swap(x, P(x, k, h), Q(x, k, h)))), b)
     <==> perm(a, b)
 
 // a trace of steps that preserve the permutation, whose quantified side condition the simplifier decides once F is
-// instantiated, e.g. by a lemma perm(F(b, k), c) <==> perm(b, c) on the step; for one and for two dependencies
-// (from bubble_sort, insertion_sort)
-lemma {:rw} {:teq} perm_steps(a: array<int, int>, c: array<int, int>, ks: List<int>, F: (array<int, int>, int) -> array<int, int>)
-  requires forall b: array<int, int>, k: int :: perm(F(b, k), b)
-  ensures perm(current(trace(a, for ks do b, k :: F(b, k))), c) <==> perm(a, c)
-
-lemma {:rw} {:teq} perm_steps_two(a: array<int, int>, c: array<int, int>, ks: List<int>, is: List<int>,
-                                  F: (array<int, int>, int, int) -> array<int, int>)
-  requires forall b: array<int, int>, k: int, i: int :: perm(F(b, k, i), b)
-  ensures perm(current(trace(a, for ks, is do b, k, i :: F(b, k, i))), c) <==> perm(a, c)
-
-// the same with a further dependency, e.g. a choice of the numbers of iterations of an inner loop and the loop
-// variable; a polymorphic version is not matched (TODO.md)
-// (from examples/dafny/algorithms: insertion_sort, insertion_sort2, selection_sort)
+// instantiated, e.g. by a lemma perm(F(b, k), c) <==> perm(b, c) on the step; three dependencies, e.g. a choice of the
+// numbers of iterations of an inner loop and the loop variable, which also cover traces of one or two, whose bound
+// variables take that of the first (Rewrite.combinator); a polymorphic version is not matched (TODO.md)
+// (from examples/dafny/algorithms: bubble_sort, insertion_sort, insertion_sort2, selection_sort)
 lemma {:rw} {:teq} perm_steps_three(a: array<int, int>, c: array<int, int>, ks: List<int>, ns: List<int>, is: List<int>,
                                     F: (array<int, int>, int, int, int) -> array<int, int>)
   requires forall b: array<int, int>, k: int, nn: int, i: int :: perm(F(b, k, nn, i), b)

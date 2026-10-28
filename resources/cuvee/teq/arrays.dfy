@@ -26,14 +26,8 @@ lemma {:rw} {:teq} current_trace_row(A0: array<int, array<int, int>>, r: int, n:
 lemma {:rw} {:teq} stores_cases(a0: array<int, int>, n: int, c: int, P: (int) -> bool, G: (int) -> int)
   ensures
     trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case P(a[k]) => a[k := c] case !P(a[k]) => a[k := G(a[k])])
-      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(a0[k]) then c else G(a0[k])))
-
-// a loop that stores at each position k a constant chosen by cases on k stores these values
-// (from MonoCera: brs2-brs5)
-lemma {:rw} {:teq} stores_index_cases(a0: array<int, int>, n: int, c: int, d: int, P: (int) -> bool)
-  ensures
-    trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case P(k) => a[k := c] case !P(k) => a[k := d])
-      == stores(a0, ⌊counter(0, 1, n)⌋, maps(for ⌊counter(0, 1, n)⌋ yield k :: if P(k) then c else d))
+      == stores(a0, ⌊counter(0, 1, n)⌋,
+                maps(for ⌊counter(0, 1, n)⌋ yield k :: case P(a0[k]) => c case !P(a0[k]) => G(a0[k])))
 
 // a loop whose iteration k stores F(k) at k by two cases split at a position c, where the simplifier has substituted
 // c for k in the second case, so that the cases are not merged (TODO.md, ideas/dnf-guards.md)
@@ -57,7 +51,10 @@ lemma {:rw} {:teq} stores_read_unmodified(a0: array<int, int>, n: int, hs: List<
 lemma {:rw} {:teq} select_current_trace_reset_keep(a0: array<int, int>, j: int, n: int, c: int)
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a))[j]
-      == if n <= 0 then a0[j] else c
+      == if {
+        case n <= 0 => a0[j]
+        case 0 < n => c
+      }
 
 // a loop that moves each element of i + 1, ..., i + n one position down reads the next element of the initial array at
 // the positions it writes, i, ..., i + n - 1, which it has not written yet, and the initial array elsewhere
@@ -65,14 +62,10 @@ lemma {:rw} {:teq} select_current_trace_reset_keep(a0: array<int, int>, j: int, 
 lemma {:rw} {:teq} select_current_trace_shift(a: array<int, int>, i: int, n: int, j: int)
   requires 0 <= n
   ensures current(trace(a, for ⌊counter(i, 1, n)⌋ do x, k :: x[k := x[k + 1]]))[j]
-    == if i <= j < i + n then a[j + 1] else a[j]
-
-// a read at a position other than that of an update, also where the simplifier does not decide that they differ, from
-// a fact j != i
-// (from array_of_struct_single_elem_init, single_elem_safe)
-lemma {:rw} {:teq} select_store_other<a, b>(a: array<a, b>, i: a, v: b, j: a)
-  requires j != i
-  ensures a[i := v][j] == a[j]
+    == if {
+      case i <= j < i + n => a[j + 1]
+      case !(i <= j < i + n) => a[j]
+    }
 
 // the elements of stores at the positions of a counter, read at the positions of the same counter, are the stored
 // values; both counters are patterns, since they are different trace variables in programs
@@ -88,7 +81,10 @@ lemma {:rw} {:teq} select_current_trace_conditional_store(a0: array<int, int>, n
                                                    V: (int) -> int)
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case C(k) => a[k := V(k)] case !C(k) => a))[j]
-      == if 0 <= j < n && C(j) then V(j) else a0[j]
+      == if {
+        case 0 <= j < n && C(j) => V(j)
+        case !(0 <= j < n && C(j)) => a0[j]
+      }
 
 // the same, with the guard and the value on the values of three further dependencies at the iteration of j
 // (from array_mul_init; used on SV-COMP by array_mul_init, motivex only)
@@ -97,16 +93,21 @@ lemma {:rw} {:teq} select_current_trace_conditional_store_deps(a0: array<int, in
                                                         V: (int, int, int) -> int)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋, hs, cs, vs do a, k, h, c, v ::
                   case C(h, c, v) => a[k := V(h, c, v)] case !C(h, c, v) => a))[j]
-    == if 0 <= j < n && C(earlier(j, hs), earlier(j, cs), earlier(j, vs))
-       then V(earlier(j, hs), earlier(j, cs), earlier(j, vs))
-       else a0[j]
+    == if {
+      case 0 <= j < n && C(earlier(j, hs), earlier(j, cs), earlier(j, vs)) =>
+        V(earlier(j, hs), earlier(j, cs), earlier(j, vs))
+      case !(0 <= j < n && C(earlier(j, hs), earlier(j, cs), earlier(j, vs))) => a0[j]
+    }
 
 // a clamp of each element to b, where the guard reads the initial element, since each position is written in its own
 // iteration only; a generic guard C(a[k], k) is no pattern, and C(a, k) would read other positions
 // (from condn, condnf; used on SV-COMP by condn only)
 lemma {:rw} {:teq} select_current_trace_cap(a0: array<int, int>, n: int, j: int, b: int)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case a[k] < b => a case b <= a[k] => a[k := b]))[j]
-    == if 0 <= j < n && b <= a0[j] then b else a0[j]
+    == if {
+      case 0 <= j < n && b <= a0[j] => b
+      case !(0 <= j < n && b <= a0[j]) => a0[j]
+    }
 
 // a copy from both ends: iteration k copies the positions m - k - 1 and k from b, so a position covered by either
 // range holds b at it, whatever the order of the stores and whether the ranges overlap; the index as the simplifier
@@ -115,14 +116,20 @@ lemma {:rw} {:teq} select_current_trace_cap(a0: array<int, int>, n: int, j: int,
 // (from array-tiling/tcpy, array-cav19/array_tiling_tcpy)
 lemma {:rw} {:teq} select_current_trace_copy_both_ends(a0: array<int, int>, b: array<int, int>, n: int, m: int, j: int)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: a[-k + m + -1 := b[-k + m + -1]][k := b[k]]))[j]
-    == if 0 <= j < n || m - n <= j < m then b[j] else a0[j]
+    == if {
+      case 0 <= j < n || m - n <= j < m => b[j]
+      case !(0 <= j < n || m - n <= j < m) => a0[j]
+    }
 
 // (from array-tiling/tcpy)
 lemma {:rw} {:teq} select_current_trace_copy_both_ends_list(a0: array<int, int>, xs: List<int>, n: int, m: int,
                                                             j: int)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k ::
                   a[-k + m + -1 := earlier(-k + m + -1, xs)][k := earlier(k, xs)]))[j]
-    == if 0 <= j < n || m - n <= j < m then earlier(j, xs) else a0[j]
+    == if {
+      case 0 <= j < n || m - n <= j < m => earlier(j, xs)
+      case !(0 <= j < n || m - n <= j < m) => a0[j]
+    }
 
 // a store of the old value of a cell after a store at another position changes nothing, e.g. volArray[2 k + 1] =
 // volArray[2 k + 1] after volArray[2 k] = c

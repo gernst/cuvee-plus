@@ -19,7 +19,7 @@ lemma {:rw} {:teq} invs_two_phases(x0: int, n: int, b: int, c: int, B: int)
     invs(for ⌊counter(0, 1, n)⌋, ⌊trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c)⌋
          check k, x :: x < B)
       <==> (n <= 0
-             || (if n - 1 <= b - x0 then x0 + n - 1 else b + (n - 1 - (b - x0)) * c) < B)
+             || if { case n - 1 <= b - x0 => x0 + n - 1 case b - x0 < n - 1 => b + (n - 1 - (b - x0)) * c } < B)
 
 // an iteration constraint that is a negated disjunction, as the test of a break, is two of them
 // (from benchmark09_conjunctive, the only task of SV-COMP that uses it)
@@ -30,7 +30,10 @@ lemma {:rw} {:teq} invs_not_or(hs: List<int>, gs: List<int>, fs: List<int>, P: (
 
 lemma {:rw} {:teq} current_trace_constant<a>(x: a, y: a, i: int, c: int, n: int)
   ensures current(trace(x, for ⌊counter(i, c, n)⌋ do z, v :: y))
-    == if n <= 0 then x else y
+    == if {
+      case n <= 0 => x
+      case 0 < n => y
+    }
 
 // a counter in two phases: by 1 up to the bound b, from an initial value up to b, then by c >= 0, which keeps it
 // at least b
@@ -38,7 +41,10 @@ lemma {:rw} {:teq} current_trace_constant<a>(x: a, y: a, i: int, c: int, n: int)
 lemma {:rw} {:teq} current_trace_two_phases(x0: int, n: int, b: int, c: int)
   requires 0 <= n && x0 <= b && 0 <= c
   ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case x < b => x + 1 case b <= x => x + c))
-    == if n <= b - x0 then x0 + n else b + (n - (b - x0)) * c
+    == if {
+      case n <= b - x0 => x0 + n
+      case b - x0 < n => b + (n - (b - x0)) * c
+    }
 
 // a follower: y increases by 1 whenever it does not exceed the value x of a counter with step 1, hence y is the
 // larger of its initial value and the final value of x, given that it starts at least at x
@@ -46,14 +52,20 @@ lemma {:rw} {:teq} current_trace_two_phases(x0: int, n: int, b: int, c: int)
 lemma {:rw} {:teq} current_trace_catch_up(y0: int, x0: int, n: int)
   requires 0 <= n && x0 <= y0
   ensures current(trace(y0, for ⌊counter(0, 1, n)⌋, ⌊counter(x0, 1, n)⌋ do y, k, x :: case y <= x => y + 1 case x < y => y))
-    == if x0 + n <= y0 then y0 else x0 + n
+    == if {
+      case x0 + n <= y0 => y0
+      case y0 < x0 + n => x0 + n
+    }
 
 // a flag, initially x0, that is set to c whenever D holds, is x0 at the end iff D never held, otherwise c, of any type,
 // e.g. a boolean flag
 // (from standard_compare_ground; examples/dafny/algorithms/is_sorted.dfy)
 lemma {:rw} {:teq} current_trace_flag<a>(x0: a, c: a, n: int, hs: List<int>, D: (int, int) -> bool)
   ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do f, k, h :: case D(k, h) => c case !D(k, h) => f))
-    == if invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !D(k, h)) then x0 else c
+    == if {
+      case invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !D(k, h)) => x0
+      case !invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: !D(k, h)) => c
+    }
 
 // a value that increases by a positive constant in each of its three cases exceeds its initial value after at
 // least one iteration; the fourth case, the complement of the others, makes the lemma hold for every update, the

@@ -271,8 +271,14 @@ lemma {:rw} {:teq} earlier_selects<a, b>(j: int, a: array<a, b>, keys: List<a>)
 
 lemma {:rw} {:teq} current_stores<a, b>(k: a, a: array<a, b>, keys: List<a>, values: List<b>)
   ensures current(stores(a, keys, values))[k]
-    == if occurs(k, keys) then earlier(indexof(k, keys), values) else a[k]
+    == if {
+      case occurs(k, keys) => earlier(indexof(k, keys), values)
+      case !occurs(k, keys) => a[k]
+    }
 
 lemma {:rw} {:teq} earlier_stores<a, b>(k: a, j: int, a: array<a, b>, keys: List<a>, values: List<b>)
   ensures earlier(j, ⌊stores(a, keys, values)⌋)[k]
-    == if occurs(k, prefix(j, keys)) then earlier(indexof(k, prefix(j, keys)), values) else a[k]
+    == if {
+      case occurs(k, prefix(j, keys)) => earlier(indexof(k, prefix(j, keys)), values)
+      case !occurs(k, prefix(j, keys)) => a[k]
+    }

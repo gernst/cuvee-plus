@@ -89,6 +89,32 @@ object TEQ extends TestSuite:
       val phi_ = cuvee.prove.Simplify.simplify(cuvee.Config.default, State.empty, cuvee.prove.Context.empty(State.empty).copy(polarity = Some(true)).withRules(List(rule)), phi)
       assert(subexprs(phi_).collect { case t: Trace => t }.distinct.length == 1)
 
+    // the accessors of the folds of the module aggregation: an earlier value is the aggregate of a prefix, without the
+    // fold, and the prefix of the history is the fold over the prefix of the values (earlier_maxs, prefix_maxs, ...)
+    test("accessors"):
+      val rules = cuvee.prove.Rules.from(State.empty, database)
+      def fun(name: String) = database.collectFirst { case DeclareFun(fun, _) if fun.name.name == name => fun; case DefineFun(fun, _, _) if fun.name.name == name => fun }.get
+      def app(name: String, args: Expr*) = App(fun(name), args.toList)
+      def has(expr: Expr, name: String) = subexprs(expr).exists { case App(f, _, _, _) => f.name.name == name; case _ => false }
+
+      val e = Var("e", Sort.int)
+      val j = Var("j", Sort.int)
+      val x = Var("x", Sort.int)
+      val values = Var("values", Sort.list(Sort.int))
+      val ctx = cuvee.prove.Context.empty(State.empty).withRules(rules)
+
+      val folds = List("sums" -> List(x, values), "maxs" -> List(x, values), "mins" -> List(x, values),
+        "parities" -> List(x, values), "counts" -> List(x, e, values))
+
+      for (name, args) <- folds
+      do
+        val earlier = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("earlier", j, Butlast(app(name, args*))))
+        assert(!has(earlier, name))
+        assert(subexprs(earlier).contains(app("prefix", j, values)))
+
+        val prefix = Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, app("prefix", j, Butlast(app(name, args*))))
+        assert(subexprs(prefix).contains(app(name, args.init :+ app("prefix", j, values)*)))
+
     // the prefix counts are counts of prefixes (earlier_counts of the module aggregation)
     test("count"):
       val rules = cuvee.prove.Rules.from(State.empty, database)
@@ -149,4 +175,5 @@ object TEQ extends TestSuite:
       val k = Var("k", Sort.int)
       val loop = Trace(Ints.one, List(Butlast(K)), x, List(k), Ints.zero)
       val ctx = cuvee.prove.Context.empty(State.empty).assume(Ints.le(Ints.zero, n)).assume(Eq(K, Counter(Ints.zero, Ints.one, n))).assume(Eq(X, loop)).withRules(rules)
-      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==> Ite(Ints.le(n, Ints.zero), Ints.one, Ints.zero)
+      Rewrite.rewrite(cuvee.Config.default, State.empty, ctx, Current(X)) ==>
+        Eps(List(Upd(Ints.le(n, Ints.zero), Ints.one), Upd(Ints.lt(Ints.zero, n), Ints.zero)))

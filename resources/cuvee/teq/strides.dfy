@@ -37,42 +37,47 @@ lemma {:rw} {:teq} select_current_strides₂(a0: array<int, int>, o: int, s: int
     xs₁: List<int>, j: int)
   requires 2 <= s
   ensures current(strides₂(a0, ⌊counter(o, s, n)⌋, xs₀, xs₁))[j]
-    == if 0 <= j - o && j - o < s * n && (j - o) % s < 2
-       then (if (j - o) % s == 0 then earlier((j - o) / s, xs₀) else earlier((j - o) / s, xs₁))
-       else a0[j]
+    == if {
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 0 => earlier((j - o) / s, xs₀)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 1 => earlier((j - o) / s, xs₁)
+         case j - o < 0 || s * n <= j - o || 2 <= (j - o) % s => a0[j]
+       }
 
 lemma {:rw} {:teq} select_current_strides₃(a0: array<int, int>, o: int, s: int, n: int, xs₀: List<int>,
     xs₁: List<int>, xs₂: List<int>, j: int)
   requires 3 <= s
   ensures current(strides₃(a0, ⌊counter(o, s, n)⌋, xs₀, xs₁, xs₂))[j]
-    == if 0 <= j - o && j - o < s * n && (j - o) % s < 3
-       then (if (j - o) % s == 0 then earlier((j - o) / s, xs₀)
-             else if (j - o) % s == 1 then earlier((j - o) / s, xs₁)
-             else earlier((j - o) / s, xs₂))
-       else a0[j]
+    == if {
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 0 => earlier((j - o) / s, xs₀)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 1 => earlier((j - o) / s, xs₁)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 2 => earlier((j - o) / s, xs₂)
+         case j - o < 0 || s * n <= j - o || 3 <= (j - o) % s => a0[j]
+       }
 
 lemma {:rw} {:teq} select_current_strides₄(a0: array<int, int>, o: int, s: int, n: int, xs₀: List<int>,
     xs₁: List<int>, xs₂: List<int>, xs₃: List<int>, j: int)
   requires 4 <= s
   ensures current(strides₄(a0, ⌊counter(o, s, n)⌋, xs₀, xs₁, xs₂, xs₃))[j]
-    == if 0 <= j - o && j - o < s * n && (j - o) % s < 4
-       then (if (j - o) % s == 0 then earlier((j - o) / s, xs₀)
-             else if (j - o) % s == 1 then earlier((j - o) / s, xs₁)
-             else if (j - o) % s == 2 then earlier((j - o) / s, xs₂)
-             else earlier((j - o) / s, xs₃))
-       else a0[j]
+    == if {
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 0 => earlier((j - o) / s, xs₀)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 1 => earlier((j - o) / s, xs₁)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 2 => earlier((j - o) / s, xs₂)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 3 => earlier((j - o) / s, xs₃)
+         case j - o < 0 || s * n <= j - o || 4 <= (j - o) % s => a0[j]
+       }
 
 lemma {:rw} {:teq} select_current_strides₅(a0: array<int, int>, o: int, s: int, n: int, xs₀: List<int>,
     xs₁: List<int>, xs₂: List<int>, xs₃: List<int>, xs₄: List<int>, j: int)
   requires 5 <= s
   ensures current(strides₅(a0, ⌊counter(o, s, n)⌋, xs₀, xs₁, xs₂, xs₃, xs₄))[j]
-    == if 0 <= j - o && j - o < s * n && (j - o) % s < 5
-       then (if (j - o) % s == 0 then earlier((j - o) / s, xs₀)
-             else if (j - o) % s == 1 then earlier((j - o) / s, xs₁)
-             else if (j - o) % s == 2 then earlier((j - o) / s, xs₂)
-             else if (j - o) % s == 3 then earlier((j - o) / s, xs₃)
-             else earlier((j - o) / s, xs₄))
-       else a0[j]
+    == if {
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 0 => earlier((j - o) / s, xs₀)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 1 => earlier((j - o) / s, xs₁)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 2 => earlier((j - o) / s, xs₂)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 3 => earlier((j - o) / s, xs₃)
+         case 0 <= j - o && j - o < s * n && (j - o) % s == 4 => earlier((j - o) / s, xs₄)
+         case j - o < 0 || s * n <= j - o || 5 <= (j - o) % s => a0[j]
+       }
 
 // a loop whose iteration k stores F(k) at k + 1 and then G(k) at k, except in the last one, k + 1 == m, which stores
 // at k only, leaves G(j) at j < n, since the iteration j writes it last; at n, there is F(n - 1) if n < m, the guards
@@ -85,9 +90,11 @@ lemma {:rw} {:teq} select_current_trace_ahead(a0: array<int, int>, n: int, m: in
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k ::
                   case k + 1 < m => a[k + 1 := F(k)][k := G(k)]
                   case m == k + 1 => a[k := G(k)]))[j]
-      == if 0 <= j && j < n then G(j)
-         else if j == n && 0 < j && j < m then F(j - 1)
-         else a0[j]
+      == if {
+           case 0 <= j && j < n => G(j)
+           case j == n && 0 < j && j < m => F(j - 1)
+           case !(0 <= j && j < n) && !(j == n && 0 < j && j < m) => a0[j]
+         }
 
 // the same for a loop down from s, whose iteration i stores F(i) at i - 1, if 1 <= i, and then G(i) at i: the cells
 // s - n + 1, ..., s hold G, the cell below the last iteration the value stored ahead by it
@@ -98,6 +105,8 @@ lemma {:rw} {:teq} select_current_trace_ahead_down(a0: array<int, int>, n: int, 
     current(trace(a0, for ⌊counter(0, 1, n)⌋, ⌊counter(s, -1, n)⌋ do a, k, i ::
                   case 1 <= i => a[i + (-1) := F(i)][i := G(i)]
                   case i < 1 => a[i := G(i)]))[j]
-      == if s - n < j && j <= s then G(j)
-         else if j == s - n && 0 <= j && 0 < n then F(j + 1)
-         else a0[j]
+      == if {
+           case s - n < j && j <= s => G(j)
+           case j == s - n && 0 <= j && 0 < n => F(j + 1)
+           case !(s - n < j && j <= s) && !(j == s - n && 0 <= j && 0 < n) => a0[j]
+         }

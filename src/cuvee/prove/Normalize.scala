@@ -34,14 +34,16 @@ object Normalize:
         case None                 => True
         case Some((xs, ant, suc)) => clause(xs, ant, suc)
 
-  // the conjunction exists xs. ant and not suc that `phi` holds, false if it is trivial
+  // the conjunction exists xs. ant and not suc that `phi` holds, false if it is trivial; the negated conjuncts of `phi`
+  // are moved to the front of the succedents one by one (see flatten), so they are reversed back into their order,
+  // otherwise e.g. !(a && b) && !(c && d) would come back as !(c && d) && !(a && b) and be flattened again without end
   def goal(bound: Set[Var], phi: Expr): Expr =
     if isAtomic(phi)
     then phi
     else
       flatten(bound, List(phi), Nil) match
         case None                 => False
-        case Some((xs, ant, suc)) => Ex(xs, And(ant ++ suc.map(Not(_))))
+        case Some((xs, ant, suc)) => Ex(xs, And(ant ++ suc.reverse.map(Not(_))))
 
   // a clause without succedents is the negation of its antecedents
   def clause(xs: List[Var], ant: List[Expr], suc: List[Expr]): Expr =

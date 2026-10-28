@@ -49,7 +49,7 @@ lemma {:rw} {:teq} parity_empty()
   ensures parity(multiset{}) == 0
 
 lemma {:rw} {:teq} parity_single(x: int)
-  ensures parity(multiset{x}) == if x % 2 == 0 then 1 else -1
+  ensures parity(multiset{x}) == if { case x % 2 == 0 => 1 case x % 2 != 0 => -1 }
 
 lemma {:rw} {:teq} parity_union(m: multiset<int>, n: multiset<int>)
   ensures parity(m + n) == parity(m) + parity(n)
@@ -62,7 +62,7 @@ lemma {:rw} {:teq} multiplicity_empty<a>(e: a)
   ensures (multiset{} as multiset<a>)[e] == 0
 
 lemma {:rw} {:teq} multiplicity_single<a>(v: a, e: a)
-  ensures multiset{v}[e] == if v == e then 1 else 0
+  ensures multiset{v}[e] == if { case v == e => 1 case v != e => 0 }
 
 lemma {:rw} {:teq} multiplicity_union<a>(m: multiset<a>, n: multiset<a>, e: a)
   ensures (m + n)[e] == m[e] + n[e]
@@ -75,7 +75,7 @@ lemma {:rw} {:teq} max_empty(x: int)
   ensures max(x, multiset{}) == x
 
 lemma {:rw} {:teq} max_single(x: int, v: int)
-  ensures max(x, multiset{v}) == if x <= v then v else x
+  ensures max(x, multiset{v}) == if { case x <= v => v case v < x => x }
 
 lemma {:rw} {:teq} max_union(x: int, m: multiset<int>, n: multiset<int>)
   ensures max(x, m + n) == max(max(x, m), n)
@@ -84,7 +84,7 @@ lemma {:rw} {:teq} min_empty(x: int)
   ensures min(x, multiset{}) == x
 
 lemma {:rw} {:teq} min_single(x: int, v: int)
-  ensures min(x, multiset{v}) == if x <= v then x else v
+  ensures min(x, multiset{v}) == if { case x <= v => x case v < x => v }
 
 lemma {:rw} {:teq} min_union(x: int, m: multiset<int>, n: multiset<int>)
   ensures min(x, m + n) == min(min(x, m), n)
@@ -146,6 +146,14 @@ lemma {:rw} {:teq} current_maxs(x: int, values: List<int>)
   ensures current(maxs(x, values))
     == max(x, elems(values))
 
+lemma {:rw} {:teq} earlier_maxs(j: int, x: int, values: List<int>)
+  ensures earlier(j, ⌊maxs(x, values)⌋)
+    == max(x, elems(prefix(j, values)))
+
+lemma {:rw} {:teq} prefix_maxs(k: int, x: int, values: List<int>)
+  ensures prefix(k, ⌊maxs(x, values)⌋)
+    == ⌊maxs(x, prefix(k, values))⌋
+
 // (used on SV-COMP by standard_minInArray_ground-2 only)
 function {:teq} {:fold} mins(x: int, values: List<int>): Trace<int>
 {
@@ -158,6 +166,14 @@ lemma {:rw} {:teq} length_mins(x: int, values: List<int>)
 lemma {:rw} {:teq} current_mins(x: int, values: List<int>)
   ensures current(mins(x, values))
     == min(x, elems(values))
+
+lemma {:rw} {:teq} earlier_mins(j: int, x: int, values: List<int>)
+  ensures earlier(j, ⌊mins(x, values)⌋)
+    == min(x, elems(prefix(j, values)))
+
+lemma {:rw} {:teq} prefix_mins(k: int, x: int, values: List<int>)
+  ensures prefix(k, ⌊mins(x, values)⌋)
+    == ⌊mins(x, prefix(k, values))⌋
 
 // the number of occurrences of a value, counted from an initial value
 // (used on SV-COMP by half, sumt2 only)
@@ -205,6 +221,10 @@ lemma {:rw} {:teq} earlier_counts<a>(j: int, x: int, e: a, vs: List<a>)
   ensures earlier(j, ⌊counts(x, e, vs)⌋)
     == x + elems(prefix(j, vs))[e]
 
+lemma {:rw} {:teq} prefix_counts<a>(k: int, x: int, e: a, vs: List<a>)
+  ensures prefix(k, ⌊counts(x, e, vs)⌋)
+    == ⌊counts(x, e, prefix(k, vs))⌋
+
 // the aggregates of the values read at distinct keys after a store: the stored value replaces the old one if the key is
 // among them, otherwise nothing changes; one per aggregate with an inverse (sum, parity, count), restored from the
 // legacy database of 0.50.3 (distincts of a counter is distincts_counter of teq.dfy)
@@ -212,21 +232,30 @@ lemma {:rw} {:teq} earlier_counts<a>(j: int, x: int, e: a, vs: List<a>)
 lemma {:rw} {:teq} sum_selects_update<a>(a: array<a, int>, k: a, v: int, keys: List<a>)
   requires distincts(keys)
   ensures sum(elems(selects(a[k := v], keys)))
-    == if occurs(k, keys) then sum(elems(selects(a, keys))) + v - a[k] else sum(elems(selects(a, keys)))
+    == if {
+      case occurs(k, keys) => sum(elems(selects(a, keys))) + v - a[k]
+      case !occurs(k, keys) => sum(elems(selects(a, keys)))
+    }
 
 lemma {:rw} {:teq} parity_selects_update<a>(a: array<a, int>, k: a, v: int, keys: List<a>)
   requires distincts(keys)
   ensures parity(elems(selects(a[k := v], keys)))
-    == if occurs(k, keys)
-       then parity(elems(selects(a, keys))) + (if v % 2 == 0 then 1 else -1) - (if a[k] % 2 == 0 then 1 else -1)
-       else parity(elems(selects(a, keys)))
+    == if {
+      case occurs(k, keys) =>
+        parity(elems(selects(a, keys))) + if { case v % 2 == 0 => 1 case v % 2 != 0 => -1 }
+          - if { case a[k] % 2 == 0 => 1 case a[k] % 2 != 0 => -1 }
+      case !occurs(k, keys) => parity(elems(selects(a, keys)))
+    }
 
 lemma {:rw} {:teq} count_selects_update<a, b>(a: array<a, b>, k: a, w: b, e: b, keys: List<a>)
   requires distincts(keys)
   ensures elems(selects(a[k := w], keys))[e]
-    == if occurs(k, keys)
-       then elems(selects(a, keys))[e] + (if w == e then 1 else 0) - (if a[k] == e then 1 else 0)
-       else elems(selects(a, keys))[e]
+    == if {
+      case occurs(k, keys) =>
+        elems(selects(a, keys))[e] + if { case w == e => 1 case w != e => 0 }
+          - if { case a[k] == e => 1 case a[k] != e => 0 }
+      case !occurs(k, keys) => elems(selects(a, keys))[e]
+    }
 
 // the prefix sums of n copies of c, from x, are the counter from x by c: the counter of an inner loop, whose trace is
 // folded into sums over its dependency before that is known to be a counter (see examples/dafny/sorting/nested_sum.dfy)
@@ -234,16 +263,24 @@ lemma {:rw} {:teq} sums_consts(x: int, n: int, c: int)
   ensures sums(x, ⌊consts(n, c)⌋)
     == counter(x, c, n)
 
-// a sum of n terms that are each 0, c, or d is at most n times the largest of them, and one of remainders k % m of
-// the iterations k from 0 at most n (m - 1); the left-hand sides are comparisons, whose constants bind the bound
-// (from MonoCera: brs2-brs5, ms2-ms5)
-lemma {:rw} {:teq} sum_cases_below(n: int, c: int, d: int, e: int, P: (int) -> bool)
-  requires 0 <= e && n * c <= e && n * d <= e
-  ensures sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then (if P(k) then c else d) else 0))) <= e
+// a sum of the values over a counter of n iterations is at least, or at most, e if each value times n is, whatever the
+// cases of the values (they are decided case by case in the condition, see Simplify.atom), e.g. 0 < sum of positive
+// values; at least needs an iteration, since the empty sum 0 satisfies the condition vacuously; the left-hand sides
+// are comparisons, whose constants bind e; the values may read further dependencies hs, e.g. the choices of a loop
+// (from loop-invgen/large_const, MonoCera: brs2-brs5, ms2-ms5)
+lemma {:rw} {:teq} sum_above(n: int, hs: List<int>, V: (int, int) -> int, e: int)
+  requires 0 < n && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: e <= n * V(k, h))
+  ensures e <= sum(elems(maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: V(k, h))))
 
+lemma {:rw} {:teq} sum_below(n: int, hs: List<int>, V: (int, int) -> int, e: int)
+  requires 0 <= e && invs(for ⌊counter(0, 1, n)⌋, hs check k, h :: n * V(k, h) <= e)
+  ensures sum(elems(maps(for ⌊counter(0, 1, n)⌋, hs yield k, h :: V(k, h)))) <= e
+
+// a sum of the remainders k % m of the iterations k from 0 is at most n (m - 1), which sum_below does not decide,
+// since n * (k % m) is not linear
 lemma {:rw} {:teq} sum_mod_below(n: int, m: int, e: int)
   requires 0 <= n && 0 < m && n * (m - 1) <= e
-  ensures sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then k % m else 0))) <= e
+  ensures sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: case 0 < k => k % m case k <= 0 => 0))) <= e
 
 lemma {:rw} {:teq} sum_neg(values: List<int>)
   ensures sum(elems(maps(for values yield v :: -v)))
@@ -263,17 +300,22 @@ lemma {:rw} {:teq} sum_add(xs: List<int>, ys: List<int>)
 // lemmas on counts evaluate
 // (used on SV-COMP by brs1 only)
 lemma {:rw} {:teq} sum_indicator_true<a>(xs: List<a>, P: a -> bool)
-  ensures sum(elems(maps(for xs yield x :: if P(x) then 1 else 0))) == elems(maps(for xs yield x :: P(x)))[true]
+  ensures sum(elems(maps(for xs yield x :: case P(x) => 1 case !P(x) => 0)))
+    == elems(maps(for xs yield x :: P(x)))[true]
 
 // (unused on SV-COMP; the pair of sum_indicator_true)
 lemma {:rw} {:teq} sum_indicator_false<a>(xs: List<a>, P: a -> bool)
-  ensures sum(elems(maps(for xs yield x :: if P(x) then 0 else 1))) == elems(maps(for xs yield x :: P(x)))[false]
+  ensures sum(elems(maps(for xs yield x :: case P(x) => 0 case !P(x) => 1)))
+    == elems(maps(for xs yield x :: P(x)))[false]
 
 // (used on SV-COMP by nest-if3 only)
 lemma {:rw} {:teq} count_consts<a>(n: int, e: a, v: a)
   requires 0 <= n
   ensures elems(⌊consts(n, v)⌋)[e]
-    == if v == e then n else 0
+    == if {
+      case v == e => n
+      case v != e => 0
+    }
 
 // the iterations of a counter by 1 before m and from m on, e.g. for loops with if (i < m) in the body; the counts of
 // false are the others, by count_false_true below
@@ -464,6 +506,14 @@ lemma {:rw} {:teq} current_parities(x: int, values: List<int>)
   ensures current(parities(x, values))
     == x + parity(elems(values))
 
+lemma {:rw} {:teq} earlier_parities(j: int, x: int, values: List<int>)
+  ensures earlier(j, ⌊parities(x, values)⌋)
+    == x + parity(elems(prefix(j, values)))
+
+lemma {:rw} {:teq} prefix_parities(k: int, x: int, values: List<int>)
+  ensures prefix(k, ⌊parities(x, values)⌋)
+    == ⌊parities(x, prefix(k, values))⌋
+
 // the recurrences of arrays whose values are sums (from arrays.dfy of the per-variable form)
 // the same for a sum kept in the cell j of an array, e.g. sum[0] of a one-element array in C: only the cell j is
 // written, hence it is read from the final array
@@ -471,33 +521,58 @@ lemma {:rw} {:teq} current_parities(x: int, values: List<int>)
 lemma {:rw} {:teq} select_current_trace_reset_add(a0: array<int, int>, j: int, n: int, c: int, G: (int) -> int)
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: case k == 0 => a[j := c] case 0 < k => a[j := a[j] + G(k)]))[j]
-      == if n <= 0 then a0[j] else c + sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then G(k) else 0)))
+      == if {
+        case n <= 0 => a0[j]
+        case 0 < n => c + sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: case 0 < k => G(k) case k <= 0 => 0)))
+      }
 
 // the same where the addition is split by a guard P, whose other case adds 0 and keeps the array, the form that the
 // conditional of the value takes once lifted into cases (Simplify.choices, since 0.52.7), e.g. sum[0] + (i % 2 == 0 ?
-// 2 : 0); the sum is that of sum_cases_below
+// 2 : 0); the sum is bounded by sum_below
 // (from MonoCera: brs2-brs5)
 lemma {:rw} {:teq} select_current_trace_reset_add_keep(a0: array<int, int>, j: int, n: int, c: int, P: (int) -> bool,
     G: (int) -> int)
   ensures
     current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k ::
                   case k == 0 => a[j := c] case 0 < k && P(k) => a[j := a[j] + G(k)] case 0 < k && !P(k) => a))[j]
-      == if n <= 0 then a0[j]
-         else c + sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: if 0 < k then (if P(k) then G(k) else 0) else 0)))
+      == if {
+        case n <= 0 => a0[j]
+        case 0 < n =>
+          c + sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: case 0 < k && P(k) => G(k) case k <= 0 || !P(k) => 0)))
+      }
+
+// the same for a sum kept in a scalar, whose summand of the read of a map with cases is lifted into the cases of the
+// update (Simplify.choices)
+// (from examples/dafny/teq/sum_cases.dfy)
+lemma {:rw} {:teq} current_trace_reset_add_keep(x0: int, n: int, c: int, P: (int) -> bool, G: (int) -> int)
+  ensures
+    current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k ::
+                  case k == 0 => c case 0 < k && P(k) => x + G(k) case 0 < k && !P(k) => x))
+      == if {
+        case n <= 0 => x0
+        case 0 < n =>
+          c + sum(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: case 0 < k && P(k) => G(k) case k <= 0 || !P(k) => 0)))
+      }
 
 // an array filled by a recurrence at the positions 1, ..., n, each element from its predecessor plus G of the position
 // of the predecessor, is the initial element plus the sum of G over the positions before
 // (from eqn1, eqn1f, nsqm, nsqmf, pcomp, pcompf, sqm)
 lemma {:rw} {:teq} select_current_trace_prefix_sums(b0: array<int, int>, n: int, j: int, G: (int) -> int)
   ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := G(k) + b[k]]))[j]
-    == if 0 <= j <= n then b0[0] + sum(elems(maps(for ⌊counter(0, 1, j)⌋ yield k :: G(k)))) else b0[j]
+    == if {
+      case 0 <= j <= n => b0[0] + sum(elems(maps(for ⌊counter(0, 1, j)⌋ yield k :: G(k))))
+      case !(0 <= j <= n) => b0[j]
+    }
 
 // the same with two added terms, since a higher-order summand matches a single summand only (see TODO.md)
 // (from nsqm, nsqmf, pcomp, pcompf, sqm; unused on SV-COMP, whose tasks nsqm, pcomp remain open for other reasons)
 lemma {:rw} {:teq} select_current_trace_prefix_sums_add(b0: array<int, int>, n: int, j: int, G: (int) -> int,
                                                  H: (int) -> int)
   ensures current(trace(b0, for ⌊counter(0, 1, n)⌋, ⌊counter(1, 1, n)⌋ do b, k, i :: b[i := b[k] + G(k) + H(k)]))[j]
-    == if 0 <= j <= n then b0[0] + sum(elems(maps(for ⌊counter(0, 1, j)⌋ yield k :: G(k) + H(k)))) else b0[j]
+    == if {
+      case 0 <= j <= n => b0[0] + sum(elems(maps(for ⌊counter(0, 1, j)⌋ yield k :: G(k) + H(k))))
+      case !(0 <= j <= n) => b0[j]
+    }
 
 // a recurrence in an array: the first cell set to c, each further cell i the previous one plus G(i), so the cell j is
 // c plus the sum of G over 1, ..., j, e.g. a[i] = a[i - 1] + 2 and b[i] = b[i - 1] + a[i - 1] of ifeqn1 (needs the
@@ -506,4 +581,7 @@ lemma {:rw} {:teq} select_current_trace_prefix_sums_add(b0: array<int, int>, n: 
 lemma {:rw} {:teq} select_current_trace_recurrence(a0: array<int, int>, n: int, c: int, j: int, G: (int) -> int)
   ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, i ::
             case i == 0 => a[0 := c] case 0 < i => a[i := a[i - 1] + G(i)]))[j]
-    == if 0 <= j && j < n then c + sum(elems(maps(for ⌊counter(1, 1, j)⌋ yield k :: G(k)))) else a0[j]
+    == if {
+      case 0 <= j && j < n => c + sum(elems(maps(for ⌊counter(1, 1, j)⌋ yield k :: G(k))))
+      case !(0 <= j && j < n) => a0[j]
+    }

@@ -67,10 +67,30 @@ object Simplify:
         then Debug.step("simplify", show(config.output.printer, expr), show(config.output.printer, once_))
 
         // a term with a literal in its class is that literal (see Classes.ground)
-        val expr_ = ctx.classes.ground(rewrite(config, state, ctx, once_))
+        val expr_ = ctx.classes.ground(atom(rewrite(config, state, ctx, once_)))
         if expr_ == expr
         then forward(config, state, ctx, expr)
         else simplify(config, state, ctx, expr_)
+
+  // an atom whose terms contain a choice as a value, e.g. the read earlier(j, maps(...)) of a map whose update has
+  // cases, is the conjunction of the guards implying the atom at the results (see Normalize.choices), which keeps the
+  // cases as guards of formulas; a choice that is itself the formula, the update of a trace of Bool, stays, and so does
+  // a choice inside a list or a trace, the value of all its elements, e.g. consts(n, eps(...)) for guards that do not
+  // depend on the iteration (maps_const), whose equation defines a trace in the classes
+  // (atoms only: connectives are simplified part by part, whose atoms are lifted there)
+  def atom(expr: Expr): Expr =
+    expr match
+      case And(_) | Or(_) | Not(_) | Imp(_, _)                    => expr
+      case App(_, _, _, args) if expr.typ == Sort.bool && args.exists(value) => Normalize.choices(expr)
+      case _                                                      => expr
+
+  // whether a term contains a choice that is not inside a list or a trace
+  def value(expr: Expr): Boolean =
+    expr match
+      case Eps(_)                                                                => true
+      case App(_, _, Sort(Con.list | Con.trace, _), _)                           => false
+      case App(_, _, _, args)                                                    => args.exists(value)
+      case _                                                                     => false
 
   // a comparison or an equation at a position with a polarity, decided by the forward lemmas that fire on its own terms
   // (see Forward): at a positive position, it holds if its denial contradicts their instances, e.g. the bare goal
@@ -977,20 +997,14 @@ object Simplify:
         case _ =>
           op(left_, right_)
 
-  // earlier moves inward: into maps, whose element j is its update for the elements j of the dependencies, where cases
-  // are conditionals outside of the combinator, unspecified if no guard holds, into both branches of ite, and into the
-  // body of let, whose bound variables are renamed apart from j
+  // earlier moves inward: into maps, whose element j is its update for the elements j of the dependencies, a choice if
+  // it has cases (see atom), into both branches of ite, and into the body of let, whose bound variables are renamed
+  // apart from j
   def earlier(config: Config, state: State, ctx: Context, j: Expr, arg: Expr): Expr =
     (j, arg) match
       case (j, ctx.↑(Maps(deps, bound, update))) =>
         val su = Subst.from(bound, deps.map(earlier(config, state, ctx, j, _)))
-        su(update) match
-          case Eps(updates) =>
-            updates.foldRight(Unspecified(update.typ)): (upd, rest) =>
-              ite(config, state, ctx, upd.cond, upd.rhs, rest)
-
-          case update_ =>
-            update_
+        su(update)
 
       case (j, Ite(test, left, right)) =>
         ite(config, state, ctx, test, earlier(config, state, ctx, j, left), earlier(config, state, ctx, j, right))
@@ -1135,7 +1149,9 @@ object Simplify:
     Trace(inits, deps_, accs, bound_, results.map(result => choices(config, state, ctx, re(result))))
 
   // R[ite(c, a, b)] is case c => R[a] case !c => R[b] for the outermost leftmost conditional that is not below a binder
-  // (Normalize.ite), and so on in the cases, also in those of a result that is a choice already
+  // (Normalize.ite), and so on in the cases, also in those of a result that is a choice already; likewise
+  // R[eps(cᵢ => vᵢ)] is case cᵢ => R[vᵢ] for a choice nested in a term (Normalize.eps), e.g. the read of a map with
+  // cases added to an accumulator, eps(k % 2 == 0 => 2, 0 < k % 2 => 0) + s
   def choices(config: Config, state: State, ctx: Context, result: Expr): Expr =
     result match
       case Eps(updates) =>
@@ -1152,11 +1168,21 @@ object Simplify:
             eps(config, state, ctx, result.typ, updates)
 
           case _ =>
-            result
+            Normalize.eps(result) match
+              case Some(choice @ Eps(updates)) =>
+                val updates_ =
+                  for Upd(cond, rhs) <- updates
+                  yield Upd(cond, choices(config, state, ctx, Normalize.replace(result, choice, rhs)))
+                eps(config, state, ctx, result.typ, updates_)
 
+              case _ =>
+                result
+
+  // the conditionals of the update are lifted into cases, as in traces, so that a map has one form whether its values
+  // come from conditionals or from the cases of an update (see Rewrite.update)
   def maps(config: Config, state: State, ctx: Context, deps: List[Expr], bound: List[Var], update: Expr): Expr =
     val (deps_, bound_, re) = this.deps(config, state, ctx, deps, bound, update.free)
-    Maps(deps_, bound_, re(update))
+    Maps(deps_, bound_, choices(config, state, ctx, re(update)))
 
   // invariants distribute over conjunctions, where each part keeps the dependencies that it uses;
   // with a constant body: true holds trivially,

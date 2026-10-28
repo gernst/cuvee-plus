@@ -185,8 +185,6 @@ Cleanup, none of it a bug.
   context (mapsum1).
 - The branches of a conditional formula are not simplified under the facts of the context
   (standard_password_ground).
-- Reads over writes at another position are decided without the facts (`Simplify.select`), so `j != 3` does not
-  reduce `a[3 := w][j]` (single_elem_safe).
 - Conditionals are lifted over equations (Oct 28), not over comparisons and products (motivex).
 - A pattern sum of a rule variable and a bound variable matches only if the variable takes one summand, unless only
   a constant offset differs (cancelled since Oct 28)

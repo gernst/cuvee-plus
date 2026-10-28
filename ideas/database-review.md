@@ -47,7 +47,7 @@ is closed.
 | complete guards are an obligation of the proofs | the complementary last case of `current_trace_increasing`, `current_trace_bounded`, `bisection` |
 | the engine does not check reads within the loop or lengths | the premises of [lean/premises.txt](../lean/premises.txt) |
 | a pattern of nested stores has a fixed number of stores | the folds `strides₂` to `strides₅` (one per number of adjacent cells; the number of cases is free since Oct 28) |
-| a pattern has a fixed number of dependencies, one bound variable each, and a polymorphic higher-order side condition is not matched | one lemma per number of dependencies: `perm_steps`, `perm_steps_two`, `perm_steps_three`, which Lean proves from one lemma over any list of dependencies (`perm_steps_general`); kept specific by decision |
+| a pattern has a fixed number of dependencies, one bound variable each, and a polymorphic higher-order side condition is not matched | `perm_steps_three` and `perm_swaps` (Oct 28: `perm_steps`, `perm_steps_two`, `perm_swaps_one` removed, since an expression with fewer dependencies shares the bound variable of the first; bubble_sort, insertion_sort, insertion_sort2, perm unchanged); Lean proves them from one lemma over any list of dependencies (`perm_steps_general`) |
 
 ## Rejected lemmas
 

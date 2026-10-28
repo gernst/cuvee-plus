@@ -11,6 +11,6 @@ goal
       && length(U?₅₄) == N
       && length(W?₅₅) == N
       && 0 <= l < N
-      ==> !(if earlier(l, U?₅₄) != C then false else D == C)
-        && !(if earlier(l, W?₅₅) != C then false else D == C)
+      ==> !(earlier(l, U?₅₄) == C && D == C)
+        && !(earlier(l, W?₅₅) == C && D == C)
 
