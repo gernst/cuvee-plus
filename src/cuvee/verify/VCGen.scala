@@ -19,7 +19,7 @@ object VCGen extends Transform:
     val cmds_ =
       for
         cmd <- cmds;
-        cmd_ <- verify(state, gs, cmd)
+        cmd_ <- verify(config, state, gs, cmd)
       yield cmd_
 
     // a verify-call ends the stage (last), after its goal of the precondition; the procedures are verified by their
@@ -44,7 +44,7 @@ object VCGen extends Transform:
     Assert(Goal, Nil, All(gs.filter(phi.free), phi), Attrs.empty)
 
   // the goals of a command, the other commands are kept
-  def verify(state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
+  def verify(config: Config, state: State, gs: List[Var], cmd: Cmd): List[Cmd] =
     cmd match
       // procedures without body have nothing to verify,
       // their contract is looked up from the state at call sites
@@ -76,8 +76,17 @@ object VCGen extends Transform:
         val phi = wp(state, gs, name, assume, commit, body_, post_, False, False, post_)
         val phi_ = All(in ++ out ++ gs, Imp(pre, Subst.from(gs_, gs)(phi)))
         // a loop without invariants, whose invariant is true, makes the goal stronger than the specification, such that
-        // its refutation is no counterexample (see Solver.sink)
-        val attrs = if body_.abstracts then Attrs.from("abstract") else Attrs.empty
+        // its refutation is no counterexample (see Solver.sink); where executions start at an entry point (main in C,
+        // see Config.entry), so are the goal of another procedure, whose precondition need not describe its calls,
+        // and a call of a procedure without contract, whose outputs are havocked, e.g. verifythis/lcp, where the check
+        // of a prefix fails for an arbitrary length instead of the one lcp returns
+        val unspecified =
+          body_.calls.exists: callee =>
+            val attrs = state.annotated(callee)
+            attrs.values[Expr]("requires").isEmpty && attrs.values[Expr]("ensures").isEmpty
+        val outside = config.entry.exists(_ != name)
+        val abstracts = body_.abstracts || config.entry.isDefined && (outside || unspecified)
+        val attrs = if abstracts then Attrs.from("abstract") else Attrs.empty
         List(Assert(Goal, params, phi_, attrs))
 
       case _ =>

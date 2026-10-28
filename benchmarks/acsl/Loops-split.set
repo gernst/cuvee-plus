@@ -1,5 +1,8 @@
 # Tasks of Loops.set whose verification conditions z3 proves only as separate goals (-split, xml/cuvee-acsl.xml):
 # geo1/2/3-ll with unsigned long long and lcm2 of nla-digbench and nla-digbench-scaling (README.md)
+# and prodbin-ll, prod4br-ll_valuebound5 (Oct 28, 2026: unknown or a timeout without -split, proved in 2-3 s with it)
+nla-digbench/prodbin-ll.yml
+nla-digbench-scaling/prod4br-ll_valuebound5.yml
 nla-digbench/geo1-ll.yml
 nla-digbench/geo2-ll.yml
 nla-digbench/geo3-ll.yml

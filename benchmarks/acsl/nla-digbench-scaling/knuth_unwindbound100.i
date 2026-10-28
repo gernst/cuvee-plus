@@ -53,7 +53,7 @@ int main() {
         loop invariant (k*t - t*t) % 4294967296 == 0;
         loop invariant (d*d*q - 2*d*q - 4*d*r + 4*d*t + 4*a*k - 4*a*t - 8*n + 8*r) % 4294967296 == 0;
         loop invariant (d*k - d*t - a*k + a*t) % 4294967296 == 0;
-        loop assigns r, k, q, d, t;
+        loop assigns r, k, q, d, t, counter;
         loop invariant 0 <= counter <= 100; */
     while (counter++<100) {
         __VERIFIER_assert(d * d * q - 2 * q * d - 4 * r * d + 4 * k * d + 8 * r == 8 * n);

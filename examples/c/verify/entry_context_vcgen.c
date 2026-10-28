@@ -1,5 +1,6 @@
 // ./Cuvee.sh -vcgen -z3 examples/c/verify/entry_context_vcgen.c
-// -vcgen checks every function against its contract, even without one for all n, which does not hold
+// -vcgen checks every function against its contract, even without one for all n, which does not hold; executions
+// start in main, which calls even with even arguments only, so the refutation is no counterexample: unknown
 extern int __VERIFIER_nondet_int(void);
 extern void abort(void);
 void reach_error(void) { abort(); }

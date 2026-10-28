@@ -243,7 +243,9 @@ and the next sink.
   - Goals and lemmas are answered `correct` (`unsat` of the negation),
     `incorrect` (`sat`), or `unknown`; a refutation is `unknown` if the goal
     is `:abstract`, i.e., stronger than what it was generated from (a loop
-    without invariant in `VCGen`, a goal lowered by `Fallback`), or applies a
+    without invariant in `VCGen`; with an entry point, the goal of another
+    procedure or one that calls a procedure without contract; a goal lowered
+    by `Fallback`), or applies a
     function declared `:abstract` (`Cmd.funs`), or one defined in terms of
     such, e.g. the bit operations of the C prelude, which the solver
     interprets freely. Free lemmas are acknowledged.

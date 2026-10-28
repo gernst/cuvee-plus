@@ -197,7 +197,9 @@ or solvers consume.
   starts from it (`Config.entry`: `-entry <name>`, otherwise `main` in
   C; SV-LIB starts at its `verify-call` commands); the other procedures are
   checked in the context of their calls. `-vcgen` checks every procedure
-  against its contract.
+  against its contract; with an entry point, the goals of the other
+  procedures and of callers of procedures without contract are `:abstract`
+  (a refutation is `unknown`, not `incorrect`).
 - **Pretty printing:** wrap parenthesized documents in `Align(...)`.
 - **Imports:** import `cuvee.Error` and `cuvee.Debug` instead of using
   qualified names.
