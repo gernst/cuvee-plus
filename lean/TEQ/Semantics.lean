@@ -16,6 +16,11 @@ zero like the core's (cvc5's bag.difference_subtract), and submultisets compare 
 parity, max, and min, which the modules declare without a body and characterize by their lemmas, are folds of the
 lists, lifted by the proof that the fold does not depend on the order; the generator checks and leaves out their
 printed declarations (AGGREGATES of scripts/lean/generate.py).
+
+The value in two phases, phases x0 m n F G of counters.dfy, which the module declares without a body, is the trace of
+the comment above it, trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case k < m => F(x, k) case m <= k => G(x, k)), over
+the iterations 0, ..., n - 1 (iterations, since the counters are defined by the printer); the generator leaves out its
+printed declaration as well.
 -/
 open Classical
 
@@ -105,5 +110,14 @@ noncomputable def min (x : Int) : Bag Int → Int :=
   Quotient.lift (fun xs => xs.foldr (fun v m => if m ≤ v then m else v) x)
     (Bag.foldr_perm _ (by intro a b z; by_cases h₁ : z ≤ a <;> by_cases h₂ : z ≤ b <;> by_cases h₃ : a ≤ b <;>
       simp [h₁, h₂, h₃] <;> omega) x)
+
+-- the iterations s, s + 1, ... of a loop of t steps, the values of a counter from s by 1 (Proofs.lean: iterations_N)
+def iterations (s : Int) : Nat → List Int
+  | 0 => []
+  | t + 1 => s :: iterations (s + 1) t
+
+-- a value in two phases: the first m iterations update it by F, the others by G
+def phases (x0 m n : Int) (F G : Int → Int → Int) : Trace Int :=
+  trace x0 (iterations 0 n.toNat) (fun x k => if k < m then F x k else G x k)
 
 end TEQ

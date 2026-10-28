@@ -162,8 +162,9 @@ theorem prefix_zip_int {α β : Type} [Inhabited α] [Inhabited β] (k : Int) (x
 
 -- the prefix of a counter zipped with a list of its length: the shorter counter, which zip cuts to the prefix of the
 -- list also where the prefix is longer than the list
-theorem prefix_zip_counter {β : Type} [Inhabited β] (k : Nat) : ∀ (i : Int) (n : Nat) (ys : List β), ys.length = n →
-    N.«prefix» k (List.zip (butlast (N.counter i 1 n)) ys) = List.zip (butlast (N.counter i 1 k)) (N.«prefix» k ys) := by
+theorem prefix_zip_counter {β : Type} [Inhabited β] (c : Int) (k : Nat) : ∀ (i : Int) (n : Nat) (ys : List β),
+    ys.length = n →
+    N.«prefix» k (List.zip (butlast (N.counter i c n)) ys) = List.zip (butlast (N.counter i c k)) (N.«prefix» k ys) := by
   induction k with
   | zero => intro i n ys h; rfl
   | succ k ih =>
@@ -174,7 +175,7 @@ theorem prefix_zip_counter {β : Type} [Inhabited β] (k : Nat) : ∀ (i : Int) 
       obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by simp at h; omega⟩
       rw [N.butlast_counter_succ, N.butlast_counter_succ, List.zip_cons_cons]
       simp only [N.«prefix», List.zip_cons_cons]
-      rw [ih (i + 1) m ys (by simpa using h)]
+      rw [ih (i + c) m ys (by simpa using h)]
 
 theorem squares_N (i n : Int) : squares i n = N.squares i n.toNat := by
   simp only [squares, N.squares, counter_N, sum_N]
@@ -1440,79 +1441,76 @@ theorem select_current_trace_reset_keep : Stmt.select_current_trace_reset_keep :
   exact ite_iff (toNat_zero_iff n) _ _
 
 theorem length_stores_where : Stmt.length_stores_where := by
-  intro a n guards values n1 hguards hvalues hn h
+  intro a i c n guards values n1 hguards hvalues hn h
   rw [stores_where, N.length_butlast_trace, counter_N,
-    N.length_zip_eq _ _ n.toNat (N.length_butlast_counter 0 1 n.toNat)
+    N.length_zip_eq _ _ n.toNat (N.length_butlast_counter i c n.toNat)
       (by rw [N.length_zip_eq guards values guards.length rfl (by omega)]; omega)]
   omega
 
 theorem earlier_stores_where : Stmt.earlier_stores_where := by
-  intro j a n guards values n1 hguards hvalues hn ⟨hj, hjn⟩
+  intro j a i c n guards values n1 hguards hvalues hn ⟨hj, hjn⟩
   rw [stores_where, stores_where, earlier_trace_int j _ _ _ hj
-    (by rw [counter_N, N.length_zip_eq _ _ n.toNat (N.length_butlast_counter 0 1 n.toNat)
+    (by rw [counter_N, N.length_zip_eq _ _ n.toNat (N.length_butlast_counter i c n.toNat)
       (by rw [N.length_zip_eq guards values guards.length rfl (by omega)]; omega)]; omega),
     prefix_zip_int, prefix_zip_int, counter_N, counter_N, prefix_N,
-    N.prefix_counter j.toNat 0 1 n.toNat (by rw [N.integer_cast, N.integer_cast]; omega)]
+    N.prefix_counter j.toNat i c n.toNat (by rw [N.integer_cast, N.integer_cast]; omega)]
 
 theorem prefix_stores_where : Stmt.prefix_stores_where := by
-  intro k a n guards values n1 hguards hvalues hn
+  intro k a i c n guards values n1 hguards hvalues hn
   rw [stores_where, stores_where, prefix_trace_int, ← prefix_zip_int, counter_N, counter_N, prefix_N, prefix_N,
-    prefix_zip_counter k.toNat 0 n.toNat _ (by rw [N.length_zip_eq guards values guards.length rfl (by omega)]; omega)]
+    prefix_zip_counter c k.toNat i n.toNat _
+      (by rw [N.length_zip_eq guards values guards.length rfl (by omega)]; omega)]
 
--- the stores where the guards hold over the counter from i: a position in range keeps the value of its iteration if
--- its guard holds, since each position is written once
-theorem select_current_stores_where_N (m : Nat) : ∀ (a0 : Int → Int) (i : Int) (gs : List Prop) (vs : List Int)
-    (j : Int), gs.length = m → vs.length = m →
-    current (trace a0 (List.zip (butlast (N.counter i 1 m)) (List.zip gs vs))
+-- the stores where the guards hold, over distinct keys: a key keeps the value of its iteration if its guard holds,
+-- since it is written once
+theorem select_current_stores_where_list (j : Int) : ∀ (a0 : Int → Int) (ks : List Int) (gs : List Prop) (vs : List Int),
+    distincts ks → gs.length = ks.length → vs.length = ks.length →
+    current (trace a0 (List.zip ks (List.zip gs vs))
       (fun b ⟨k, g, v⟩ => if g then fun j => if j = k then v else b j else if ¬g then b else unspecified)) j
-      = if i ≤ j ∧ j < i + m ∧ earlier (j - i) gs then earlier (j - i) vs else a0 j := by
-  induction m with
-  | zero =>
-    intro a0 i gs vs j hg hv
+      = if occurs j ks ∧ earlier (indexof j ks) gs then earlier (indexof j ks) vs else a0 j
+  | a0, [], gs, vs, _, hg, hv => by
     rw [List.length_eq_zero_iff.1 hg, List.length_eq_zero_iff.1 hv]
     show a0 j = _
-    rw [if_neg (by omega)]
-  | succ m ih =>
-    intro a0 i gs vs j hg hv
-    cases gs with
-    | nil => simp at hg
-    | cons g gs =>
-      cases vs with
-      | nil => simp at hv
-      | cons v vs =>
-        rw [N.butlast_counter_succ, List.zip_cons_cons, List.zip_cons_cons, N.trace_cons, N.current_step_eq,
-          ih _ (i + 1) gs vs j (by simpa using hg) (by simpa using hv)]
-        dsimp only
-        by_cases hji : j = i
-        · subst hji
-          have e0 : ∀ {γ : Type} [Inhabited γ] (x : γ) (xs : List γ), earlier (j - j) (x :: xs) = x := by
-            intro γ _ x xs; simp only [earlier, Int.sub_self]; rfl
-          rw [e0, e0, if_neg (by omega : ¬(j + 1 ≤ j ∧ j < j + 1 + (m : Int) ∧ earlier (j - (j + 1)) gs))]
-          by_cases hg0 : g
-          · rw [if_pos (⟨Int.le_refl j, by omega, hg0⟩ : j ≤ j ∧ j < j + ((m + 1 : Nat) : Int) ∧ g)]; simp [hg0]
-          · rw [if_neg (fun h : j ≤ j ∧ j < j + ((m + 1 : Nat) : Int) ∧ g => hg0 h.2.2)]; simp [hg0]
-        · have ha : (if g then fun j => if j = i then v else a0 j else if ¬g then a0 else unspecified) j = a0 j := by
-            by_cases hg0 : g <;> simp [hg0, hji]
-          by_cases h1 : i + 1 ≤ j ∧ j < i + 1 + (m : Int)
-          · have e : ∀ {γ : Type} [Inhabited γ] (x : γ) (xs : List γ),
-                earlier (j - i) (x :: xs) = earlier (j - (i + 1)) xs := by
-              intro γ _ x xs; simp only [earlier]
-              rw [if_neg (by omega), if_neg (by omega), show j - i - 1 = j - (i + 1) by omega]
-            rw [e, e]
-            by_cases hc : earlier (j - (i + 1)) gs
-            · rw [if_pos (⟨h1.1, h1.2, hc⟩ : i + 1 ≤ j ∧ j < i + 1 + (m : Int) ∧ earlier (j - (i + 1)) gs),
-                if_pos (⟨by omega, by omega, hc⟩ : i ≤ j ∧ j < i + ((m + 1 : Nat) : Int) ∧ earlier (j - (i + 1)) gs)]
-            · rw [if_neg (fun h : i + 1 ≤ j ∧ j < i + 1 + (m : Int) ∧ earlier (j - (i + 1)) gs => hc h.2.2),
-                if_neg (fun h : i ≤ j ∧ j < i + ((m + 1 : Nat) : Int) ∧ earlier (j - (i + 1)) gs => hc h.2.2), ha]
-          · rw [if_neg (fun h : i + 1 ≤ j ∧ j < i + 1 + (m : Int) ∧ earlier (j - (i + 1)) gs => h1 ⟨h.1, h.2.1⟩),
-              if_neg (fun h : i ≤ j ∧ j < i + ((m + 1 : Nat) : Int) ∧ earlier (j - i) (g :: gs) =>
-                h1 ⟨by omega, by omega⟩), ha]
+    rw [if_neg (fun h => h.1)]
+  | a0, k :: ks, [], _, _, hg, _ => by simp at hg
+  | a0, k :: ks, _, [], _, _, hv => by simp at hv
+  | a0, k :: ks, g :: gs, v :: vs, hd, hg, hv => by
+    simp only [distincts] at hd
+    rw [List.zip_cons_cons, List.zip_cons_cons, N.trace_cons, N.current_step_eq,
+      select_current_stores_where_list j _ ks gs vs hd.2 (by simpa using hg) (by simpa using hv)]
+    dsimp only
+    have hi : 0 ≤ indexof j ks := by rw [indexof_N]; omega
+    have e : ∀ {γ : Type} [Inhabited γ] (x : γ) (xs : List γ),
+        earlier (indexof j ks + 1) (x :: xs) = earlier (indexof j ks) xs := by
+      intro γ _ x xs; simp only [earlier]; rw [if_neg (by omega), if_neg (by omega), Int.add_sub_cancel]
+    by_cases ho : occurs j ks
+    · have hk : k ≠ j := fun h => hd.1 (h ▸ ho)
+      have hix : indexof j (k :: ks) = indexof j ks + 1 := by simp only [indexof]; rw [if_pos ho]
+      rw [hix, e, e]
+      by_cases hc : earlier (indexof j ks) gs
+      · rw [if_pos (⟨ho, hc⟩ : occurs j ks ∧ earlier (indexof j ks) gs),
+          if_pos (⟨Or.inr ho, hc⟩ : occurs j (k :: ks) ∧ earlier (indexof j ks) gs)]
+      · rw [if_neg (fun h : occurs j ks ∧ earlier (indexof j ks) gs => hc h.2),
+          if_neg (fun h : occurs j (k :: ks) ∧ earlier (indexof j ks) gs => hc h.2)]
+        by_cases hg0 : g <;> simp [hg0, Ne.symm hk]
+    · have hix : indexof j (k :: ks) = 0 := by simp only [indexof]; rw [if_neg ho]
+      have e0 : ∀ {γ : Type} [Inhabited γ] (x : γ) (xs : List γ), earlier 0 (x :: xs) = x := by
+        intro γ _ x xs; rfl
+      rw [if_neg (fun h : occurs j ks ∧ earlier (indexof j ks) gs => ho h.1), hix, e0, e0]
+      by_cases hk : k = j
+      · subst hk
+        by_cases hg0 : g
+        · rw [if_pos (⟨Or.inl rfl, hg0⟩ : occurs k (k :: ks) ∧ g)]; simp [hg0]
+        · rw [if_neg (fun h : occurs k (k :: ks) ∧ g => hg0 h.2)]; simp [hg0]
+      · rw [if_neg (fun h : occurs j (k :: ks) ∧ g => h.1.elim hk ho)]
+        by_cases hg0 : g <;> simp [hg0, Ne.symm hk]
 
 theorem select_current_stores_where : Stmt.select_current_stores_where := by
-  intro a0 n guards values j n1 hguards hvalues hn
+  intro a0 i c n guards values j n1 hguards hvalues hn hc
   conv => rhs; simp (disch := complement) only [cases_of]
-  rw [stores_where, counter_N, select_current_stores_where_N n.toNat a0 0 guards values j (by omega) (by omega),
-    Int.sub_zero, Int.zero_add, Int.toNat_of_nonneg (by omega)]
+  have hl : (butlast (counter i c n)).length = n.toNat := by rw [counter_N, N.length_butlast_counter]
+  rw [stores_where]
+  exact select_current_stores_where_list j a0 _ guards values (distincts_counter i c n hc) (by omega) (by omega)
 
 theorem length_copies : Stmt.length_copies := by
   intro a ks ls S n hks hls
@@ -1568,6 +1566,140 @@ theorem current_trace_constant : Stmt.current_trace_constant := by
   intro α _ x y i c n
   rw [counter_N, N.current_trace_constant]
   exact ite_iff (toNat_zero_iff n) _ _
+
+-- phases: the model of Semantics.lean is the trace over the counter from 0 with the update by the phase of k
+theorem iterations_N (t : Nat) : ∀ (s : Int), iterations s t = butlast (N.counter s 1 t) := by
+  induction t with
+  | zero => intro s; rfl
+  | succ t ih => intro s; rw [N.butlast_counter_succ, ← ih]; rfl
+
+theorem phases_trace (x0 m n : Int) (F G : Int → Int → Int) :
+    phases x0 m n F G = trace x0 (butlast (counter 0 1 n)) (fun x k => if k < m then F x k else G x k) := by
+  rw [phases, iterations_N, counter_N]
+
+-- traces over a counter whose updates agree at its values are equal
+theorem trace_counter_congr {α : Type} (f g : α → Int → α) (t : Nat) : ∀ (s : Int) (x : α),
+    (∀ y k, s ≤ k → k < s + t → f y k = g y k) →
+    trace x (butlast (N.counter s 1 t)) f = trace x (butlast (N.counter s 1 t)) g := by
+  induction t with
+  | zero => intro s x h; rfl
+  | succ t ih =>
+    intro s x h
+    rw [N.butlast_counter_succ, N.trace_cons, N.trace_cons, h x s (Int.le_refl s) (by omega),
+      ih (s + 1) _ (fun y k h1 h2 => h y k (by omega) (by omega))]
+
+-- the counter of a + b steps is that of a steps followed by that of b steps from s + a
+theorem butlast_counter_append (a : Nat) : ∀ (s : Int) (b : Nat),
+    butlast (N.counter s 1 (a + b)) = butlast (N.counter s 1 a) ++ butlast (N.counter (s + a) 1 b) := by
+  induction a with
+  | zero => intro s b; simp [N.counter, butlast]
+  | succ a ih =>
+    intro s b
+    rw [show a + 1 + b = (a + b) + 1 by omega, N.butlast_counter_succ, N.butlast_counter_succ, ih (s + 1) b,
+      show s + 1 + (a : Int) = s + ((a + 1 : Nat) : Int) by omega]; rfl
+
+theorem current_trace_append {α β : Type} [Inhabited α] (x : α) (l₁ l₂ : List β) (f : α → β → α) :
+    current (trace x (l₁ ++ l₂) f) = current (trace (current (trace x l₁ f)) l₂ f) := by
+  induction l₁ generalizing x with
+  | nil => rfl
+  | cons d ds ih => exact ih (f x d)
+
+-- a counter from s + m read at k is one from s read at k + m
+theorem trace_counter_shift {α : Type} (G : α → Int → α) (m : Int) (t : Nat) : ∀ (s : Int) (x : α),
+    trace x (butlast (N.counter (s + m) 1 t)) G = trace x (butlast (N.counter s 1 t)) (fun y k => G y (k + m)) := by
+  induction t with
+  | zero => intro s x; rfl
+  | succ t ih =>
+    intro s x
+    rw [N.butlast_counter_succ, N.butlast_counter_succ, N.trace_cons, N.trace_cons,
+      show s + m + 1 = s + 1 + m by omega, ih (s + 1)]
+
+theorem length_phases : Stmt.length_phases := by
+  intro x0 m n F G h; rw [phases_trace, N.length_butlast_trace, counter_N, N.length_butlast_counter]; omega
+
+theorem earlier_phases : Stmt.earlier_phases := by
+  intro j x0 m n F G ⟨hj, hjn⟩
+  rw [phases_trace, phases_trace, earlier_trace_int j _ _ _ hj
+    (by rw [counter_N, N.length_butlast_counter]; omega), prefix_counter j 0 1 n (by omega)]
+
+theorem prefix_phases : Stmt.prefix_phases := by
+  intro k x0 m n F G h; rw [phases_trace, phases_trace, prefix_trace_int, prefix_counter k 0 1 n h]
+
+-- below the threshold b the value counts up from x0 by 1, above it it stays at least b, hence the guard on the value
+-- is the guard on the iteration
+theorem trace_threshold_N (x0 b c : Int) (hc : 0 ≤ c) (t : Nat) : ∀ (s x : Int), 0 ≤ s →
+    (s ≤ b - x0 → x = x0 + s) → (b - x0 ≤ s → b ≤ x) →
+    trace x (butlast (N.counter s 1 t)) (fun x k => if x < b then x + 1 else x + c)
+      = trace x (butlast (N.counter s 1 t)) (fun x k => if k < b - x0 then x + 1 else x + c) := by
+  induction t with
+  | zero => intro s x hs h1 h2; rfl
+  | succ t ih =>
+    intro s x hs h1 h2
+    rw [N.butlast_counter_succ, N.trace_cons, N.trace_cons]
+    by_cases hk : s < b - x0
+    · rw [if_pos (show x < b by have := h1 (by omega); omega), if_pos hk]
+      rw [ih (s + 1) (x + 1) (by omega) (fun h => by have := h1 (by omega); omega)
+        (fun h => by have := h1 (by omega); omega)]
+    · rw [if_neg (show ¬x < b by have := h2 (by omega); omega), if_neg hk]
+      rw [ih (s + 1) (x + c) (by omega) (fun h => by omega) (fun h => by have := h2 (by omega); omega)]
+
+theorem trace_threshold : Stmt.trace_threshold := by
+  intro x0 n b c ⟨hb, hc⟩
+  choices
+  rw [phases_trace, counter_N]
+  exact trace_threshold_N x0 b c hc n.toNat 0 x0 (Int.le_refl 0) (fun _ => by omega) (fun h => by omega)
+
+theorem current_phases : Stmt.current_phases := by
+  intro x0 m n F G ⟨hm, hn⟩
+  choices
+  rw [phases_trace]
+  by_cases h : n ≤ m
+  · rw [if_pos h, counter_N]
+    congr 1
+    exact trace_counter_congr _ _ n.toNat 0 x0 (fun y k h1 h2 => by rw [if_pos (by omega)])
+  · rw [if_neg h, counter_N, counter_N, counter_N,
+      show n.toNat = m.toNat + (n - m).toNat by omega, butlast_counter_append, current_trace_append,
+      trace_counter_congr _ (fun x k => F x k) m.toNat 0 x0 (fun y k h1 h2 => by rw [if_pos (by omega)]),
+      trace_counter_congr _ (fun x k => G x k) (n - m).toNat _ _ (fun y k h1 h2 => by rw [if_neg (by omega)]),
+      show (0 : Int) + (m.toNat : Int) = 0 + m by omega, trace_counter_shift]
+
+-- the states of a trace that does not decrease are below a bound iff the last of them is
+theorem invs_butlast_mono (h : Int → Int → Int) (hm : ∀ y k, y ≤ h y k) (B : Int) (t : Nat) : ∀ (s x : Int),
+    invs (butlast (trace x (butlast (N.counter s 1 (t + 1))) h)) (fun x => x < B)
+      ↔ current (trace x (butlast (N.counter s 1 t)) h) < B := by
+  induction t with
+  | zero => intro s x; simp [N.counter, butlast, trace, invs, current]
+  | succ t ih =>
+    intro s x
+    rw [N.butlast_counter_succ, N.trace_cons, butlast, invs, ih (s + 1) (h x s), N.butlast_counter_succ,
+      N.trace_cons, N.current_step_eq]
+    have := N.trace_mono (h x s) (butlast (N.counter (s + 1) 1 t)) h hm
+    have := hm x s
+    constructor
+    · exact fun h => h.2
+    · exact fun h' => ⟨by omega, h'⟩
+
+-- a predicate of the second components of a zip with a list at least as long
+theorem invs_zip_snd {α β : Type} (P : β → Prop) : ∀ (ks : List α) (xs : List β), xs.length ≤ ks.length →
+    (invs (List.zip ks xs) (fun p => P p.2) ↔ invs xs P)
+  | _, [], _ => by simp [invs]
+  | [], _ :: _, h => by simp at h
+  | k :: ks, x :: xs, h => by
+    rw [List.zip_cons_cons, invs, invs, invs_zip_snd P ks xs (by simp at h; omega)]
+
+theorem invs_phases_upper : Stmt.invs_phases_upper := by
+  intro x0 m n F G B ⟨hm, hFG⟩
+  have hmono : ∀ y k, y ≤ (fun x k => if k < m then F x k else G x k) y k := by
+    intro y k; dsimp only; split
+    · exact (hFG y k).1
+    · exact (hFG y k).2
+  rw [phases_trace, phases_trace]
+  show invs (List.zip _ _) (fun p => p.2 < B) ↔ _
+  rw [invs_zip_snd (fun x => x < B) _ _ (by rw [N.length_butlast_trace]; exact Nat.le_refl _)]
+  by_cases hn : n ≤ 0
+  · rw [counter_N, show n.toNat = 0 by omega]; simp [N.counter, butlast, trace, invs, hn]
+  · rw [counter_N, counter_N, show n.toNat = (n - 1).toNat + 1 by omega, invs_butlast_mono _ hmono B]
+    simp only [hn, false_or]
 
 theorem current_trace_catch_up : Stmt.current_trace_catch_up := by
   intro y0 x0 n ⟨hn, h⟩

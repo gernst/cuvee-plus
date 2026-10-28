@@ -17,6 +17,11 @@ example : ¬ («prefix» 1 (butlast (counter 0 1 0)) = butlast (counter 0 1 1)) 
 example : ¬ («prefix» 1 (butlast (consts 0 (0 : Int))) = butlast (consts 1 0)) :=
   by simp [«prefix», consts, butlast]
 
+-- prefix_phases for k > n
+example : ¬ («prefix» 1 (butlast (phases 0 0 0 (fun x _ => x) (fun x _ => x)))
+    = butlast (phases 0 0 1 (fun x _ => x) (fun x _ => x))) :=
+  by simp [«prefix», phases, iterations, butlast, trace]
+
 -- the former maps_earlier, whose right-hand side was the whole list, for a list that is longer than the iterations,
 -- e.g. that of an earlier loop with more iterations (bugs.md); maps_earlier has its prefix now
 example : ¬ (maps (butlast (counter 0 1 0)) (fun k => earlier k [(1 : Int)]) = [1]) :=
@@ -47,11 +52,11 @@ example : ¬ (distincts [(0 : Int)] → selects (current (stores (fun (_ : Int) 
 
 -- length_stores_where and prefix_stores_where, with guards and values shorter than the iterations, which the fold
 -- over the counter does not see (premises.txt)
-example : ¬ ((length (butlast (stores_where (fun (_ : Int) => (0 : Int)) 1 [] [])) : Int) = 1) :=
+example : ¬ ((length (butlast (stores_where (fun (_ : Int) => (0 : Int)) 0 1 1 [] [])) : Int) = 1) :=
   by simp [stores_where, counter, butlast, trace]
 
-example : ¬ («prefix» 1 (butlast (stores_where (fun (_ : Int) => (0 : Int)) 0 [True] [1]))
-    = butlast (stores_where (fun (_ : Int) => (0 : Int)) 1 («prefix» 1 [True]) («prefix» 1 [1]))) :=
+example : ¬ («prefix» 1 (butlast (stores_where (fun (_ : Int) => (0 : Int)) 0 1 0 [True] [1]))
+    = butlast (stores_where (fun (_ : Int) => (0 : Int)) 0 1 1 («prefix» 1 [True]) («prefix» 1 [1]))) :=
   by simp [stores_where, «prefix», counter, butlast, trace]
 
 -- current_trace_bounded, where the updates are conditionals that apply F3 also if no guard holds, unlike the cases of

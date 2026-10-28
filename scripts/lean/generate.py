@@ -3,7 +3,7 @@
 # the definitions as printed by -print lean, each lemma as the proposition Stmt.<name> of its printed statement with
 # the premises of lean/premises.txt, and for each lemma the check that the theorem <name> of lean/TEQ/Proofs.lean
 # proves it; the datatype of traces is that of lean/TEQ/Semantics.lean, which the printed one must equal, and so are
-# the declarations of the aggregates of multisets that it defines (AGGREGATES)
+# the declarations of the functions without a body that it models, the aggregates of multisets and phases (AGGREGATES)
 #
 #   scripts/lean/generate.py [--jar cuvee.jar | --classpath <classpath>] [--check]
 #
@@ -31,12 +31,14 @@ TRACE = """inductive Trace (α₀ : Type) where
   | stop (last : α₀) : Trace α₀
   | step (first : α₀) (rest : Trace α₀) : Trace α₀"""
 
-# the aggregates of multisets, which the modules declare without a body and lean/TEQ/Semantics.lean defines over its
-# model of multisets: the printed declarations, which the generator checks and leaves out
+# the functions that the modules declare without a body and lean/TEQ/Semantics.lean models: the aggregates of
+# multisets over its model of multisets, and phases of counters.dfy as the trace of the comment above it; the printed
+# declarations, which the generator checks and leaves out
 AGGREGATES = {"sum": "axiom sum : Bag Int → Int",
               "parity": "axiom parity : Bag Int → Int",
               "max": "axiom max : Int → Bag Int → Int",
-              "min": "axiom min : Int → Bag Int → Int"}
+              "min": "axiom min : Int → Bag Int → Int",
+              "phases": "axiom phases : Int → Int → Int → (Int → Int → Int) → (Int → Int → Int) → Trace Int"}
 
 def norm(s):
     return re.sub(r"\s+", " ", s).strip()

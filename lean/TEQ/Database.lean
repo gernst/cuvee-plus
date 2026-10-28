@@ -1393,11 +1393,12 @@ def Stmt.selects_stores_counter : Prop :=
         (butlast (counter i c n))
         = vs
 
-noncomputable def stores_where (a : Int → Int) (n : Int) (guards : List Prop)
+noncomputable def stores_where (a : Int → Int) (i : Int) (c : Int) (n : Int)
+                               (guards : List Prop)
                                (values : List Int) : Trace (Int → Int) :=
   trace
     a
-    (List.zip (butlast (counter 0 1 n)) (List.zip guards values))
+    (List.zip (butlast (counter i c n)) (List.zip guards values))
     (fun b ⟨k, g, v⟩ =>
        if g then
          fun j => if j = k then v else b j
@@ -1405,27 +1406,33 @@ noncomputable def stores_where (a : Int → Int) (n : Int) (guards : List Prop)
          if ¬g then b else unspecified)
 
 def Stmt.length_stores_where : Prop :=
-  ∀ (a : Int → Int) (n : Int) (guards : List Prop) (values : List Int) (n1 : Int) (hguards : length guards = n1) (hvalues : length values = n1) (hn : n1 = n),
-    0 ≤ n → length (butlast (stores_where a n guards values)) = n
+  ∀ (a : Int → Int) (i : Int) (c : Int) (n : Int) (guards : List Prop) (values : List Int) (n1 : Int) (hguards : length guards = n1) (hvalues : length values = n1) (hn : n1 = n),
+    0 ≤ n → length (butlast (stores_where a i c n guards values)) = n
 
 def Stmt.earlier_stores_where : Prop :=
-  ∀ (j : Int) (a : Int → Int) (n : Int) (guards : List Prop) (values : List Int) (n1 : Int) (hguards : length guards = n1) (hvalues : length values = n1) (hn : n1 = n),
+  ∀ (j : Int) (a : Int → Int) (i : Int) (c : Int) (n : Int) (guards : List Prop) (values : List Int) (n1 : Int) (hguards : length guards = n1) (hvalues : length values = n1) (hn : n1 = n),
     0 ≤ j ∧ j < n →
-      (earlier j (butlast (stores_where a n guards values))
-         = current (stores_where a j («prefix» j guards) («prefix» j values)))
+      (earlier j (butlast (stores_where a i c n guards values))
+         = current (stores_where a i c j («prefix» j guards) («prefix» j values)))
 
 def Stmt.prefix_stores_where : Prop :=
-  ∀ (k : Int) (a : Int → Int) (n : Int) (guards : List Prop) (values : List Int) (n1 : Int) (hguards : length guards = n1) (hvalues : length values = n1) (hn : n1 = n),
-    «prefix» k (butlast (stores_where a n guards values))
-      = butlast (stores_where a k («prefix» k guards) («prefix» k values))
+  ∀ (k : Int) (a : Int → Int) (i : Int) (c : Int) (n : Int) (guards : List Prop) (values : List Int) (n1 : Int) (hguards : length guards = n1) (hvalues : length values = n1) (hn : n1 = n),
+    «prefix» k (butlast (stores_where a i c n guards values))
+      = butlast (stores_where a i c k («prefix» k guards) («prefix» k values))
 
 def Stmt.select_current_stores_where : Prop :=
-  ∀ (a0 : Int → Int) (n : Int) (guards : List Prop) (values : List Int) (j : Int) (n1 : Int) (hguards : length guards = n1) (hvalues : length values = n1) (hn : n1 = n),
-    current (stores_where a0 n guards values) j
-      = (if 0 ≤ j ∧ j < n ∧ earlier j guards then
-           earlier j values
-         else
-           if ¬(0 ≤ j ∧ j < n ∧ earlier j guards) then a0 j else unspecified)
+  ∀ (a0 : Int → Int) (i : Int) (c : Int) (n : Int) (guards : List Prop) (values : List Int) (j : Int) (n1 : Int) (hguards : length guards = n1) (hvalues : length values = n1) (hn : n1 = n),
+    c ≠ 0
+      → current (stores_where a0 i c n guards values) j
+        = (if occurs j (butlast (counter i c n))
+             ∧ earlier (indexof j (butlast (counter i c n))) guards then
+             earlier (indexof j (butlast (counter i c n))) values
+           else
+             if ¬(occurs j (butlast (counter i c n))
+                    ∧ earlier (indexof j (butlast (counter i c n))) guards) then
+               a0 j
+             else
+               unspecified)
 
 def Stmt.select_current_trace_cap : Prop :=
   ∀ (a0 : Int → Int) (n : Int) (j : Int) (b : Int),
@@ -1501,8 +1508,58 @@ def Stmt.current_trace_constant : Prop :=
     current (trace x (butlast (counter i c n)) (fun z v => y))
       = (if n ≤ 0 then x else if 0 < n then y else unspecified)
 
-axiom phases :
-  Int → Int → Int → (Int → Int → Int) → (Int → Int → Int) → Trace Int
+def Stmt.length_phases : Prop :=
+  ∀ (x0 : Int) (m : Int) (n : Int) (F : Int → Int → Int) (G : Int → Int → Int),
+    0 ≤ n → length (butlast (phases x0 m n F G)) = n
+
+def Stmt.earlier_phases : Prop :=
+  ∀ (j : Int) (x0 : Int) (m : Int) (n : Int) (F : Int → Int → Int) (G : Int → Int → Int),
+    0 ≤ j ∧ j < n →
+      (earlier j (butlast (phases x0 m n F G)) = current (phases x0 m j F G))
+
+def Stmt.prefix_phases : Prop :=
+  ∀ (k : Int) (x0 : Int) (m : Int) (n : Int) (F : Int → Int → Int) (G : Int → Int → Int),
+    k ≤ n →
+      («prefix» k (butlast (phases x0 m n F G)) = butlast (phases x0 m k F G))
+
+def Stmt.trace_threshold : Prop :=
+  ∀ (x0 : Int) (n : Int) (b : Int) (c : Int),
+    x0 ≤ b ∧ 0 ≤ c
+      → trace
+        x0
+        (butlast (counter 0 1 n))
+        (fun x k => if x < b then x + 1 else if b ≤ x then x + c else unspecified)
+        = phases
+          x0
+          (b - x0)
+          n
+          (fun (y : Int) (l : Int) => y + 1)
+          (fun (y : Int) (l : Int) => y + c)
+
+def Stmt.current_phases : Prop :=
+  ∀ (x0 : Int) (m : Int) (n : Int) (F : Int → Int → Int) (G : Int → Int → Int),
+    0 ≤ m ∧ 0 ≤ n
+      → current (phases x0 m n F G)
+        = (if n ≤ m then
+             current (trace x0 (butlast (counter 0 1 n)) (fun x k => F x k))
+           else
+             if m < n then
+               current
+                 (trace
+                    (current
+                       (trace x0 (butlast (counter 0 1 m)) (fun x k => F x k)))
+                    (butlast (counter 0 1 (n - m)))
+                    (fun x k => G x (k + m)))
+             else
+               unspecified)
+
+def Stmt.invs_phases_upper : Prop :=
+  ∀ (x0 : Int) (m : Int) (n : Int) (F : Int → Int → Int) (G : Int → Int → Int) (B : Int),
+    0 ≤ m ∧ (∀ (y : Int) (l : Int), y ≤ F y l ∧ y ≤ G y l)
+      → (invs
+           (List.zip (butlast (counter 0 1 n)) (butlast (phases x0 m n F G)))
+           (fun ⟨k, x⟩ => x < B)
+           ↔ n ≤ 0 ∨ current (phases x0 m (n - 1) F G) < B)
 
 def Stmt.current_trace_catch_up : Prop :=
   ∀ (y0 : Int) (x0 : Int) (n : Int),

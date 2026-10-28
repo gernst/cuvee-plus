@@ -207,8 +207,9 @@ Lean 4 without Mathlib, in the Lake project at the root ([lean/README.md](../lea
   list erased once each, which cuts off at zero like the core's), the multiplicity `Bag.count m e` (`List.count`),
   and submultisets `n ≤ m` (by the multiplicities), each lifted by `Quotient.lift₂` or `Quotient.lift`. The
   aggregates `sum`, `parity`, `max`, `min`, which the modules declare without a body, are defined here as right folds
-  of the lists, lifted by the proof that the fold does not depend on the order; the generator checks their printed
-  declarations and leaves them out (`AGGREGATES`). Proofs.lean bridges `elems xs` to the class of `xs` and the
+  of the lists, lifted by the proof that the fold does not depend on the order; so is `phases` of the module counters,
+  also declared without a body, as the trace of its comment; the generator checks the printed declarations of these
+  functions and leaves them out (`AGGREGATES`). Proofs.lean bridges `elems xs` to the class of `xs` and the
   aggregates of it to the folds of lists of Naturals.lean (`sum_N`, `parity_N`, `count_N`).
 - [Database.lean](../lean/TEQ/Database.lean) (generated): the functions as printed by `-print lean`, and each lemma
   as a proposition `Stmt.<name>` with the premises of [premises.txt](../lean/premises.txt).
@@ -218,9 +219,7 @@ Lean 4 without Mathlib, in the Lake project at the root ([lean/README.md](../lea
   `N`.
 - [Check.lean](../lean/TEQ/Check.lean) (generated): `example : Stmt.<name> := @<name>` for each lemma.
 - [Counterexamples.lean](../lean/TEQ/Counterexamples.lean): the lemmas without their premises or conditions are false.
-- [open.txt](../lean/open.txt): lemmas without proof, removed from the modules before printing (the six lemmas of
-  `phases`, which is declared without a body: proving them needs its model in Semantics.lean and an entry in
-  `AGGREGATES` of generate.py).
+- [open.txt](../lean/open.txt): lemmas without proof, removed from the modules before printing (empty).
 
 The dependencies of a combinator have equal lengths, which `zip` does not assume: `-print lean` adds hypotheses
 (`lean.Printer.lengths`), `length xs = n` for each list that is a dependency of a combinator (also through a fold),
