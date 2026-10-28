@@ -52,7 +52,8 @@ object Simplify:
   // simplify `expr` assuming that all facts in `ctx` hold
   // by repeated rounds of simplification until a fixpoint is reached,
   // a formula that is known from the context is replaced by its truth value (only formulas, which not applies to);
-  // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already
+  // after each round, a rewrite rule of the context is applied at the top, whose subterms are simplified already, and a
+  // term with a literal in its class is that literal
   // an expression in an inconsistent context is unreachable, any value is right there, and it stays as it is, since
   // every side condition holds and the rules would apply without end, e.g. to the reads of the history of a trace in
   // the dead branch of a decided test (swap.dfy); formulas are decided by their polarity first (see implied)
@@ -65,7 +66,8 @@ object Simplify:
         if once_ != expr
         then Debug.step("simplify", show(config.output.printer, expr), show(config.output.printer, once_))
 
-        val expr_ = rewrite(config, state, ctx, once_)
+        // a term with a literal in its class is that literal (see Classes.ground)
+        val expr_ = ctx.classes.ground(rewrite(config, state, ctx, once_))
         if expr_ == expr
         then forward(config, state, ctx, expr)
         else simplify(config, state, ctx, expr_)

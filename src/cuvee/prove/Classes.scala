@@ -119,9 +119,20 @@ case class Classes(
   // term: how a variable is written in a term, the root of its class (a literal before a variable, see rank);
   // value: a leaf of a polynomial with the solutions of its variables (see substitute);
   // fixed: whether a variable has a literal value, which then is its root;
+  // ground: a registered term whose class has a literal as its root by that literal, also an application, e.g. the
+  // read a[i] under a[i] == 1 in the stored value a[i := a[i] + 1], which the facts with a literal are no rewrite rules
+  // for (see Context.rule), so that writing them costs no rewrite step;
   // fact: the canonical form of a fact (see normalize)
   def term(x: Var): Expr =
     normalize(x)
+
+  def ground(expr: Expr): Expr =
+    if parent.contains(expr)
+    then
+      find(expr) match
+        case lit: Lit => lit
+        case _        => expr
+    else expr
 
   def value(leaf: Expr): Expr =
     substitute(leaf)

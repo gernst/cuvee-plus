@@ -13,6 +13,10 @@ benchmarks are not rerun with Cuvée.
 In this order; each is checked on its tasks first, then by one cloud run of Arrays and Loops (no task lost). Open
 tasks are from the cloud runs of Oct 27 and 28 (0.52.14 to 0.52.17, Ryzen, 120 s, one core).
 
+- [ ] **Ground terms in the canonical form** (Oct 28): since 0.53.5, a term whose class has a literal as its root is
+      written as that literal (`Classes.ground`; cloud, 120 s: Arrays 190/62, Loops 225/33, +standard_partial_init_ground,
+      string-1, divbin_unwindbound1, no losses); open: ground roots that are no literals (terms over constants), which
+      rank behind the variables now (`Classes.rank`), as the second step; `-prove:steps 10000` lost nothing on 0.53.4.
 - [ ] **Strided stores** (array-tiling, 22 of 29 open: `pr2`-`pr5`, `mbpr2`-`mbpr5`, `pnr2`-`pnr5`, `nr2`-`nr5`,
       `tcpy`, ...). Three gaps, in this order:
       1. done (0.52.15): the parity of successors, `(p + c) % m` from a known `p % m` for `m <= 4`, the case split on

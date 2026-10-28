@@ -53,7 +53,10 @@ rules, and the memos. Each assumed fact goes to all theories:
     match. Nothing else is substituted: equations of traces, reads of traces and arrays, and applications stay members
     of their classes.
   - **Canonical forms.** `Classes.normalize` writes arithmetic in its polynomial normal form with the solutions of its
-    atoms, a registered term by its root, and an equation of equal sides as `true`. The simplifier, the context and
+    atoms, a registered term by its root, and an equation of equal sides as `true`. The simplifier writes a term whose class has a
+    literal as its root as that literal (`Classes.ground`), also an application, e.g. the read `a[i]` of the stored value
+    `a[i := a[i] + 1]` under `a[i] == 1` (array-fpi/conda); a fact with a literal is no rewrite rule of the context
+    (`Context.rule`), so that writing it costs no rewrite step. The simplifier, the context and
     the matcher use this policy through four operations of `Classes` only: `term` (a variable as the root of its
     class), `value` (a leaf of arithmetic with its solution), `fixed` (whether a variable has a literal value), and
     `fact` (a fact in canonical form); a change of the order of roots or of the solutions is a change of `Classes`
