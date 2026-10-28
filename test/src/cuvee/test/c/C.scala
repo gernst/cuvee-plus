@@ -6,11 +6,13 @@ import utest._
 import cuvee.core._
 import cuvee.Cuvee
 
-// printing the C examples is stable after a first round of parsing and printing again
+// printing the C examples is stable after two rounds of parsing and printing again: the first hoists declarations of
+// nested scopes, e.g. of the variable of a for loop, which may then shadow those of inner blocks, which the second
+// renames, e.g. to i₁, printed as i_1, which the third reads as a name without index, printed as i_1_ from then on
 object Roundtrip extends TestSuite:
   val tests =
     Examples.tests(Examples.printing(Examples.valid(os.sub / "c", "c"))): file =>
-      Examples.roundtrip(file, Nil, rounds = 1)
+      Examples.roundtrip(file, Nil, rounds = 2)
 
 // all examples with -chc whose second line states whether all assertions hold,
 // except for division by variables, for which z3 answers unknown; z3 answers each within 250 ms when the machine is

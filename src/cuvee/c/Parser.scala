@@ -21,10 +21,8 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
   // the signatures of the functions by name
   val functions = mutable.Map[String, Function]()
 
-  // the functions of math.h without a body, which are pure, as uninterpreted functions of their arguments rather than
-  // procedures, e.g. sqrt (see floats)
-  val math = Set("sqrt", "sqrtf", "sqrtl", "fabs", "fabsf", "fabsl", "floor", "floorf", "ceil", "ceilf", "pow", "powf",
-                 "exp", "expf", "log", "logf")
+  // the functions of math.h without a body (Syntax.math), which are pure, as uninterpreted functions of their
+  // arguments rather than procedures, e.g. sqrt (see floats)
   val pure = mutable.Set[String]()
 
   // the logic functions and predicates of ACSL by name (see logic)
@@ -232,27 +230,10 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       val int = state.types.sort("Int")
       val bool = state.types.sort("Bool")
       for s <- List("Float", "Double") do state = state.declare(s, 0, Attrs.empty)
-      for (name, args, res) <- floatFuns
+      for (name, args, res) <- Syntax.floats
       do
         val formals = args.zipWithIndex.map((t, i) => state.exprs.formal("x" + i, if t == "Int" then int else if t == "Bool" then bool else state.types.sort(t)))
         state = state.declare(name, Nil, formals, if res == "Int" then int else if res == "Bool" then bool else state.types.sort(res), freely)
-
-  def floatFuns: List[(String, List[String], String)] =
-    List("Float", "Double").flatMap: s =>
-      List(
-        (s + "_of_int", List("Int"), s),
-        (s + "_to_int", List(s), "Int"),
-        (s + "_lit", List("Int", "Int"), s),
-        (s + "_neg", List(s), s),
-        (s + "_add", List(s, s), s),
-        (s + "_sub", List(s, s), s),
-        (s + "_mul", List(s, s), s),
-        (s + "_div", List(s, s), s),
-        (s + "_lt", List(s, s), "Bool"),
-        (s + "_le", List(s, s), "Bool"),
-        (s + "_eq", List(s, s), "Bool")
-      )
-    ++ List(("Float_of_Double", List("Double"), "Float"), ("Double_of_Float", List("Float"), "Double"))
 
   def float(kind: String, op: String, args: core.Expr*): core.Expr =
     floats()
@@ -1708,7 +1689,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
 
     // procedures are declared before the bodies are resolved, since they may call each other; parameters that shadow
     // global variables are renamed apart, as local variables are (see block)
-    for (name, f) <- defs if math.contains(name) && f.body.isEmpty
+    for (name, f) <- defs if Syntax.math.contains(name) && f.body.isEmpty
     do
       pure += name
       val formals = f.params.map((t, x) => state.exprs.formal(x, typ(t)))
@@ -1774,7 +1755,7 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
     // the declarations of floating point numbers, if used (see floats)
     val floatCmds =
       if !floating then Nil
-      else List("Float", "Double").map(s => state.cmds.declareSort(s)) ++ floatFuns.map((name, args, _) => state.cmds.declareFun(name, args.length))
+      else List("Float", "Double").map(s => state.cmds.declareSort(s)) ++ Syntax.floats.map((name, args, _) => state.cmds.declareFun(name, args.length))
     floatCmds ++ cmds.toList
 
   // the modifies clauses of the functions: those of `assigns`, and for the others the global variables that their

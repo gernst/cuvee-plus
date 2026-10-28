@@ -18,6 +18,7 @@ import easyparse.Assoc
 // declarations; the result of a function is a local variable result, which each return returns, and which the parser
 // reads back as the result itself; assertions and assumptions are written with the conventions of SV-COMP;
 // the functions of the prelude of C (resources/cuvee/c/prelude.bpl) are written as the C they stand for;
+// so are the floating point numbers, float and double with their operators, casts and literals (see Parser.floats);
 // uninterpreted functions are prototypes, and their applications calls;
 // everything else is printed in SMT-LIB, wrapped such that it looks like a macro, SMT_LIB(...),
 // e.g. assertions of formulas, quantifiers, and commands such as check-sat, as far down as possible,
@@ -61,9 +62,23 @@ object Printer extends cuvee.pipe.Printer:
   def smtlib(lines: List[String]): Doc =
     text("SMT_LIB(") ~ Align(join(lines.map(text), hardline)) ~ text(")")
 
-  // each command is followed by an empty line, as by the SMT-LIB printer
+  // each command is followed by an empty line, as by the SMT-LIB printer; the declarations of floating point numbers
+  // are omitted, the parser declares them again where float or double occurs (see Parser.floats)
   def lines(cmd: Cmd): List[String] =
-    render(doc(cmd), width) :+ ""
+    cmd match
+      case DeclareSort(Con(Name("Float" | "Double", None), 0), _)                 => Nil
+      case DeclareFun(Fun(Name(f, None), Nil, _, _), _) if floating.contains(f) => Nil
+      case _                                                                     => render(doc(cmd), width) :+ ""
+
+  // the operations of floating point numbers by name (see Syntax.floats)
+  val floating = Syntax.floats.map(_._1).toSet
+
+  // the kind of floating point numbers, float or double, of a sort
+  def kind(typ: Type): Option[String] =
+    typ match
+      case Sort(Con(Name("Float", None), 0), Nil)  => Some("float")
+      case Sort(Con(Name("Double", None), 0), Nil) => Some("double")
+      case _                                      => None
 
   def lines(typ: Type): List[String] =
     render(doc(typ), width)
@@ -82,6 +97,7 @@ object Printer extends cuvee.pipe.Printer:
       // the pointers of the background theory of C (resources/cuvee/c/prelude.bpl)
       case Sort(Con(Name("Void", None), 0), Nil)            => text("void")
       case Sort(Con(Name("Ptr", None), 1), List(elem))      => doc(elem) ~ text(" *")
+      case _ if kind(typ).isDefined                         => text(kind(typ).get)
       case _         => smtlib(cuvee.smtlib.Printer.lines(typ))
 
   // the element type and the number of dimensions of arrays of arrays, e.g. int a[][] for Array Int (Array Int Int)
@@ -124,6 +140,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case DeclareProc(Proc(name_, Nil, in, out), attrs) if out.length <= 1 =>
         contract(name_, out, attrs) ~ signature(name_, in, out) ~ text(";")
+
+      // the functions of math.h, e.g. sqrt, as prototypes, which the parser reads as pure functions (see Parser.pure)
+      case DeclareFun(Fun(name_ @ Name(f, None), Nil, formals, res), _) if Syntax.math.contains(f) =>
+        text("extern") ~~ signature(name_, formals, List(Var(Name("result", None), res))) ~ text(";")
 
       // functions are the logic functions and predicates of ACSL, e.g. those of Parser.logic and the predicates of
       // Horn clauses, if ACSL has their types
@@ -293,7 +313,7 @@ object Printer extends cuvee.pipe.Printer:
     types.toMap
 
   def nondet(x: Var): Doc =
-    val fun = if x.typ == Sort.bool then "__VERIFIER_nondet_bool" else "__VERIFIER_nondet_int"
+    val fun = if x.typ == Sort.bool then "__VERIFIER_nondet_bool" else "__VERIFIER_nondet_" + kind(x.typ).getOrElse("int")
     text(name(x.name)) ~~ text("=") ~~ text(fun + "();")
 
   def doc(prog: Prog): Doc =
@@ -413,6 +433,11 @@ object Printer extends cuvee.pipe.Printer:
       // the overflow of unsigned integers as casts, e.g. uint(x + 1) as (unsigned int) (x + 1), which parse back to it
       case App(Fun(Name(f, None), Nil, _, _), _, _, List(arg)) if Syntax.overflows.contains(f) =>
         Some(("(" + Syntax.overflows(f) + ") ", Grammar.prefix_ops("-"), arg))
+      // the operations of floating point numbers (see Parser.floats), where the conversions are casts
+      case App(Fun(Name(f, None), Nil, _, _), _, _, List(arg)) if f.endsWith("_neg") && floating.contains(f) =>
+        Some(("-", Grammar.prefix_ops("-"), arg))
+      case App(Fun(Name(f, None), Nil, _, res), _, _, List(arg)) if floating.contains(f) && !floatLiteral(expr) =>
+        Some(("(" + kind(res).getOrElse("int") + ") ", Grammar.prefix_ops("-"), arg))
       case _             => None
 
   def infix(expr: Expr): Option[(String, Assoc, Int, List[Expr])] =
@@ -444,11 +469,35 @@ object Printer extends cuvee.pipe.Printer:
       case App(Fun(Name("bitxor", None), Nil, _, _), _, _, List(a, b))    => op("^", List(a, b))
       case App(Fun(Name("shl", None), Nil, _, _), _, _, List(a, b))       => op("<<", List(a, b))
       case App(Fun(Name("shr", None), Nil, _, _), _, _, List(a, b))       => op(">>", List(a, b))
+      case App(Fun(Name(f, None), Nil, _, _), _, _, List(a, b)) if floating.contains(f) && floatOps.contains(f.drop(f.indexOf('_') + 1)) =>
+        op(floatOps(f.drop(f.indexOf('_') + 1)), List(a, b))
       case Ints.lt(a, b)        => op("<", List(a, b))
       case Ints.le(a, b)        => op("<=", List(a, b))
       case Ints.gt(a, b)        => op(">", List(a, b))
       case Ints.ge(a, b)        => op(">=", List(a, b))
       case _                   => None
+
+  // the binary operations of floating point numbers by the suffix of their names (see Syntax.floats)
+  val floatOps = Map("add" -> "+", "sub" -> "-", "mul" -> "*", "div" -> "/", "lt" -> "<", "le" -> "<=", "eq" -> "==")
+
+  // the literals of floating point numbers as the parser reads them (see Parser.floatLiteral): Double_of_int(2) is
+  // 2.0 and Double_lit(5, 10) is 0.5, with the suffix f for float
+  def floatLiteral(expr: Expr): Boolean =
+    expr match
+      case App(Fun(Name(f, None), Nil, _, _), _, _, List(Lit(n: BigInt, _))) =>
+        f.endsWith("_of_int") && floating.contains(f) && n >= 0
+      case App(Fun(Name(f, None), Nil, _, _), _, _, List(Lit(n: BigInt, _), Lit(d: BigInt, _))) =>
+        f.endsWith("_lit") && floating.contains(f) && n > 0 && n % 10 != 0 && d > 1 && d.toString.matches("10*")
+      case _ =>
+        false
+
+  def floatText(expr: Expr): String =
+    val suffix = if kind(expr.typ) == Some("float") then "f" else ""
+    expr match
+      case App(_, _, _, List(Lit(n: BigInt, _)))                     => n.toString + ".0" + suffix
+      case App(_, _, _, List(Lit(n: BigInt, _), Lit(d: BigInt, _))) =>
+        BigDecimal(n, d.toString.length - 1).bigDecimal.toPlainString + suffix
+      case _                                                         => Error.raise("not a literal", expr)
 
   def level(expr: Expr): (Int, Option[Assoc]) =
     expr match
@@ -510,6 +559,9 @@ object Printer extends cuvee.pipe.Printer:
 
       case Lit(value: BigInt, _) =>
         text(value.toString)
+
+      case _ if floatLiteral(expr) =>
+        text(floatText(expr))
 
       case True if acsl =>
         text("\\true")

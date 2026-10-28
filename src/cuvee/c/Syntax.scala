@@ -32,6 +32,30 @@ object Syntax:
   val overflows =
     Map("uchar" -> "unsigned char", "ushort" -> "unsigned short", "uint" -> "unsigned int", "ulonglong" -> "unsigned long long")
 
+  // the functions of math.h without a body, which are pure, as uninterpreted functions of their arguments rather than
+  // procedures, e.g. sqrt (see Parser.floats), whose declarations the printer writes as prototypes again
+  val math = Set("sqrt", "sqrtf", "sqrtl", "fabs", "fabsf", "fabsl", "floor", "floorf", "ceil", "ceilf", "pow", "powf",
+                 "exp", "expf", "log", "logf")
+
+  // the declared operations of the floating point numbers by name, argument sorts, and result sort (see Parser.floats),
+  // which the printer writes as the C they stand for
+  val floats: List[(String, List[String], String)] =
+    List("Float", "Double").flatMap: s =>
+      List(
+        (s + "_of_int", List("Int"), s),
+        (s + "_to_int", List(s), "Int"),
+        (s + "_lit", List("Int", "Int"), s),
+        (s + "_neg", List(s), s),
+        (s + "_add", List(s, s), s),
+        (s + "_sub", List(s, s), s),
+        (s + "_mul", List(s, s), s),
+        (s + "_div", List(s, s), s),
+        (s + "_lt", List(s, s), "Bool"),
+        (s + "_le", List(s, s), "Bool"),
+        (s + "_eq", List(s, s), "Bool")
+      )
+    ++ List(("Float_of_Double", List("Double"), "Float"), ("Double_of_Float", List("Float"), "Double"))
+
   // allocations of arrays (see Parser.allocation), also safe_malloc and safe_calloc, with which SV-COMP replaces
   // allocations that are not checked for NULL, defined in the tasks as abort() on NULL, or as a loop forever in the
   // variants safe_malloc_or_loop and safe_calloc_or_loop (e.g. verifythis/tree_del_iter), which the allocations
