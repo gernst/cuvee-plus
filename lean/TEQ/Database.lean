@@ -1584,6 +1584,15 @@ def Stmt.current_trace_constant : Prop :=
     current (trace x (butlast (counter i c n)) (fun z v => y))
       = (if n ≤ 0 then x else if 0 < n then y else unspecified)
 
+def Stmt.current_trace_last : Prop :=
+  ∀ {α : Type} [Inhabited α] (x0 : α) (n : Int) (hs : List Int) (F : Int → Int → α) (hhs : length hs = n),
+    current
+      (trace x0 (List.zip (butlast (counter 0 1 n)) hs) (fun x ⟨k, h⟩ => F k h))
+      = (if n ≤ 0 then
+           x0
+         else
+           if 0 < n then F (n - 1) (earlier (n - 1) hs) else unspecified)
+
 def Stmt.length_phases : Prop :=
   ∀ (x0 : Int) (m : Int) (n : Int) (F : Int → Int → Int) (G : Int → Int → Int),
     0 ≤ n → length (butlast (phases x0 m n F G)) = n
@@ -2033,6 +2042,36 @@ def Stmt.current_trace_mod_add_cases : Prop :=
                 if C k then x + F k else if ¬C k then x else unspecified))
           % m
 
+def Stmt.current_trace_mod_affine : Prop :=
+  ∀ (x0 : Int) (m : Int) (n : Int) (hs : List Int) (A : Int → Int → Int) (B : Int → Int → Int) (hhs : length hs = n),
+    0 < m ∧ 0 ≤ x0 ∧ x0 < m
+      → current
+        (trace
+           x0
+           (List.zip (butlast (counter 0 1 n)) hs)
+           (fun x ⟨k, h⟩ => (x * A k h + B k h) % m))
+        = current
+          (trace
+             x0
+             (List.zip (butlast (counter 0 1 n)) hs)
+             (fun x ⟨k, h⟩ => x * A k h + B k h))
+          % m
+
+def Stmt.current_trace_mod_mul : Prop :=
+  ∀ (x0 : Int) (m : Int) (n : Int) (hs : List Int) (A : Int → Int → Int) (hhs : length hs = n),
+    0 < m ∧ 0 ≤ x0 ∧ x0 < m
+      → current
+        (trace
+           x0
+           (List.zip (butlast (counter 0 1 n)) hs)
+           (fun x ⟨k, h⟩ => x * A k h % m))
+        = current
+          (trace
+             x0
+             (List.zip (butlast (counter 0 1 n)) hs)
+             (fun x ⟨k, h⟩ => x * A k h))
+          % m
+
 noncomputable def squares (i : Int) (n : Int) : Int :=
   sum (elems (maps (butlast (counter i 1 n)) (fun k => k * k)))
 
@@ -2100,6 +2139,10 @@ noncomputable def series (x0 : Int) (z : Int) (a : Int) (n : Int) : Trace Int :=
 def Stmt.length_series : Prop :=
   ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),
     0 ≤ n → length (butlast (series x0 z a n)) = n
+
+def Stmt.current_series_none : Prop :=
+  ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),
+    n ≤ 0 → current (series x0 z a n) = x0
 
 def Stmt.current_series : Prop :=
   ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),

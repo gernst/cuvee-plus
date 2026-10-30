@@ -1,6 +1,2 @@
 # the lemmas of the stable modules without a proof in Lean, which the generator removes from the modules before
 # printing (scripts/lean/generate.py): a line `name -- why`; each line is a lemma that is assumed, not checked
-current_trace_last -- new (Oct 29): a trace whose update does not read its accumulator holds its last update
-current_trace_mod_affine -- new (Oct 29): the remainder of an affine update lifted out of the trace
-current_trace_mod_mul -- new (Oct 29): the same for a product without a summand
-current_series_none -- new (Oct 29): series without an iteration is its initial value

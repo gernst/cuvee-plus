@@ -1875,6 +1875,26 @@ theorem current_trace_constant {α : Type} [Inhabited α] (x : α) (y : α)
       | zero => rfl
       | succ k ih => simp [butlast_counter_succ, trace, current, ih]
 
+-- a trace whose update does not read its accumulator holds the update of its last iteration, from any start s of the
+-- counter, over a list of its length
+theorem current_trace_last_from {α : Type} [Inhabited α] (F : Int → Int → α) (n : Nat) :
+    ∀ (s : Int) (x0 : α) (hs : List Int), hs.length = n + 1 →
+      current (trace x0 (List.zip (butlast (counter s 1 (n + 1))) hs) (fun x ⟨k, h⟩ => F k h))
+        = F (s + n) (earlier n hs) := by
+  induction n with
+  | zero =>
+    intro s x0 hs hl
+    match hs, hl with
+    | [h], _ => simp [counter, butlast, trace, current, earlier]
+  | succ n ih =>
+    intro s x0 hs hl
+    match hs, hl with
+    | h :: hs, hl =>
+      rw [butlast_counter_succ, List.zip_cons_cons]
+      simp only [trace, current]
+      rw [ih (s + 1) _ hs (by simpa using hl)]
+      simp only [earlier]; congr 1; push_cast; omega
+
 theorem current_consts {α : Type} [Inhabited α] (n : Nat) (x : α) :
   current (consts n x) = x :=
   by
@@ -3783,6 +3803,38 @@ theorem current_trace_mod_add_cases : Stmt.current_trace_mod_add_cases := by
   simp only [ite_lt_le, ite_le_lt, ite_eq_ne, ite_not_else, ite_ne_eq, ite_not_first]
   have := trace_mod_add_cases_from m C F (butlast (counter 0 1 n)) x0
   rwa [Int.emod_eq_of_lt h1 h2] at this
+
+-- the trace of the remainders of an affine update from y % m is the remainder of the trace from y, over any
+-- dependencies, since the remainder commutes with sums and products
+theorem trace_mod_affine_from (m : Int) (A B : Int → Int → Int) (ds : List (Int × Int)) : ∀ y,
+    current (trace (y % m) ds (fun x ⟨k, h⟩ => (x * A k h + B k h) % m))
+      = current (trace y ds (fun x ⟨k, h⟩ => x * A k h + B k h)) % m := by
+  induction ds with
+  | nil => intro y; rfl
+  | cons d ds ih =>
+    intro y
+    obtain ⟨k, h⟩ := d
+    rw [trace_cons, trace_cons, current_step_eq, current_step_eq]
+    have e : (y % m * A k h + B k h) % m = (y * A k h + B k h) % m := by
+      rw [Int.add_emod, Int.mul_emod, Int.emod_emod, ← Int.mul_emod, ← Int.add_emod]
+    simp only
+    rw [e]
+    exact ih (y * A k h + B k h)
+
+theorem trace_mod_mul_from (m : Int) (A : Int → Int → Int) (ds : List (Int × Int)) : ∀ y,
+    current (trace (y % m) ds (fun x ⟨k, h⟩ => x * A k h % m))
+      = current (trace y ds (fun x ⟨k, h⟩ => x * A k h)) % m := by
+  induction ds with
+  | nil => intro y; rfl
+  | cons d ds ih =>
+    intro y
+    obtain ⟨k, h⟩ := d
+    rw [trace_cons, trace_cons, current_step_eq, current_step_eq]
+    have e : y % m * A k h % m = y * A k h % m := by
+      rw [Int.mul_emod, Int.emod_emod, ← Int.mul_emod]
+    simp only
+    rw [e]
+    exact ih (y * A k h)
 
 -- the bisection of search.dfy: a property that the update preserves holds of the current value; the bounds are such
 -- properties, also with the third case, which keeps the state, so they need no premise on the steps

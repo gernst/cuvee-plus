@@ -231,6 +231,7 @@ example : Stmt.prefix_copies := @prefix_copies
 example : Stmt.select_current_copies := @select_current_copies
 example : Stmt.store_select_other := @store_select_other
 example : Stmt.current_trace_constant := @current_trace_constant
+example : Stmt.current_trace_last := @current_trace_last
 example : Stmt.length_phases := @length_phases
 example : Stmt.earlier_phases := @earlier_phases
 example : Stmt.prefix_phases := @prefix_phases
@@ -261,6 +262,8 @@ example : Stmt.invs_counter_mod_upper_zero := @invs_counter_mod_upper_zero
 example : Stmt.invs_counter_mod_upper_cases := @invs_counter_mod_upper_cases
 example : Stmt.current_trace_mod_add_const := @current_trace_mod_add_const
 example : Stmt.current_trace_mod_add_cases := @current_trace_mod_add_cases
+example : Stmt.current_trace_mod_affine := @current_trace_mod_affine
+example : Stmt.current_trace_mod_mul := @current_trace_mod_mul
 example : Stmt.squares_zero := @squares_zero
 example : Stmt.cubes_zero := @cubes_zero
 example : Stmt.fourths_zero := @fourths_zero
@@ -271,6 +274,7 @@ example : Stmt.fourths_closed := @fourths_closed
 example : Stmt.fifths_closed := @fifths_closed
 example : Stmt.current_trace_geometric := @current_trace_geometric
 example : Stmt.length_series := @length_series
+example : Stmt.current_series_none := @current_series_none
 example : Stmt.current_series := @current_series
 
 end TEQ

@@ -1690,6 +1690,16 @@ theorem current_trace_constant : Stmt.current_trace_constant := by
   rw [counter_N, N.current_trace_constant]
   exact ite_iff (toNat_zero_iff n) _ _
 
+theorem current_trace_last : Stmt.current_trace_last := by
+  unfold Stmt.current_trace_last; choices
+  intro α _ x0 n hs F hhs
+  rw [counter_N]
+  by_cases hn : n ≤ 0
+  · rw [if_pos hn, show n.toNat = 0 by omega]; rfl
+  · rw [if_neg hn, show n.toNat = (n - 1).toNat + 1 by omega, N.current_trace_last_from F (n - 1).toNat 0 x0 hs
+      (by omega), earlier_N_nonneg _ _ (by omega)]
+    congr 1; omega
+
 -- phases: the model of Semantics.lean is the trace over the counter from 0 with the update by the phase of k
 theorem iterations_N (t : Nat) : ∀ (s : Int), iterations s t = butlast (N.counter s 1 t) := by
   induction t with
@@ -2201,6 +2211,16 @@ theorem current_trace_mod_add_const : Stmt.current_trace_mod_add_const := by
 theorem current_trace_mod_add_cases : Stmt.current_trace_mod_add_cases := by
   intro x0 n m C F h; rw [counter_N]; exact N.current_trace_mod_add_cases x0 n.toNat m C F h
 
+theorem current_trace_mod_affine : Stmt.current_trace_mod_affine := by
+  intro x0 m n hs A B hhs ⟨h1, h2, h3⟩
+  have := N.trace_mod_affine_from m A B (List.zip (butlast (counter 0 1 n)) hs) x0
+  rwa [Int.emod_eq_of_lt h2 h3] at this
+
+theorem current_trace_mod_mul : Stmt.current_trace_mod_mul := by
+  intro x0 m n hs A hhs ⟨h1, h2, h3⟩
+  have := N.trace_mod_mul_from m A (List.zip (butlast (counter 0 1 n)) hs) x0
+  rwa [Int.emod_eq_of_lt h2 h3] at this
+
 -- the lemmas of series.dfy
 
 theorem squares_zero : Stmt.squares_zero := by
@@ -2232,6 +2252,9 @@ theorem current_trace_geometric : Stmt.current_trace_geometric := by
 
 theorem length_series : Stmt.length_series := by
   intro x0 z a n hn; rw [series, N.length_butlast_trace, counter_N, N.length_butlast_counter]; omega
+
+theorem current_series_none : Stmt.current_series_none := by
+  intro x0 z a n hn; rw [series_N, show n.toNat = 0 by omega]; rfl
 
 theorem current_series : Stmt.current_series := by
   intro x0 z a n; rw [series_N, pow_N]; exact N.current_series x0 z a n.toNat
