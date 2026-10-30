@@ -63,7 +63,14 @@ rules, and the memos. Each assumed fact goes to all theories:
     alone. After a merge or a solution, the facts that mention a root it changed are renormalized
     (`Classes.retired`, `Context.renormalize`), the others are canonical already; a fact that becomes `true` keeps its
     form, since the facts are the keys of the memos (`Facts.map`). A solution that depends on its variable through
-    the classes is not used (`Classes.acyclic`).
+    the classes is not used (`Classes.acyclic`). Within one normalization, each solution is normalized once: a map of
+    the variables met so far is passed through `normalize` and `substitute`, since a chain of solutions in each other
+    is expanded again at every occurrence otherwise, exponentially in its length (geo1-ll: the values of `x` before
+    and after `x = x * (z - 1)`, each modulo 2^64). A variable whose solution is being normalized has no solution
+    meanwhile, so it stays an atom where its normalized solution leads back to it through the roots of the classes,
+    a cycle that `acyclic` does not see, since it arises from the roots that `normalize` writes; geo1-ll ran into a
+    stack overflow without it. The map is local to the call, not kept in the `Classes` value: the cost is per call of
+    `normalize` (the median time of Arrays and Loops rose by 14 to 20 % in 0.53.22).
   - **Definitions.** The members of the class of a variable that are not variables and do not contain it
     (`Context.defs`) are its definitions, in both orientations and transitively; the matcher tries them when a pattern
     does not match the variable itself (`Rewrite.alternatives`). A rewrite whose result contains its own term modulo

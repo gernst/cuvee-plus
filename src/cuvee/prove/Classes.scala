@@ -152,14 +152,20 @@ case class Classes(
   // renamed apart from the context; an equation of equal sides is true, e.g. a definition x == f(y) of the classes,
   // which the facts keep as it is (see Facts.map)
   def normalize(expr: Expr): Expr =
-    val expr_ = expr.map(normalize)
+    normalize(expr, util.Ref(Map()))
+
+  // the same with the normalized solutions of the variables met so far in this term, each computed once, since a chain
+  // of solutions in each other is expanded again at every occurrence otherwise, exponentially in its length, e.g. the
+  // values of x before and after x = x * (z - 1), each modulo 2^64 (geo1-ll)
+  def normalize(expr: Expr, solutions: util.Ref[Map[Var, Option[Expr]]]): Expr =
+    val expr_ = expr.map(normalize(_, solutions))
     val expr__ =
       expr_ match
         case Eq(a, b) if a == b =>
           True
         case _ if expr_.isArith =>
           Ring(expr_.typ) match
-            case Some(ring) => Arith.toPoly(ring, expr_, substitute).normalize.toExpr(ring)
+            case Some(ring) => Arith.toPoly(ring, expr_, substitute(_, solutions)).normalize.toExpr(ring)
             case None       => expr_
         case _ =>
           expr_
@@ -171,11 +177,24 @@ case class Classes(
 
   // a solved atom of a polynomial by the canonical form of its solution
   def substitute(expr: Expr): Expr =
+    substitute(expr, util.Ref(Map()))
+
+  // the same with the solutions normalized so far (see normalize), also the variables without a usable solution (None),
+  // whose lookup costs a traversal of the classes as well (see acyclic); a variable whose solution is being normalized
+  // is None meanwhile, so that it stays an atom where its solution leads back to it through the roots of the classes
+  def substitute(expr: Expr, solutions: util.Ref[Map[Var, Option[Expr]]]): Expr =
     expr match
       case x: Var =>
-        solution(x) match
-          case Some(e) => normalize(e)
-          case None    => x
+        val entry =
+          solutions.value.get(x) match
+            case Some(entry) =>
+              entry
+            case None =>
+              solutions := solutions.value + (x -> None)
+              val entry = solution(x).map(normalize(_, solutions))
+              solutions := solutions.value + (x -> entry)
+              entry
+        entry.getOrElse(x)
       case _ =>
         expr
 
