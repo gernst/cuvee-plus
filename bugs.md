@@ -142,18 +142,15 @@ the contexts that `-teq` builds, as far as the reasons go.
 Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 
 - C: signed overflow is not modelled; `-unbounded` also drops the wrap-around of unsigned integers (which proves
-  `geo1-u`, unsafe only by it); arrays are values, so the updates of a callee to an array parameter do not reach
-  the caller (the ACSL tasks that relied on it take their arrays as global variables since Oct 14, 2026); variables declared without a value are
-  arbitrary integers; memory safety is not checked (`\valid` is true).
+  `geo1-u`, unsafe only by it); arrays are values, so the updates of a callee to an array parameter do not reach the
+  caller (the ACSL tasks that relied on it take their arrays as global variables since Oct 14, 2026; e.g.
+  array-examples/sanfoundry_43_ground, `unknown` since sv-benchmarks b6b589e296a replaced its assignment by the
+  assertion `src[x] == dst[x] - 1` after `incrementArray(src, dst)`, proved before only as it was trivial); variables
+  declared without a value are arbitrary integers; memory safety is not checked (`\valid` is true).
 - `-vcgen`: without a measure, termination is not checked (`VCGen.scala:99`).
 
 ## Errors and crashes
 
-- **array-examples/sanfoundry_43_ground lost between 0.53.14 and 0.53.15** (true in 12 s on the cloud with 0.53.14,
-  `unknown` with the jar of `out/bench/tool-05315` and later): the residual goal reads the array `dst` as it was
-  before the call `incrementArray(src, dst)`, whose loop writes `dst[i] = src[i] + 1`, so the effect of the call on an
-  array parameter is lost; not caused by the lemma database (the jar of 0.53.15 has none of the lemmas of Oct 29),
-  presumably by the changes of the C frontend after 80437f46. Not traced further (Oct 30).
 
 - **The expected outputs of examples/dafny/algorithms are stale** (found Oct 28, 2026): 16 of them (argmax,
   bubble_sort, count_occurrences, counting_sort, distinct, first_duplicate, insertion_sort, insertion_sort2,

@@ -2050,6 +2050,21 @@ def Stmt.current_trace_mod_add_cases : Prop :=
                 if C k then x + F k else if ¬C k then x else unspecified))
           % m
 
+def Stmt.current_trace_mod_affine_wrapped : Prop :=
+  ∀ (y : Int) (m : Int) (n : Int) (hs : List Int) (A : Int → Int → Int) (B : Int → Int → Int) (hhs : length hs = n),
+    0 < m
+      → current
+        (trace
+           (y % m)
+           (List.zip (butlast (counter 0 1 n)) hs)
+           (fun x ⟨k, h⟩ => (x * A k h + B k h) % m))
+        = current
+          (trace
+             y
+             (List.zip (butlast (counter 0 1 n)) hs)
+             (fun x ⟨k, h⟩ => x * A k h + B k h))
+          % m
+
 def Stmt.current_trace_mod_affine : Prop :=
   ∀ (x0 : Int) (m : Int) (n : Int) (hs : List Int) (A : Int → Int → Int) (B : Int → Int → Int) (hhs : length hs = n),
     0 < m ∧ 0 ≤ x0 ∧ x0 < m
