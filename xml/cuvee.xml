@@ -13,7 +13,7 @@
   <!-- the rules applied to each goal, for the statistics of scripts/rules.py -->
   <option name="-rules"/>
 
-  <!-- the categories ReachSafety-Arrays and ReachSafety-Loops of SV-COMP (sv-benchmarks) -->
+  <!-- the categories of ReachSafety of SV-COMP (sv-benchmarks); the standard sets are Arrays and Loops -->
   <rundefinition name="SV-COMP27_unreach-call">
     <tasks name="C.unreach-call.Arrays">
       <includesfile>../sv-benchmarks/c/Arrays.set</includesfile>
@@ -22,6 +22,20 @@
     <tasks name="C.unreach-call.Loops">
       <includesfile>../sv-benchmarks/c/Loops.set</includesfile>
       <includesfile>../sv-benchmarks/c/VerifyThis-Loops.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <!-- other categories of ReachSafety in which Korn participates (fm-tools, SV-COMP 2027), not Recursive and XCSP,
+         recursion and the size of the constraint problems being out of reach -->
+    <tasks name="C.unreach-call.ControlFlow">
+      <includesfile>../sv-benchmarks/c/ControlFlow.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.ECA">
+      <includesfile>../sv-benchmarks/c/ECA.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="C.unreach-call.Sequentialized">
+      <includesfile>../sv-benchmarks/c/Sequentialized.set</includesfile>
       <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
     </tasks>
   </rundefinition>

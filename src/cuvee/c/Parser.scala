@@ -1110,6 +1110,11 @@ class Parser(var state: State, arch: Int, unbounded: Boolean, infer: Boolean):
       case ExprStmt(Call("abort", Nil)) =>
         List(state.progs.assume(state.exprs.const("false")))
 
+      // exit ends the program, the error is not reached afterwards, whatever the exit code
+      case ExprStmt(Call("exit", List(code))) =>
+        val (pre, _, _) = expr(scope, ctx, code)
+        pre :+ state.progs.assume(state.exprs.const("false"))
+
       // calls as statements, whose result is discarded
       case ExprStmt(Call(f, args)) if pure.contains(f) =>
         arguments(scope, ctx, f, args)._1

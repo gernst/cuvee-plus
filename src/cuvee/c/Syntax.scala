@@ -24,8 +24,8 @@ object Syntax:
   // the functions of the verification conventions of SV-COMP and of assert.h, which are not procedures,
   // hence their bodies are skipped by the grammar and their declarations are dropped by the parser
   def builtin(name: String) =
-    name == "assert" || name == "reach_error" || name == "abort" || name.startsWith("__assert") || name.startsWith("__VERIFIER_") ||
-      allocation(name)
+    name == "assert" || name == "reach_error" || name == "abort" || name == "exit" || name.startsWith("__assert") ||
+      name.startsWith("__VERIFIER_") || allocation(name)
 
   // the functions of the prelude that compute modulo the range of an unsigned type of 1, 2, 4, or 8 bytes, with the
   // type that a cast to it denotes, e.g. uint(x) as (unsigned int) x (see resources/cuvee/c/prelude.bpl)

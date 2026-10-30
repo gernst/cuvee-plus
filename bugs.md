@@ -375,7 +375,9 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
   a++;` reads up to the first negative element of the nondeterministic array `aa[100000]`, beyond the array if
   there is none, which is undefined behavior in C; the verdicts `unreach-call` true and `termination` true assume
   that the read stops within the array. Verifiers that check memory safety refute it (TriCera, on a translation of
-  ours, removed since); SV-LIB has no translation of it.
+  ours, removed since); SV-LIB has no translation of it. Fix prepared on Oct 30, 2026, branch
+  `fix-standard-vararg-ground-bounds` of ~/Projects/sv-benchmarks (af1a5b02775, not pushed): the loop checks
+  `a < N` before the read, in the `.c` and in the `.i`, the input of the task.
 
 ## Fixed
 

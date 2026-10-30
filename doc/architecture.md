@@ -411,7 +411,8 @@ variables are. Functions and loops with ACSL `assigns` or `loop assigns` clauses
 modify the global variables listed there instead (their identifiers, e.g. `a`
 for `a[0..N-1]`), which `Type.check` holds against the body, unless `-teq` or
 `-chc` is among the transforms, which infer them always (`c.Parser.assigned`,
-the parameter `infer` set by `c.Source`). The keywords `while`, `do` and `for` and the names `reach_error` and `__VERIFIER_error` are
+the parameter `infer` set by `c.Source`). The calls `abort()` and `exit(code)` end the program, they are `assume
+false` ([exit.c](../examples/c/verify/exit.c)). The keywords `while`, `do` and `for` and the names `reach_error` and `__VERIFIER_error` are
 located tokens (`easyparse.Token.Located`, with line and column from 1, a tab one column), which match as keywords
 and values and from which the grammar reads the position of a keyword by `L(name)`; each loop of the core gets the attribute `:location (line column function)` of its
 keyword, an s-expression that all printers but C's print, for the locations of witnesses
