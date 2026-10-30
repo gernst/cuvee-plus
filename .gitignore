@@ -41,6 +41,12 @@ __pycache__/
 *.fdb_latexmk
 *.synctex.gz
 doc/**/*.out
+doc/**/*.bbl
+doc/**/*.blg
+doc/**/*.dvi
+doc/**/*.bcf
+doc/**/*.bcf-SAVE-ERROR
+doc/**/*.run.xml
 
 # the archive for Zenodo (scripts/zenodo.py)
 dist/
