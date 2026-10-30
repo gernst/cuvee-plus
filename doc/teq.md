@@ -110,7 +110,7 @@ modules are injected after it by `-include teq:<concept>`:
 | `counters` | `phases` (two phases, the first `m` iterations by `F`, the others by `G`, from a switch at a threshold of the value), flags, catching up, constant and bounded values, the last update of a trace that does not read its accumulator (`current_trace_last`, cohendiv) |
 | `strides` | the stores of 2 to 5 adjacent cells per iteration as folds `strides₂` to `strides₅` with one list of values per cell, synthesized with the cases of the update where the values differ (the conditional stores of pr2-pr5, pnr2-pnr5), their reads at a stride of at least their width; stores ahead (MonoCera); tiles of an outer loop over the folded stores of an inner one (`select_current_tiles`, nr3-nr5) |
 | `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables; the remainder of an additive or affine update lifted out of the final value of a trace (`current_trace_mod_add_*`, `_affine`, `_mul`), whose histories stay wrapped (geo1-3) |
-| `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, geometric `series` (with no iteration its initial value); after `aggregation`, `arithmetic` |
+| `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, the affine recurrence `series` (`x * z + a`), its value related to `pow` by a forward fact without division, and evaluated for no and one iteration; after `aggregation`, `arithmetic` |
 
 **Multisets.** The aggregates (sum, parity, count, maximum, minimum) do not depend on the order of the values, so
 they are functions of the multiset of a list (`sum(elems(xs))`, `elems(xs)[e]`), and a permutation of an array (a

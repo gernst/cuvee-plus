@@ -1,8 +1,9 @@
-// series: the closed forms of the sums of the powers of a counter (Faulhaber's formulas) and of geometric sequences and
-// series, for the polynomial loops of SV-COMP (nla-digbench: the power sums ps2 to ps6, geo; array-fpi: ncomp, pcomp);
-// an optional module over teq.dfy, teq:aggregation (sum) and teq:arithmetic (pow), included after them
-// (-include teq:series); the forward facts are triggered at folds (squares, cubes, fourths, fifths, series), not at
-// general terms such as a sum over a counter or the current value of a trace, which would be tried at every such term
+// series: the closed forms of the sums of the powers of a counter (Faulhaber's formulas) and of affine recurrences
+// (geometric sequences and their sums), for the polynomial loops of SV-COMP (nla-digbench: the power sums ps2 to ps6,
+// geo; array-fpi: ncomp, pcomp); an optional module over teq.dfy, teq:aggregation (sum) and teq:arithmetic (pow),
+// included after them (-include teq:series); the forward facts are triggered at folds (squares, cubes, fourths,
+// fifths, series), not at general terms such as a sum over a counter or the current value of a trace, which would be
+// tried at every such term
 
 // the sums of the powers of a counter by 1 from i, abstracted by folds (see above); the offset i in each fold, not a
 // rule that shifts counters to 0, which would change the normal form of every map over a counter, e.g. of the reads of
@@ -81,16 +82,16 @@ lemma {:fw} {:teq} fifths_closed(i: int, n: int)
          * (2 * (i + n) * (i + n) - 2 * (i + n) - 1)
        - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1)
 
-// geometric sequences: a value multiplied by z in each iteration is its initial value times a power of z, the function
-// pow of teq:arithmetic, which is not unfolded but an atom of the arithmetic
-// (from nla-digbench: geo1, geo2, geo3)
-lemma {:rw} {:teq} current_trace_geometric(y0: int, z: int, n: int)
-  ensures current(trace(y0, for ⌊counter(0, 1, n)⌋ do y, k :: y * z)) == y0 * pow(z, n)
+// affine recurrences, x = x * z + a in each iteration: for z == 1 the arithmetic series, a counter by a (teq.dfy); for
+// a == 0 the geometric sequence x0 * z^n; in general the fold series, whose value is the quotient
+// x0 * z^n + a * (z^n - 1) / (z - 1), which is no term for z == 1, hence a forward fact without division at the
+// value itself, whose products with z are then those of the goal (a closed form over a named geometric sum lost
+// them, since the arithmetic does not multiply a definition out, 0.53.19), and rewrite rules for no and one
+// iteration, where the value is a polynomial (the loops that run at most once, the unwindbound variants)
+// (from nla-digbench: geo1, geo2, geo3 and their variants)
 
-// a geometric series, multiplied by z and added a in each iteration, abstracted by a fold (see above): at the current
-// value of any trace with such an update, the trigger slows down tasks with many traces (zero_sum4 from 30 s to 43 s,
-// without a single instance)
-// (from nla-digbench: geo1, geo2, geo3)
+// the fold of the general recurrence, rather than a rule at the current value of any trace with such an update, whose
+// trigger slowed down tasks with many traces (zero_sum4 from 30 s to 43 s, without a single instance)
 function {:teq} {:fold} series(x0: int, z: int, a: int, n: int): Trace<int>
 {
   trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: x * z + a)
@@ -100,12 +101,18 @@ lemma {:rw} {:teq} length_series(x0: int, z: int, a: int, n: int)
   requires 0 <= n
   ensures length(⌊series(x0, z, a, n)⌋) == n
 
-// no iteration: the initial value, which current_series below does not give for z == 1
-lemma {:rw} {:teq} current_series_none(x0: int, z: int, a: int, n: int)
+lemma {:rw} {:teq} current_series_zero(x0: int, z: int, a: int, n: int)
   requires n <= 0
   ensures current(series(x0, z, a, n)) == x0
 
-// without division: (z - 1) times its value plus a is the same power of z times (z - 1) times its initial value plus
-// a; a forward fact, since the value is a quotient by z - 1, which is 0 for z == 1
+lemma {:rw} {:teq} current_series_one(x0: int, z: int, a: int)
+  ensures current(series(x0, z, a, 1)) == x0 * z + a
+
+// without division: (z - 1) times the value plus a is the same power of z times (z - 1) times the initial value plus a
 lemma {:fw} {:teq} current_series(x0: int, z: int, a: int, n: int)
   ensures (z - 1) * current(series(x0, z, a, n)) + a == ((z - 1) * x0 + a) * pow(z, n)
+
+// the geometric sequence, the case a == 0, which the update x * z + a of series does not match (a summand is not
+// matched as 0)
+lemma {:rw} {:teq} current_trace_geometric(y0: int, z: int, n: int)
+  ensures current(trace(y0, for ⌊counter(0, 1, n)⌋ do y, k :: y * z)) == y0 * pow(z, n)

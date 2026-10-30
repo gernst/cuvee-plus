@@ -1103,6 +1103,14 @@ noncomputable def pow (c : Int) (n : Int) : Int :=
 termination_by n.toNat
 decreasing_by all_goals omega
 
+def Stmt.pow_zero : Prop :=
+  ∀ (c : Int) (n : Int),
+    n ≤ 0 → pow c n = 1
+
+def Stmt.pow_one : Prop :=
+  ∀ (c : Int),
+    pow c 1 = c
+
 def Stmt.square_eq_self : Prop :=
   ∀ (c : Int),
     c * c = c ↔ c = 0 ∨ c = 1
@@ -2129,10 +2137,6 @@ def Stmt.fifths_closed : Prop :=
           * (2 * (i + n) * (i + n) - 2 * (i + n) - 1)
           - i * i * (i - 1) * (i - 1) * (2 * i * i - 2 * i - 1)
 
-def Stmt.current_trace_geometric : Prop :=
-  ∀ (y0 : Int) (z : Int) (n : Int),
-    current (trace y0 (butlast (counter 0 1 n)) (fun y k => y * z)) = y0 * pow z n
-
 noncomputable def series (x0 : Int) (z : Int) (a : Int) (n : Int) : Trace Int :=
   trace x0 (butlast (counter 0 1 n)) (fun x k => x * z + a)
 
@@ -2140,12 +2144,20 @@ def Stmt.length_series : Prop :=
   ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),
     0 ≤ n → length (butlast (series x0 z a n)) = n
 
-def Stmt.current_series_none : Prop :=
+def Stmt.current_series_zero : Prop :=
   ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),
     n ≤ 0 → current (series x0 z a n) = x0
+
+def Stmt.current_series_one : Prop :=
+  ∀ (x0 : Int) (z : Int) (a : Int),
+    current (series x0 z a 1) = x0 * z + a
 
 def Stmt.current_series : Prop :=
   ∀ (x0 : Int) (z : Int) (a : Int) (n : Int),
     (z - 1) * current (series x0 z a n) + a = ((z - 1) * x0 + a) * pow z n
+
+def Stmt.current_trace_geometric : Prop :=
+  ∀ (y0 : Int) (z : Int) (n : Int),
+    current (trace y0 (butlast (counter 0 1 n)) (fun y k => y * z)) = y0 * pow z n
 
 end TEQ

@@ -2,11 +2,19 @@
 // remainders of non-literal arguments, products, powers); an optional module over teq.dfy (-include teq:arithmetic);
 // the bounds of the triangles are forward facts about their term, the others rewrite rules
 
-// powers, which are not unfolded
+// powers, which are not unfolded but atoms of the arithmetic; decided for no and one iteration, e.g. pow(z, 0) and
+// pow(z, 1) of a geometric trace whose loop runs at most once (the unwindbound variants of nla-digbench geo1-geo3)
 function {:teq} pow(c: int, n: int): int
 {
   if n <= 0 then 1 else c * pow(c, n - 1)
 }
+
+lemma {:rw} {:teq} pow_zero(c: int, n: int)
+  requires n <= 0
+  ensures pow(c, n) == 1
+
+lemma {:rw} {:teq} pow_one(c: int)
+  ensures pow(c, 1) == c
 
 // a positive number divides itself
 // (from modn, modnf; used on SV-COMP by array_mul_init, eqn1f, ps2-ll_valuebound1 only)

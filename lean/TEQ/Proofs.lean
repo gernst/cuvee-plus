@@ -1255,6 +1255,12 @@ theorem triangle_even_below : Stmt.triangle_even_below := N.triangle_even_below
 theorem triangle_even_scaled : Stmt.triangle_even_scaled := N.triangle_even_scaled
 theorem triangle_even_below_scaled : Stmt.triangle_even_below_scaled := N.triangle_even_below_scaled
 
+theorem pow_zero : Stmt.pow_zero := by
+  intro c n hn; rw [pow_N, show n.toNat = 0 by omega]; rfl
+
+theorem pow_one : Stmt.pow_one := by
+  intro c; rw [pow_N]; simp [N.pow]
+
 theorem square_eq_self : Stmt.square_eq_self := by
   intro c
   constructor
@@ -2253,8 +2259,11 @@ theorem current_trace_geometric : Stmt.current_trace_geometric := by
 theorem length_series : Stmt.length_series := by
   intro x0 z a n hn; rw [series, N.length_butlast_trace, counter_N, N.length_butlast_counter]; omega
 
-theorem current_series_none : Stmt.current_series_none := by
+theorem current_series_zero : Stmt.current_series_zero := by
   intro x0 z a n hn; rw [series_N, show n.toNat = 0 by omega]; rfl
+
+theorem current_series_one : Stmt.current_series_one := by
+  intro x0 z a; rw [series_N]; rfl
 
 theorem current_series : Stmt.current_series := by
   intro x0 z a n; rw [series_N, pow_N]; exact N.current_series x0 z a n.toNat

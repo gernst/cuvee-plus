@@ -171,6 +171,8 @@ example : Stmt.earlier_scans := @earlier_scans
 example : Stmt.prefix_scans := @prefix_scans
 example : Stmt.select_current_scans := @select_current_scans
 example : Stmt.select_current_trace_recurrence := @select_current_trace_recurrence
+example : Stmt.pow_zero := @pow_zero
+example : Stmt.pow_one := @pow_one
 example : Stmt.square_eq_self := @square_eq_self
 example : Stmt.mod_self := @mod_self
 example : Stmt.double_eq_half := @double_eq_half
@@ -272,9 +274,10 @@ example : Stmt.squares_closed := @squares_closed
 example : Stmt.cubes_closed := @cubes_closed
 example : Stmt.fourths_closed := @fourths_closed
 example : Stmt.fifths_closed := @fifths_closed
-example : Stmt.current_trace_geometric := @current_trace_geometric
 example : Stmt.length_series := @length_series
-example : Stmt.current_series_none := @current_series_none
+example : Stmt.current_series_zero := @current_series_zero
+example : Stmt.current_series_one := @current_series_one
 example : Stmt.current_series := @current_series
+example : Stmt.current_trace_geometric := @current_trace_geometric
 
 end TEQ
