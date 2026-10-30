@@ -34,12 +34,18 @@ trace; the components of several accumulators (`Component(S, i)`), since these l
 
 ### A2. Wrap-around modulo 2^64 of affine updates (geo1-ll, geo2-ll, geo3-ll, 33 tasks)
 
-In progress (Oct 29): `current_trace_mod_affine` and `current_trace_mod_mul` (unsigned.dfy, after the additions
+Done (Oct 29-30): `current_trace_mod_affine` and `current_trace_mod_mul` (unsigned.dfy, after the additions
 `current_trace_mod_add_*`, which lift the remainder already; one lemma per form, since a higher-order summand is not
-matched as 0) and `current_series_none` (series.dfy, no iteration). On geo2-ll the affine lemma fired and `series`
-folded `x`, unknown in 47 s, with `y * z % 2^64` not lifted before the multiplicative lemma and `series(1, z, 1, 0)` not
-read; with both added, a small version of geo2 (examples-sized, the four modules it needs) times out at 20 s, not yet
-traced.
+matched as 0). Cloud run of Oct 30: geo2-ll, geo2-ll_valuebound20/50/100, geo3-ll_valuebound20/50/100 correct. Open
+were geo3-ll and the unwindbound variants, whose loops run at most a literal number of times: their residual goals had
+`pow(z, 0)`, `pow(z, 1)` and `current(series(1, z, 1, 1))`, which only the forward fact of series related. Since Oct 30
+the value of a series for no and one iteration is a polynomial (`current_series_zero`, `current_series_one`, with
+`pow_zero`, `pow_one`); for a symbolic count it stays the forward fact at the value. A closed form over a named
+geometric sum, `x0 * pow(z, n) + a * geometric(z, n)` (0.53.19), lost geo1-3_valuebound5 and _valuebound10 on the
+cloud: the arithmetic does not multiply the definition of the value out, so the product of the value with z in the
+goal was no monomial of the forward fact about the sum (option B, substituting such definitions into products, is an
+engine change, not taken). geo1-ll
+ends in "rewriting does not terminate" (bugs.md).
 
 `x = (x*z + 1) % 2^64`, `y = (y*z) % 2^64` (unsigned long long) stay raw traces: `current_trace_geometric` and the fold
 `series` match `y * z` and `x * z + a`, not their remainders. Residual goal of geo2-ll:
