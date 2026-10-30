@@ -883,6 +883,13 @@ class Parser(var state: State):
       case _ =>
         Error.raise("unknown expression", expr)
 
+  // the body of a loop or a branch, whose braces the syntax requires: a block of a single statement without local
+  // variables or attributes is that statement, as in SV-LIB, (while test s), such that it reads back as written
+  def branch(scope: Scope, prog: Prog): core.Prog =
+    resolve(scope, prog) match
+      case core.Block(Nil, List(prog_), attrs) if attrs.isEmpty => prog_
+      case prog_                                                 => prog_
+
   def resolve(scope: Scope, prog: Prog): core.Prog =
     prog match
       case Skip =>
@@ -978,26 +985,26 @@ class Parser(var state: State):
 
       case If(Some(test), left, right) =>
         val test_ = resolve(scope, test)
-        val left_ = resolve(scope, left)
-        val right_ = resolve(scope, right)
+        val left_ = branch(scope, left)
+        val right_ = branch(scope, right)
         state.progs.if_(test_, left_, right_)
 
       case If(None, left, right) =>
-        val left_ = resolve(scope, left)
-        val right_ = resolve(scope, right)
+        val left_ = branch(scope, left)
+        val right_ = branch(scope, right)
         state.progs.choice(left_, right_)
 
       case While(attrs, Some(test), mod, invs, dec, body) =>
         val test_ = resolve(scope, test)
         val attrs_ = Attrs(properties(scope, attrs).attrs ++ loop(scope, mod, invs, dec).attrs)
         record(attrs_, scope)
-        val body_ = resolve(scope, body)
+        val body_ = branch(scope, body)
         state.progs.while_(test_, body_, attrs_)
 
       case While(attrs, None, mod, invs, dec, body) =>
         val attrs_ = Attrs(properties(scope, attrs).attrs ++ loop(scope, mod, invs, dec).attrs)
         record(attrs_, scope)
-        val body_ = resolve(scope, body)
+        val body_ = branch(scope, body)
         state.progs.iter(body_, attrs_)
 
       // the annotations are resolved in the scope of the block, without its local variables

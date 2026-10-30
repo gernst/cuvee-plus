@@ -45,9 +45,7 @@ method m(s: seq<int>) returns (x: int, b: bool)
     if !test₇ {
       break;
     }
-    {
-      x := x - 1;
-    }
+    x := x - 1;
   }
 }
 

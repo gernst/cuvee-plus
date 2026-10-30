@@ -359,7 +359,10 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      (with a semicolon in Boogie). The parsers resolve the properties of a
      tagged statement and of an `annotate` command in the scope of the
      statement, as `smtlib.Parser` does (`Parser.properties`, `Parser.tags`);
-     `annotate` and `verify` remain identifiers elsewhere.
+     `annotate` and `verify` remain identifiers elsewhere. The body of a loop
+     and a branch, which both write in braces, is a single statement if the
+     block has no locals and no annotations (`Parser.branch`), as in SV-LIB,
+     `(while test s)`; other blocks of one statement stay blocks.
    - Dafny's `include "path"` parses the file at `path`, relative to the
      including file, by a fresh parser that starts from the state after the
      prelude (`dafny.Source.included`), which is immutable and shared by all
