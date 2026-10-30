@@ -755,6 +755,29 @@ theorem sum_scaled_below {β : Type} (e n : Int) (V : β → Int) : ∀ (ds : Li
     have ih := sum_scaled_below e n V ds hs
     simp only [maps, N.sum, List.length_cons, Int.natCast_add, Int.add_mul, Int.mul_add] at ih ⊢; omega
 
+-- for no iteration, the sum is 0, which the bound e ≤ 0 or 0 ≤ e decides
+theorem sum_above : Stmt.sum_above := by
+  intro n hs V e hhs ⟨hn, h⟩
+  rw [sum_N]
+  by_cases hp : 0 < n
+  · have hl : ((List.zip (butlast (counter 0 1 n)) hs).length : Int) = n := by
+      rw [counter_N, N.length_zip_eq _ hs n.toNat (N.length_butlast_counter 0 1 n.toNat) (by omega)]; omega
+    have hb := sum_scaled_above e n (fun (⟨k, h⟩ : Int × Int) => V k h) _ h
+    rw [hl] at hb
+    exact Int.le_of_mul_le_mul_left (a := n) hb hp
+  · rw [counter_N, show n.toNat = 0 by omega]; simp [N.counter, butlast, maps, N.sum]; omega
+
+theorem sum_below : Stmt.sum_below := by
+  intro n hs V e hhs ⟨hn, h⟩
+  rw [sum_N]
+  by_cases hp : 0 < n
+  · have hl : ((List.zip (butlast (counter 0 1 n)) hs).length : Int) = n := by
+      rw [counter_N, N.length_zip_eq _ hs n.toNat (N.length_butlast_counter 0 1 n.toNat) (by omega)]; omega
+    have hb := sum_scaled_below e n (fun (⟨k, h⟩ : Int × Int) => V k h) _ h
+    rw [hl] at hb
+    exact Int.le_of_mul_le_mul_left (a := n) hb hp
+  · rw [counter_N, show n.toNat = 0 by omega]; simp [N.counter, butlast, maps, N.sum]; omega
+
 theorem sum_mod_below : Stmt.sum_mod_below := by
   unfold Stmt.sum_mod_below; choices
   intro n m e ⟨hn, h⟩; simp only [sum_N] at *
@@ -776,6 +799,25 @@ theorem sum_indicator_true : Stmt.sum_indicator_true := by
 theorem sum_indicator_false : Stmt.sum_indicator_false := by
   unfold Stmt.sum_indicator_false; choices
   intro α _ xs P n hxs; simp only [sum_N, count_N] at *; exact N.sum_indicator_false xs P xs.length rfl
+
+-- a sum of multiples of m is one: the remainder of a sum is that of the sum of the remainders
+theorem sum_mod_multiples_list {β : Type} (m : Int) (V : β → Int) : ∀ (ds : List β),
+    invs ds (fun d => V d % m = 0) → N.sum (maps ds V) % m = 0
+  | [], _ => by simp [maps, N.sum]
+  | d :: ds, ⟨h, hs⟩ => by
+    have ih := sum_mod_multiples_list m V ds hs
+    simp only [maps, N.sum]; rw [Int.add_emod, h, ih]; rfl
+
+theorem sum_mod_multiples : Stmt.sum_mod_multiples := by
+  intro n hs V m hhs ⟨hm, h⟩
+  rw [sum_N]; exact sum_mod_multiples_list m (fun (⟨k, h⟩ : Int × Int) => V k h) _ h
+
+theorem sum_parity_indicator : Stmt.sum_parity_indicator := by
+  unfold Stmt.sum_parity_indicator; choices
+  intro α _ xs F n hxs; rw [sum_N, parity_N]; clear hxs
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => simp only [maps, N.sum, N.parity]; rw [ih]
 
 theorem count_consts : Stmt.count_consts := by
   unfold Stmt.count_consts; choices
@@ -917,6 +959,122 @@ theorem min_seeded_earlier : Stmt.min_seeded_earlier := by
       (maps (butlast (N.counter i 1 n.toNat)) (fun v => earlier v xs)) n.toNat
       (by rw [N.length_maps, N.length_butlast_counter]) (by rw [N.integer_cast, N.integer_cast]; omega)
     rwa [N.earlier_maps_counter _ _ _ _ (by omega), show i + ((j - i).toNat : Int) = j by omega] at hr
+
+-- the bitwise aggregates: band and bor are the folds of bitand from all ones and of bitor from zero, operations that
+-- are associative and commutative with these neutral elements, hence a fold from any value is the operation of the
+-- value and the aggregate
+theorem foldr_neutral (op : Int → Int → Int) (z : Int) (assoc : ∀ a b c, op (op a b) c = op a (op b c))
+    (neutral : ∀ a, op z a = a) (xs : List Int) (y : Int) : xs.foldr op y = op (xs.foldr op z) y := by
+  induction xs with
+  | nil => exact (neutral y).symm
+  | cons x xs ih => simp only [List.foldr_cons]; rw [ih, assoc]
+
+theorem foldl_neutral (op : Int → Int → Int) (z : Int) (assoc : ∀ a b c, op (op a b) c = op a (op b c))
+    (neutral : ∀ a, op a z = a) (xs : List Int) (x : Int) : xs.foldl op x = op x (xs.foldr op z) := by
+  induction xs generalizing x with
+  | nil => exact (neutral x).symm
+  | cons v vs ih => simp only [List.foldl_cons, List.foldr_cons]; rw [ih, assoc]
+
+theorem band_N (xs : List Int) : band (elems xs) = xs.foldr bitand (-1) := by rw [elems_mk]; rfl
+
+theorem bor_N (xs : List Int) : bor (elems xs) = xs.foldr bitor 0 := by rw [elems_mk]; rfl
+
+theorem bitand_assoc (a b c : Int) : bitand (bitand a b) c = bitand a (bitand b c) := Bits.land_assoc a b c
+
+theorem bitor_assoc (a b c : Int) : bitor (bitor a b) c = bitor a (bitor b c) := Bits.lor_assoc a b c
+
+theorem bitand_neg_one (a : Int) : bitand a (-1) = a := Bits.land_neg_one a
+
+theorem neg_one_bitand (a : Int) : bitand (-1) a = a := by
+  show Bits.land (-1) a = a; rw [Bits.land_comm]; exact Bits.land_neg_one a
+
+theorem bitor_zero (a : Int) : bitor a 0 = a := Bits.lor_zero a
+
+theorem zero_bitor (a : Int) : bitor 0 a = a := by
+  show Bits.lor 0 a = a; rw [Bits.lor_comm]; exact Bits.lor_zero a
+
+theorem band_empty : Stmt.band_empty := rfl
+
+theorem band_single : Stmt.band_single := fun x => bitand_neg_one x
+
+theorem band_union : Stmt.band_union := by
+  intro m n
+  induction m using Quotient.ind; induction n using Quotient.ind
+  rename_i xs ys
+  show (xs ++ ys).foldr bitand (-1) = bitand (xs.foldr bitand (-1)) (ys.foldr bitand (-1))
+  rw [List.foldr_append]; exact foldr_neutral bitand (-1) bitand_assoc neg_one_bitand xs _
+
+theorem bor_empty : Stmt.bor_empty := rfl
+
+theorem bor_single : Stmt.bor_single := fun x => bitor_zero x
+
+theorem bor_union : Stmt.bor_union := by
+  intro m n
+  induction m using Quotient.ind; induction n using Quotient.ind
+  rename_i xs ys
+  show (xs ++ ys).foldr bitor 0 = bitor (xs.foldr bitor 0) (ys.foldr bitor 0)
+  rw [List.foldr_append]; exact foldr_neutral bitor 0 bitor_assoc zero_bitor xs _
+
+theorem length_bands : Stmt.length_bands := by
+  intro x values n hvalues; rw [bands, N.length_butlast_trace]
+
+theorem current_bands : Stmt.current_bands := by
+  intro x values n hvalues
+  rw [bands, current_trace_foldl, band_N]; exact foldl_neutral bitand (-1) bitand_assoc bitand_neg_one values x
+
+theorem earlier_bands : Stmt.earlier_bands := by
+  intro j x values n hvalues ⟨hj, hjn⟩
+  rw [bands, earlier_trace_int j _ _ _ hj (by omega), current_trace_foldl, band_N]
+  exact foldl_neutral bitand (-1) bitand_assoc bitand_neg_one _ x
+
+theorem length_bors : Stmt.length_bors := by
+  intro x values n hvalues; rw [bors, N.length_butlast_trace]
+
+theorem current_bors : Stmt.current_bors := by
+  intro x values n hvalues
+  rw [bors, current_trace_foldl, bor_N]; exact foldl_neutral bitor 0 bitor_assoc bitor_zero values x
+
+theorem earlier_bors : Stmt.earlier_bors := by
+  intro j x values n hvalues ⟨hj, hjn⟩
+  rw [bors, earlier_trace_int j _ _ _ hj (by omega), current_trace_foldl, bor_N]
+  exact foldl_neutral bitor 0 bitor_assoc bitor_zero _ x
+
+-- the seeds: the counter from q - 1 is the counter from q after q - 1, and the reads of the list at k + 1 those of its
+-- tail at k, which are its prefix
+theorem counter_pred (q n : Int) (hn : 0 ≤ n) : counter (q - 1) 1 (n + 1) = .step (q - 1) (counter q 1 n) := by
+  rw [counter, if_neg (by omega), show q - 1 + 1 = q by omega, show n + 1 - 1 = n by omega]
+
+theorem maps_earlier_succ (x : Int) (xs : List Int) (n : Int) (hxs : n ≤ length xs) :
+    maps (butlast (counter 0 1 n)) (fun k => earlier (k + 1) (x :: xs)) = «prefix» n xs := by
+  rw [← maps_earlier n xs hxs, counter_N]
+  exact N.maps_counter_congr_gen 0 n.toNat _ _ (fun k hk => by
+    simp only [earlier, show ¬k + 1 < 0 by omega, show k + 1 ≠ 0 by omega, if_false, Int.add_sub_cancel])
+
+theorem prefix_succ {α : Type} [Inhabited α] (x : α) (xs : List α) (n : Int) (hn : 0 ≤ n) :
+    «prefix» (n + 1) (x :: xs) = x :: «prefix» n xs := by
+  simp only [«prefix», show ¬n + 1 ≤ 0 by omega, if_false, Int.add_sub_cancel]
+
+theorem band_seed_selects : Stmt.band_seed_selects := by
+  intro a q n v ⟨hn, hv⟩; subst hv
+  rw [counter_pred q n hn, band_N, band_N]; rfl
+
+theorem bor_seed_selects : Stmt.bor_seed_selects := by
+  intro a q n v ⟨hn, hv⟩; subst hv
+  rw [counter_pred q n hn, bor_N, bor_N]; rfl
+
+theorem band_seed_earlier : Stmt.band_seed_earlier := by
+  intro xs n hxs hn
+  cases xs with
+  | nil => simp at hxs; omega
+  | cons x xs =>
+    rw [maps_earlier_succ x xs n (by simp at hxs; omega), prefix_succ x xs n hn, band_N, band_N]; rfl
+
+theorem bor_seed_earlier : Stmt.bor_seed_earlier := by
+  intro xs n hxs hn
+  cases xs with
+  | nil => simp at hxs; omega
+  | cons x xs =>
+    rw [maps_earlier_succ x xs n (by simp at hxs; omega), prefix_succ x xs n hn, bor_N, bor_N]; rfl
 
 -- compacts without the dead branch of its update, from the count 0 on
 theorem compacts_N (c0 : Int → Int) (ks : List Int) (P : Int → Prop) : compacts c0 ks P = N.compacting P c0 0 ks := by
@@ -1294,27 +1452,6 @@ theorem select_current_trace_shift_N (m : Nat) : ∀ (a : Int → Int) (i j : In
       · subst e; rw [if_pos rfl, if_pos (by omega)]
       · rw [if_neg e, if_neg (by omega)]
 
-theorem elems_selects_rotate : Stmt.elems_selects_rotate := by
-  intro a i n m l v ⟨hn, hm, hl, hv⟩
-  subst hl
-  obtain ⟨t, rfl⟩ : ∃ t : Nat, n = t := ⟨n.toNat, by omega⟩
-  subst hm hv
-  rw [counter_N, counter_N, Int.toNat_natCast, show ((t : Int) + 1).toNat = t + 1 by omega, elems_mk, elems_mk,
-    butlast_counter_snoc, selects_append]
-  have hc : selects (fun j => if j = i + t then a i
-      else current (shifts a (butlast (N.counter i 1 t))) j)
-      (butlast (N.counter i 1 t))
-      = selects (current (shifts a (butlast (N.counter i 1 t))))
-      (butlast (N.counter i 1 t)) := by
-    apply N.maps_counter_congr_gen
-    intro k hk
-    dsimp only; rw [if_neg (by omega)]
-  rw [hc, selects_shift, ← butlast_counter_snoc, N.butlast_counter_succ]
-  show Bag.mk (selects a (butlast (N.counter (i + 1) 1 t)) ++ [if i + t = i + t then a i else _])
-    = Bag.mk (a i :: selects a (butlast (N.counter (i + 1) 1 t)))
-  rw [if_pos rfl]
-  exact Quotient.sound List.perm_append_comm
-
 theorem select_current_shifts : Stmt.select_current_shifts := by
   unfold Stmt.select_current_shifts; choices
   intro a i n j hn
@@ -1401,6 +1538,27 @@ theorem elems_selects_shift : Stmt.elems_selects_shift := by
   show Bag.mk (selects a (butlast (N.counter (i + 1) 1 t)) ++ [_])
     = Bag.mk (Bag.diff (a i :: selects a (butlast (N.counter (i + 1) 1 t))) [a i] ++ [a (i + t)])
   rw [diff_single_head]; dsimp only; rw [shifts, select_current_trace_shift_N, if_neg (by omega)]
+
+theorem elems_selects_rotate : Stmt.elems_selects_rotate := by
+  intro a i n m l v ⟨hn, hm, hl, hv⟩
+  subst hl
+  obtain ⟨t, rfl⟩ : ∃ t : Nat, n = t := ⟨n.toNat, by omega⟩
+  subst hm hv
+  rw [counter_N, counter_N, Int.toNat_natCast, show ((t : Int) + 1).toNat = t + 1 by omega, elems_mk, elems_mk,
+    butlast_counter_snoc, selects_append]
+  have hc : selects (fun j => if j = i + t then a i
+      else current (shifts a (butlast (N.counter i 1 t))) j)
+      (butlast (N.counter i 1 t))
+      = selects (current (shifts a (butlast (N.counter i 1 t))))
+      (butlast (N.counter i 1 t)) := by
+    apply N.maps_counter_congr_gen
+    intro k hk
+    dsimp only; rw [if_neg (by omega)]
+  rw [hc, selects_shift, ← butlast_counter_snoc, N.butlast_counter_succ]
+  show Bag.mk (selects a (butlast (N.counter (i + 1) 1 t)) ++ [if i + t = i + t then a i else _])
+    = Bag.mk (a i :: selects a (butlast (N.counter (i + 1) 1 t)))
+  rw [if_pos rfl]
+  exact Quotient.sound List.perm_append_comm
 
 theorem selects_stores_counter : Stmt.selects_stores_counter := by
   intro a i c n vs hvs; rw [counter_N]; exact N.selects_stores_counter a i c n.toNat vs (by omega)
@@ -1904,6 +2062,75 @@ theorem select_current_trace_ahead_down : Stmt.select_current_trace_ahead_down :
     by_cases hP : P (n - 1) <;> simp only [hP, and_true, and_false, not_false_eq_true, ↓reduceIte] <;>
       (repeat' (split <;> try dsimp only)) <;> first | rfl | contradiction | omega |
         (simp only [not_false_eq_true, and_true, Classical.not_and_iff_not_or_not, Classical.not_not] at *; omega)
+
+-- the tiles: the stores of the values vs at the positions s + o, s + 1 + o, ... of t iterations, at least as many
+-- values as iterations, leave at j the value of vs at j - s - o within these positions, by induction on the iterations
+theorem stores_counter_read (o j : Int) (t : Nat) : ∀ (b : Int → Int) (s : Int) (vs : List Int), t ≤ vs.length →
+    current (stores b (maps (butlast (N.counter s 1 t)) (fun l => l + o)) vs) j
+      = if s + o ≤ j ∧ j < s + t + o then earlier (j - s - o) vs else b j := by
+  induction t with
+  | zero => intro b s vs _; rw [if_neg (by omega)]; rfl
+  | succ t ih =>
+    intro b s vs hvs
+    cases vs with
+    | nil => simp at hvs
+    | cons v vs =>
+      rw [stores, N.butlast_counter_succ, maps, List.zip_cons_cons, N.trace_cons, N.current_step_eq, ← stores,
+        ih _ _ vs (by simp at hvs; omega)]
+      dsimp only
+      by_cases h1 : j = s + o
+      · subst h1
+        rw [if_neg (by omega), if_pos rfl, if_pos (by omega), show s + o - s - o = 0 by omega]
+        simp [earlier]
+      · by_cases h2 : s + 1 + o ≤ j ∧ j < s + 1 + t + o
+        · rw [if_pos h2, if_pos (by omega)]
+          simp only [earlier, show ¬j - s - o < 0 by omega, show ¬j - s - o = 0 by omega, if_false,
+            show j - s - o - 1 = j - (s + 1) - o by omega]
+        · rw [if_neg h2, if_neg h1, if_neg (by omega)]
+
+-- the tile of j, which the iteration j / m of the outer loop writes at its position j % m
+theorem tile_iff (m s j : Int) (hm : 0 < m) : (0 + m * s ≤ j ∧ j < 0 + m.toNat + m * s) ↔ j / m = s := by
+  have h1 := Int.le_ediv_iff_mul_le (a := s) (b := j) hm
+  have h2 := Int.ediv_lt_iff_lt_mul (a := j) (b := s + 1) hm
+  rw [Int.add_mul, Int.one_mul, Int.mul_comm s m] at *
+  omega
+
+-- the outer loop over the iterations s, ..., s + t - 1, each storing its tile, by induction on the iterations
+theorem tiles_from (m : Int) (hm : 0 < m) (V : Int → List Int) (j : Int)
+    (U : (Int → Int) → Int × Int → Int → Int)
+    (hU : ∀ a k h, U a (k, h) = current (stores a (maps (butlast (N.counter 0 1 m.toNat)) (fun l => l + m * k)) (V k)))
+    (t : Nat) : ∀ (b : Int → Int) (s : Int) (hs : List Int), hs.length = t →
+    (∀ k, s ≤ k ∧ k < s + t → m ≤ (V k).length) →
+    current (trace b (List.zip (butlast (N.counter s 1 t)) hs) U) j
+      = if s ≤ j / m ∧ j / m < s + t then earlier (j % m) (V (j / m)) else b j := by
+  induction t with
+  | zero => intro b s hs _ _; rw [if_neg (by omega)]; rfl
+  | succ t ih =>
+    intro b s hs hhs hV
+    cases hs with
+    | nil => simp at hhs
+    | cons h hs =>
+      rw [N.butlast_counter_succ, List.zip_cons_cons, N.trace_cons, N.current_step_eq,
+        ih _ _ hs (by simp at hhs; omega) (fun k hk => hV k (by omega))]
+      by_cases e : j / m = s
+      · rw [if_neg (by omega), if_pos (by omega), hU, stores_counter_read _ _ _ _ _ _ (by have := hV s (by omega); omega),
+          if_pos ((tile_iff m s j hm).2 e), e, Int.emod_def, e]
+        congr 1; omega
+      · by_cases h2 : s + 1 ≤ j / m ∧ j / m < s + 1 + t
+        · rw [if_pos h2, if_pos (by omega)]
+        · rw [if_neg h2, if_neg (by omega), hU, stores_counter_read _ _ _ _ _ _ (by have := hV s (by omega); omega),
+            if_neg (fun h' => e ((tile_iff m s j hm).1 h'))]
+
+theorem select_current_tiles : Stmt.select_current_tiles := by
+  unfold Stmt.select_current_tiles; choices
+  intro a0 n m hs V j hhs hV hm
+  simp only [counter_N]
+  rw [tiles_from m hm V j _ (fun a k h => rfl) n.toNat a0 0 hs (by omega) (fun k hk => hV k (by omega))]
+  have h1 := Int.le_ediv_iff_mul_le (a := 0) (b := j) hm
+  have h2 := Int.ediv_lt_iff_lt_mul (a := j) (b := n) hm
+  rw [Int.zero_mul] at h1
+  rw [Int.mul_comm n m] at h2
+  exact ite_iff (by omega) _ _
 
 -- the lemmas of unsigned.dfy
 

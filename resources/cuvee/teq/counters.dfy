@@ -9,6 +9,16 @@ lemma {:rw} {:teq} current_trace_constant<a>(x: a, y: a, i: int, c: int, n: int)
       case 0 < n => y
     }
 
+// a trace whose update does not read its accumulator holds the update of the last iteration, e.g. the outer loop of
+// cohendiv that keeps the values a and b of its inner loop; after current_trace_constant, the case of a constant
+// (from nla-digbench: cohendiv)
+lemma {:rw} {:teq} current_trace_last<a>(x0: a, n: int, hs: List<int>, F: (int, int) -> a)
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: F(k, h)))
+    == if {
+         case n <= 0 => x0
+         case 0 < n => F(n - 1, earlier(n - 1, hs))
+       }
+
 // a value in two phases: the first m iterations by F, the others by G, which may depend on the iteration, i.e.,
 // trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case k < m => F(x, k) case m <= k => G(x, k)); the second phase starts
 // where the first ends; no fold, but introduced only by a switch at a threshold of the value (trace_threshold), since

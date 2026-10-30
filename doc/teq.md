@@ -107,10 +107,10 @@ modules are injected after it by `-include teq:<concept>`:
 | `search` | agreeing prefixes, no occurrence, values above the iterations, the bisection with a probe |
 | `sorted` | `sorted`, `perm`, `partitioned`, `swap`, the partition points `lower`, `upper` |
 | `arrays` | stores at a counter and at distinct keys, the folds `stores_where` (stores at the positions of a counter among the dependencies where a guard holds, the guards and values synthesized over any dependencies) and `copies` (copies of a source at two lists of keys, e.g. from both ends), resets, reads along a trace, rows of two-dimensional arrays |
-| `counters` | `phases` (two phases, the first `m` iterations by `F`, the others by `G`, from a switch at a threshold of the value), flags, catching up, merged cases, constant and bounded values |
+| `counters` | `phases` (two phases, the first `m` iterations by `F`, the others by `G`, from a switch at a threshold of the value), flags, catching up, constant and bounded values, the last update of a trace that does not read its accumulator (`current_trace_last`, cohendiv) |
 | `strides` | the stores of 2 to 5 adjacent cells per iteration as folds `strides₂` to `strides₅` with one list of values per cell, synthesized with the cases of the update where the values differ (the conditional stores of pr2-pr5, pnr2-pnr5), their reads at a stride of at least their width; stores ahead (MonoCera); tiles of an outer loop over the folded stores of an inner one (`select_current_tiles`, nr3-nr5) |
-| `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables |
-| `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, geometric `series`; after `aggregation`, `arithmetic` |
+| `unsigned` | `mods(i, c, m, n)`, the counter modulo `m` of unsigned C variables; the remainder of an additive or affine update lifted out of the final value of a trace (`current_trace_mod_add_*`, `_affine`, `_mul`), whose histories stay wrapped (geo1-3) |
+| `series` | the folds `squares`, `cubes`, `fourths`, `fifths`, geometric `series` (with no iteration its initial value); after `aggregation`, `arithmetic` |
 
 **Multisets.** The aggregates (sum, parity, count, maximum, minimum) do not depend on the order of the values, so
 they are functions of the multiset of a list (`sum(elems(xs))`, `elems(xs)[e]`), and a permutation of an array (a
@@ -206,8 +206,10 @@ Lean 4 without Mathlib, in the Lake project at the root ([lean/README.md](../lea
   with the empty multiset `∅`, a single element `{x}`, union `+` (append), difference `-` (the elements of the second
   list erased once each, which cuts off at zero like the core's), the multiplicity `Bag.count m e` (`List.count`),
   and submultisets `n ≤ m` (by the multiplicities), each lifted by `Quotient.lift₂` or `Quotient.lift`. The
-  aggregates `sum`, `parity`, `max`, `min`, which the modules declare without a body, are defined here as right folds
-  of the lists, lifted by the proof that the fold does not depend on the order; so is `phases` of the module counters,
+  aggregates `sum`, `parity`, `max`, `min`, `band`, `bor`, which the modules declare without a body, are defined here
+  as right folds of the lists, lifted by the proof that the fold does not depend on the order (`band` and `bor` over
+  the bit operations `bitand` and `bitor` of C, Mathlib's `Int.land` and `Int.lor` in two's complement, defined in
+  `Bits` since core Lean lacks them, from `-1` and `0`); so is `phases` of the module counters,
   also declared without a body, as the trace of its comment; the generator checks the printed declarations of these
   functions and leaves them out (`AGGREGATES`). Proofs.lean bridges `elems xs` to the class of `xs` and the
   aggregates of it to the folds of lists of Naturals.lean (`sum_N`, `parity_N`, `count_N`).

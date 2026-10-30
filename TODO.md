@@ -15,10 +15,13 @@ without `-fallback`); the open tasks with the verdict true by family, with the c
       that literal (`Classes.ground`); a root that is a ground term over constants is not, since such terms rank
       behind the variables (`Classes.rank`). Difficult: ranking them before the variables changes the root of many
       classes, and a change of the order of roots lost 30 tasks of Loops before (ideas/engine-gaps.md, gap 3).
-- [ ] **Strided stores** (array-tiling): open nr2-nr5, mbpr4, mods, modsf; pnr4, pnr5, mbpr5 time out at 120 s
+- [ ] **Strided stores** (array-tiling): nr3-nr5 correct locally in 0.53.14 (`select_current_tiles`, the tiles of an
+      outer loop over the folded stores of an inner one, to be confirmed on the cloud); open nr2, mbpr4, mods, modsf; pnr4, pnr5, mbpr5 time out at 120 s
       (pnr4 in 514 s with 15 min). Difficult: the inner loop of nr2-nr5 over two positions leaves cases that store at
       `2 * k` and `2 * k + 1`, with the iteration variable written as the literal it equals in each case
-      (ideas/engine-gaps.md, gap 3; no evaluation of concrete traces, by decision); mbpr4 needs the case `i == 2` of
+      (ideas/engine-gaps.md, gap 3; no evaluation of concrete traces, by decision), which nr3-nr5 do not have, since
+      their inner loops of three to five iterations are folded into `stores`; nr2 needs the key `2 * k + k'`
+      synthesized from the cases (ideas/open-tasks.md); mbpr4 needs the case `i == 2` of
       `0 < i < 3` after the choices are lifted out of an atom, which the case split of `-prove` does not take (z3
       proves it with `-fallback`); mods and modsf have conditional stores without a fixed number of cases
       (ideas/cases-and-folds.md, section 6).
@@ -38,8 +41,9 @@ without `-fallback`); the open tasks with the verdict true by family, with the c
       counter; why 17 time out.
 - [ ] **Reducer commutativity** (reducercommutativity, array-crafted bAnd, bor, xor): sums, averages, bAnd1-4 and
       bor1-4 are proved (aggregates over multisets, doc/teq.md, "Multisets"); open xor, bAnd5 and bor5 (a variable
-      `N`), sep, max. Difficult: sep counts by a predicate of C's signed `%`, which is no `parity`; max ends in
-      "rewriting does not terminate" (bugs.md).
+      `N`), max. sep correct locally in 0.53.14: the predicate of C's signed `%` is one equation in both branches
+      of its sign (Simplify.eq, Simplify.ite), and the sum of 1 and -1 is `parity` (`sum_parity_indicator`); to be
+      confirmed on the cloud. max ends in "rewriting does not terminate" (bugs.md).
 - [ ] **The fallback of the aggregates over multisets**: `-fallback` lowers an aggregate of a multiset as an
       uninterpreted function (examples/dafny/teq/fallback_fold.dfy, fallback_recursion.dfy), where it unfolded the
       sum of a list. With fallback, 0.53.13 lost sep05-1, sep10-2 and cohencu-ll_valuebound2 to 20 against 0.52.17

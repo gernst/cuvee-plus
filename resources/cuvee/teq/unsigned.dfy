@@ -92,3 +92,22 @@ lemma {:rw} {:teq} current_trace_mod_add_cases(x0: int, n: int, m: int, C: (int)
   requires 0 <= x0 && x0 < m
   ensures current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C(k) => (x + F(k)) % m case !C(k) => x))
     == current(trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case C(k) => x + F(k) case !C(k) => x)) % m
+
+// the same for an affine update with a factor, e.g. x = x * z + 1 of unsigned long long: the remainder commutes with
+// sums and products, ((x % m) * A + B) % m is (x * A + B) % m, so it is taken at the end only, where the trace without
+// it is folded (series, current_trace_geometric of teq:series); the histories stay wrapped, which mods and its
+// iteration constraints read (only the final value is lifted, after the additions above)
+// (from nla-digbench: geo1-ll, geo2-ll, geo3-ll)
+lemma {:rw} {:teq} current_trace_mod_affine(x0: int, m: int, n: int, hs: List<int>, A: (int, int) -> int,
+    B: (int, int) -> int)
+  requires 0 < m && 0 <= x0 && x0 < m
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: (x * A(k, h) + B(k, h)) % m))
+    == current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: x * A(k, h) + B(k, h))) % m
+
+// the same for a product without a summand, e.g. y = y * z, which the affine pattern does not match (a summand of a
+// higher-order variable is not matched as 0), as sum_scale beside sum_add
+// (from nla-digbench: geo1-ll, geo2-ll, geo3-ll)
+lemma {:rw} {:teq} current_trace_mod_mul(x0: int, m: int, n: int, hs: List<int>, A: (int, int) -> int)
+  requires 0 < m && 0 <= x0 && x0 < m
+  ensures current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: (x * A(k, h)) % m))
+    == current(trace(x0, for ⌊counter(0, 1, n)⌋, hs do x, k, h :: x * A(k, h))) % m

@@ -15,7 +15,10 @@ are lifted from the lists, the difference by erasing the elements of the second 
 zero like the core's (cvc5's bag.difference_subtract), and submultisets compare the multiplicities. The aggregates sum,
 parity, max, and min, which the modules declare without a body and characterize by their lemmas, are folds of the
 lists, lifted by the proof that the fold does not depend on the order; the generator checks and leaves out their
-printed declarations (AGGREGATES of scripts/lean/generate.py).
+printed declarations (AGGREGATES of scripts/lean/generate.py). So are the bit operations bitand and bitor of C,
+which core Lean lacks on integers: Mathlib's Int.land and Int.lor, two's complement on unbounded integers, which are
+associative and commutative by the bits (Bits.ext), and their aggregates band and bor, the folds from all ones (-1) and
+from zero.
 
 The value in two phases, phases x0 m n F G of counters.dfy, which the module declares without a body, is the trace of
 the comment above it, trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case k < m => F(x, k) case m <= k => G(x, k)), over
@@ -110,6 +113,102 @@ noncomputable def min (x : Int) : Bag Int → Int :=
   Quotient.lift (fun xs => xs.foldr (fun v m => if m ≤ v then m else v) x)
     (Bag.foldr_perm _ (by intro a b z; by_cases h₁ : z ≤ a <;> by_cases h₂ : z ≤ b <;> by_cases h₃ : a ≤ b <;>
       simp [h₁, h₂, h₃] <;> omega) x)
+
+-- the bit operations of C on unbounded integers in two's complement, Mathlib's Int.land and Int.lor, which core Lean
+-- lacks: a natural is its bits, followed by zeros, and the negative -[m+1] = -m - 1 is the complement of the bits of
+-- m, followed by ones; the bits of m not among those of n are ldiff m n
+namespace Bits
+
+def ldiff (m n : Nat) : Nat := m ^^^ (m &&& n)
+
+def land : Int → Int → Int
+  | .ofNat m, .ofNat n => .ofNat (m &&& n)
+  | .ofNat m, .negSucc n => .ofNat (ldiff m n)
+  | .negSucc m, .ofNat n => .ofNat (ldiff n m)
+  | .negSucc m, .negSucc n => .negSucc (m ||| n)
+
+def lor : Int → Int → Int
+  | .ofNat m, .ofNat n => .ofNat (m ||| n)
+  | .ofNat m, .negSucc n => .negSucc (ldiff n m)
+  | .negSucc m, .ofNat n => .negSucc (ldiff m n)
+  | .negSucc m, .negSucc n => .negSucc (m &&& n)
+
+-- the i-th bit in two's complement
+def testBit : Int → Nat → Bool
+  | .ofNat m, i => m.testBit i
+  | .negSucc m, i => !m.testBit i
+
+theorem testBit_ldiff (m n i : Nat) : (ldiff m n).testBit i = (m.testBit i && !n.testBit i) := by
+  simp only [ldiff, Nat.testBit_xor, Nat.testBit_and]
+  cases m.testBit i <;> cases n.testBit i <;> rfl
+
+theorem testBit_land (a b : Int) (i : Nat) : testBit (land a b) i = (testBit a i && testBit b i) := by
+  cases a <;> cases b <;>
+    simp only [land, testBit, testBit_ldiff, Nat.testBit_and, Nat.testBit_or] <;>
+    cases Nat.testBit _ i <;> cases Nat.testBit _ i <;> rfl
+
+theorem testBit_lor (a b : Int) (i : Nat) : testBit (lor a b) i = (testBit a i || testBit b i) := by
+  cases a <;> cases b <;>
+    simp only [lor, testBit, testBit_ldiff, Nat.testBit_and, Nat.testBit_or] <;>
+    cases Nat.testBit _ i <;> cases Nat.testBit _ i <;> rfl
+
+-- integers of the same bits are equal: a natural and a negative number differ at a bit above both
+theorem ext {a b : Int} (h : ∀ i, testBit a i = testBit b i) : a = b := by
+  cases a with
+  | ofNat m =>
+    cases b with
+    | ofNat n => exact congrArg _ (Nat.eq_of_testBit_eq h)
+    | negSucc n =>
+      have e := h (m + n)
+      simp only [testBit, Nat.testBit_lt_two_pow (Nat.lt_of_le_of_lt (Nat.le_add_right m n) Nat.lt_two_pow_self),
+        Nat.testBit_lt_two_pow (Nat.lt_of_le_of_lt (Nat.le_add_left n m) Nat.lt_two_pow_self)] at e
+      contradiction
+  | negSucc m =>
+    cases b with
+    | ofNat n =>
+      have e := h (m + n)
+      simp only [testBit, Nat.testBit_lt_two_pow (Nat.lt_of_le_of_lt (Nat.le_add_right m n) Nat.lt_two_pow_self),
+        Nat.testBit_lt_two_pow (Nat.lt_of_le_of_lt (Nat.le_add_left n m) Nat.lt_two_pow_self)] at e
+      contradiction
+    | negSucc n =>
+      exact congrArg _ (Nat.eq_of_testBit_eq (fun i => by have := h i; simp only [testBit] at this; simpa using this))
+
+theorem land_comm (a b : Int) : land a b = land b a :=
+  ext fun i => by rw [testBit_land, testBit_land, Bool.and_comm]
+
+theorem land_assoc (a b c : Int) : land (land a b) c = land a (land b c) :=
+  ext fun i => by rw [testBit_land, testBit_land, testBit_land, testBit_land, Bool.and_assoc]
+
+theorem land_neg_one (a : Int) : land a (-1) = a :=
+  ext fun i => by rw [testBit_land]; show (testBit a i && !Nat.testBit 0 i) = _; simp
+
+theorem lor_comm (a b : Int) : lor a b = lor b a :=
+  ext fun i => by rw [testBit_lor, testBit_lor, Bool.or_comm]
+
+theorem lor_assoc (a b c : Int) : lor (lor a b) c = lor a (lor b c) :=
+  ext fun i => by rw [testBit_lor, testBit_lor, testBit_lor, testBit_lor, Bool.or_assoc]
+
+theorem lor_zero (a : Int) : lor a 0 = a :=
+  ext fun i => by rw [testBit_lor]; show (testBit a i || Nat.testBit 0 i) = _; simp
+
+end Bits
+
+-- the bit operations of the C prelude and their aggregates, the folds of the elements from all ones and from zero
+def bitand : Int → Int → Int := Bits.land
+
+def bitor : Int → Int → Int := Bits.lor
+
+noncomputable def band : Bag Int → Int :=
+  Quotient.lift (fun xs => xs.foldr (fun v r => bitand v r) (-1))
+    (Bag.foldr_perm _ (fun x y z => by
+      show Bits.land y (Bits.land x z) = Bits.land x (Bits.land y z)
+      rw [← Bits.land_assoc, Bits.land_comm y x, Bits.land_assoc]) (-1))
+
+noncomputable def bor : Bag Int → Int :=
+  Quotient.lift (fun xs => xs.foldr (fun v r => bitor v r) 0)
+    (Bag.foldr_perm _ (fun x y z => by
+      show Bits.lor y (Bits.lor x z) = Bits.lor x (Bits.lor y z)
+      rw [← Bits.lor_assoc, Bits.lor_comm y x, Bits.lor_assoc]) 0)
 
 -- the iterations s, s + 1, ... of a loop of t steps, the values of a counter from s by 1 (Proofs.lean: iterations_N)
 def iterations (s : Int) : Nat → List Int

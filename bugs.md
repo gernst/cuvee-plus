@@ -149,6 +149,12 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 
 ## Errors and crashes
 
+- **array-examples/sanfoundry_43_ground lost between 0.53.14 and 0.53.15** (true in 12 s on the cloud with 0.53.14,
+  `unknown` with the jar of `out/bench/tool-05315` and later): the residual goal reads the array `dst` as it was
+  before the call `incrementArray(src, dst)`, whose loop writes `dst[i] = src[i] + 1`, so the effect of the call on an
+  array parameter is lost; not caused by the lemma database (the jar of 0.53.15 has none of the lemmas of Oct 29),
+  presumably by the changes of the C frontend after 80437f46. Not traced further (Oct 30).
+
 - **The expected outputs of examples/dafny/algorithms are stale** (found Oct 28, 2026): 16 of them (argmax,
   bubble_sort, count_occurrences, counting_sort, distinct, first_duplicate, insertion_sort, insertion_sort2,
   max_element, merge, partition, prefix_sums, reverse, selection_sort, three_way_partition, and cocktail_sort.err)

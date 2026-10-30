@@ -6,8 +6,11 @@ documented in `doc/`.
 The open work and its order are the work queue of [TODO.md](../TODO.md); this directory holds the plans and the
 analyses behind its items. Files marked as history record what was tried and not taken.
 
-- [open-tasks.md](open-tasks.md): the open tasks of 0.53.10 with the expected verdict true by family, with the concept
-  each needs.
+- [nonlinear.md](nonlinear.md): the open tasks of nla-digbench (0.53.14): traces not folded (preserved invariants,
+  wrap-around modulo 2^64, last values, doubling, guarded increments, binary expansion, exploding systems) and the
+  arithmetic that remains, with an order by tasks per concept.
+- [open-tasks.md](open-tasks.md): the open tasks of 0.53.10 with the expected verdict true by family, with what each
+  still needs (the families done in 0.53.14 removed).
 
 - [portfolio.md](portfolio.md): a wrapper (portfolio.py) that runs fuzzing, cuvee-fallback, `-chc` and bounded
   unrolling in parallel on the native binary, with what each method is good at and the steps.

@@ -312,14 +312,6 @@ noncomputable def elems {α : Type} [Inhabited α] (xs : List α) : Bag α :=
   | .nil => ∅
   | .cons y ys => {y} + elems ys
 
-axiom bitand : Int → Int → Int
-
-axiom bitor : Int → Int → Int
-
-axiom band : Bag Int → Int
-
-axiom bor : Bag Int → Int
-
 def Stmt.sum_empty : Prop :=
   sum ∅ = 0
 
@@ -389,6 +381,28 @@ def Stmt.min_single : Prop :=
 def Stmt.min_union : Prop :=
   ∀ (x : Int) (m : Bag Int) (n : Bag Int),
     min x (m + n) = min (min x m) n
+
+def Stmt.band_empty : Prop :=
+  band ∅ = -1
+
+def Stmt.band_single : Prop :=
+  ∀ (x : Int),
+    band {x} = x
+
+def Stmt.band_union : Prop :=
+  ∀ (m : Bag Int) (n : Bag Int),
+    band (m + n) = bitand (band m) (band n)
+
+def Stmt.bor_empty : Prop :=
+  bor ∅ = 0
+
+def Stmt.bor_single : Prop :=
+  ∀ (x : Int),
+    bor {x} = x
+
+def Stmt.bor_union : Prop :=
+  ∀ (m : Bag Int) (n : Bag Int),
+    bor (m + n) = bitor (bor m) (bor n)
 
 def Stmt.single_earlier_le_elems : Prop :=
   ∀ {α : Type} [Inhabited α] (j : Int) (xs : List α),
@@ -574,6 +588,34 @@ def Stmt.sums_consts : Prop :=
   ∀ (x : Int) (n : Int) (c : Int),
     sums x (butlast (consts n c)) = counter x c n
 
+def Stmt.sum_above : Prop :=
+  ∀ (n : Int) (hs : List Int) (V : Int → Int → Int) (e : Int) (hhs : length hs = n),
+    (0 < n ∨ e ≤ 0)
+      ∧ invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => e ≤ n * V k h)
+      → e
+        ≤ sum
+          (elems
+             (maps (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => V k h)))
+
+def Stmt.sum_below : Prop :=
+  ∀ (n : Int) (hs : List Int) (V : Int → Int → Int) (e : Int) (hhs : length hs = n),
+    (0 < n ∨ 0 ≤ e)
+      ∧ invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => n * V k h ≤ e)
+      → sum
+        (elems
+           (maps (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => V k h)))
+        ≤ e
+
+def Stmt.sum_mod_multiples : Prop :=
+  ∀ (n : Int) (hs : List Int) (V : Int → Int → Int) (m : Int) (hhs : length hs = n),
+    0 < m
+      ∧ invs (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => V k h % m = 0)
+      → sum
+        (elems
+           (maps (List.zip (butlast (counter 0 1 n)) hs) (fun ⟨k, h⟩ => V k h)))
+        % m
+        = 0
+
 def Stmt.sum_mod_below : Prop :=
   ∀ (n : Int) (m : Int) (e : Int),
     0 ≤ n ∧ 0 < m ∧ n * (m - 1) ≤ e
@@ -611,6 +653,19 @@ def Stmt.sum_indicator_false : Prop :=
       (elems
          (maps xs (fun x => if P x then 0 else if ¬P x then 1 else unspecified)))
       = Bag.count (elems (maps xs (fun x => P x))) False
+
+def Stmt.sum_parity_indicator : Prop :=
+  ∀ {α : Type} [Inhabited α] (xs : List α) (F : α → Int) (n : Int) (hxs : length xs = n),
+    sum
+      (elems
+         (maps
+            xs
+            (fun x =>
+               if F x % 2 = 0 then
+                 1
+               else
+                 if F x % 2 ≠ 0 then -1 else unspecified)))
+      = parity (elems (maps xs (fun x => F x)))
 
 def Stmt.count_consts : Prop :=
   ∀ {α : Type} [Inhabited α] (n : Int) (e : α) (v : α),
@@ -705,8 +760,66 @@ def Stmt.min_seeded_earlier : Prop :=
 noncomputable def bands (x : Int) (values : List Int) : Trace Int :=
   trace x values (fun r v => bitand r v)
 
+def Stmt.length_bands : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    length (butlast (bands x values)) = length values
+
+def Stmt.current_bands : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    current (bands x values) = bitand x (band (elems values))
+
+def Stmt.earlier_bands : Prop :=
+  ∀ (j : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    0 ≤ j ∧ j < n →
+      (earlier j (butlast (bands x values))
+         = bitand x (band (elems («prefix» j values))))
+
 noncomputable def bors (x : Int) (values : List Int) : Trace Int :=
   trace x values (fun r v => bitor r v)
+
+def Stmt.length_bors : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    length (butlast (bors x values)) = length values
+
+def Stmt.current_bors : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    current (bors x values) = bitor x (bor (elems values))
+
+def Stmt.earlier_bors : Prop :=
+  ∀ (j : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    0 ≤ j ∧ j < n →
+      (earlier j (butlast (bors x values))
+         = bitor x (bor (elems («prefix» j values))))
+
+def Stmt.band_seed_selects : Prop :=
+  ∀ (a : Int → Int) (q : Int) (n : Int) (v : Int),
+    0 ≤ n ∧ v = a (q - 1)
+      → bitand v (band (elems (selects a (butlast (counter q 1 n)))))
+        = band (elems (selects a (butlast (counter (q - 1) 1 (n + 1)))))
+
+def Stmt.band_seed_earlier : Prop :=
+  ∀ (xs : List Int) (n : Int) (hxs : n + 1 ≤ length xs),
+    0 ≤ n
+      → bitand
+        (earlier 0 xs)
+        (band
+           (elems (maps (butlast (counter 0 1 n)) (fun k => earlier (k + 1) xs))))
+        = band (elems («prefix» (n + 1) xs))
+
+def Stmt.bor_seed_selects : Prop :=
+  ∀ (a : Int → Int) (q : Int) (n : Int) (v : Int),
+    0 ≤ n ∧ v = a (q - 1)
+      → bitor v (bor (elems (selects a (butlast (counter q 1 n)))))
+        = bor (elems (selects a (butlast (counter (q - 1) 1 (n + 1)))))
+
+def Stmt.bor_seed_earlier : Prop :=
+  ∀ (xs : List Int) (n : Int) (hxs : n + 1 ≤ length xs),
+    0 ≤ n
+      → bitor
+        (earlier 0 xs)
+        (bor
+           (elems (maps (butlast (counter 0 1 n)) (fun k => earlier (k + 1) xs))))
+        = bor (elems («prefix» (n + 1) xs))
 
 def Stmt.elems_selects_swap : Prop :=
   ∀ (a : Int → Int) (p : Int) (q : Int) (v : Int) (w : Int) (keys : List Int) (n : Int) (hkeys : length keys = n),
@@ -1761,6 +1874,25 @@ def Stmt.select_current_strides₅ : Prop :=
                        a0 j
                      else
                        unspecified)
+
+def Stmt.select_current_tiles : Prop :=
+  ∀ (a0 : Int → Int) (n : Int) (m : Int) (hs : List Int) (V : Int → List Int) (j : Int) (hhs : length hs = n) (hV : ∀ k, 0 ≤ k ∧ k < n → m ≤ length (V k)),
+    0 < m
+      → current
+        (trace
+           a0
+           (List.zip (butlast (counter 0 1 n)) hs)
+           (fun b ⟨k, h⟩ =>
+              current
+                (stores
+                   b
+                   (maps (butlast (counter 0 1 m)) (fun l => l + m * k))
+                   (V k))))
+        j
+        = (if 0 ≤ j ∧ j < m * n then
+             earlier (j % m) (V (j / m))
+           else
+             if ¬(0 ≤ j ∧ j < m * n) then a0 j else unspecified)
 
 def Stmt.select_current_trace_ahead : Prop :=
   ∀ (a0 : Int → Int) (n : Int) (m : Int) (F : Int → Int) (G : Int → Int) (j : Int),

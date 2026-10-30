@@ -10,6 +10,8 @@ library `TEQ` of the Lake project at the root of the repository (`lakefile.toml`
   of multisets, `Bag α`, the quotient of `List α` by `List.Perm` with its operations, and the aggregates `sum`,
   `parity`, `max`, `min` (declared without a body in the modules) as the folds of the lists, lifted by `Quotient.lift`;
   the generator checks their printed declarations and leaves them out (`AGGREGATES` of `generate.py`); likewise
+  the bit operations `bitand`, `bitor` of C (Mathlib's `Int.land`, `Int.lor` in two's complement, defined in
+  `Bits` since core Lean lacks them) and their aggregates `band`, `bor` (the folds from `-1` and from `0`); likewise
   `phases` of counters.dfy, the trace over the iterations whose update is `F` below `m` and `G` from `m` on.
 - `TEQ/Database.lean` (generated): the functions of the modules as printed by `-print lean`, and each lemma as the
   proposition `Stmt.<name>`, its printed statement with the premises of `premises.txt`.

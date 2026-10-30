@@ -70,6 +70,41 @@ example : ¬ ((0 : Int) ≤ 0 ∧ (0 : Int) ≤ 0
         ↔ True)) :=
   by simp [trace, current, counter, butlast]
 
+-- earlier_bands (and earlier_bors) at a negative position, where the read is unspecified and the prefix is empty,
+-- whose aggregate is the neutral element: the initial value would be unspecified, whatever it is
+example : ¬ ∀ x : Int, earlier (-1) (butlast (bands x [])) = bitand x (band (elems («prefix» (-1) ([] : List Int)))) := by
+  intro h
+  have h0 := h 0
+  have h1 := h 1
+  simp only [bands, trace, butlast, «prefix», band_N, List.foldr_nil, bitand_neg_one] at h0 h1
+  rw [h0] at h1; contradiction
+
+-- band_seed_earlier and bor_seed_earlier for a list shorter than the reads, whose read beyond its end is unspecified:
+-- each holds exactly if that is its neutral element, all ones for band and zero for bor, hence not both
+example : ¬ ((bitand (earlier 0 ([] : List Int))
+        (band (elems (maps (butlast (counter 0 1 0)) (fun k => earlier (k + 1) ([] : List Int))))))
+      = band (elems («prefix» (0 + 1) ([] : List Int)))
+    ∧ (bitor (earlier 0 ([] : List Int))
+        (bor (elems (maps (butlast (counter 0 1 0)) (fun k => earlier (k + 1) ([] : List Int))))))
+      = bor (elems («prefix» (0 + 1) ([] : List Int)))) := by
+  intro ⟨h1, h2⟩
+  rw [band_N, band_N] at h1
+  rw [bor_N, bor_N] at h2
+  have hc : butlast (counter 0 1 0) = [] := by rw [counter_N]; rfl
+  simp only [hc, maps, «prefix», List.foldr_nil, bitand_neg_one, bitor_zero] at h1 h2
+  rw [h1] at h2; contradiction
+
+-- select_current_tiles for an inner loop with fewer values than iterations, which zip truncates: the cell keeps its
+-- initial value, the right-hand side reads beyond the end of the values
+example : ¬ ∀ (a0 : Int → Int), current (trace a0 (List.zip (butlast (counter 0 1 1)) [(0 : Int)])
+      (fun b ⟨k, h⟩ => current (stores b (maps (butlast (counter 0 1 1)) (fun l => l + 1 * k)) ([] : List Int)))) 0
+    = (if 0 ≤ (0 : Int) ∧ (0 : Int) < 1 * 1 then earlier (0 % 1) ([] : List Int) else a0 0) := by
+  intro h
+  have h0 := h (fun _ => 0)
+  have h1 := h (fun _ => 1)
+  simp [counter, butlast, maps, stores, trace, current, earlier] at h0 h1
+  rw [← h0] at h1; contradiction
+
 -- the conditions 0 ≤ n of lemmas whose closed forms hold for the counts of loops only: a count that is not positive
 -- is no step, as in the definitions over integers, where the closed form is that of a negative number of steps
 
