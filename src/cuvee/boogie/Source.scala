@@ -20,7 +20,8 @@ object Source extends cuvee.pipe.Source:
 
     val prelude = parse("/cuvee/boogie/prelude.bpl", lifted)
 
-    // the parser's state now contains the declarations of the prelude
+    // the parser's state now contains the declarations of the prelude, to which reset returns
+    parser.init = parser.state
     (parser.state, lifted, prelude)
 
   // no further definitions

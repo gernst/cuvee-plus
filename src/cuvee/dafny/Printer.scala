@@ -68,7 +68,10 @@ object Printer extends cuvee.pipe.Printer:
       // e.g. the variables of a modifies clause
       case exprs: List[?] if exprs.nonEmpty && exprs.forall(_.isInstanceOf[Expr]) =>
         commas(exprs.map { case expr: Expr => doc(expr) })
-      // attributes that have not been resolved are s-expressions
+      // attributes that have not been resolved are s-expressions, whose lists are tuples, e.g. the location of a loop,
+      // (9, 3, main) for (9 3 main), and whose strings are those of Dafny (see Parser.unresolved)
+      case args: List[?]    => Group(text("(") ~ commas(args.map(any)) ~ text(")"))
+      case sexpr.Str(text)  => str(text)
       case value            => Doc.lines(cuvee.sexpr.Printer.lines(value))
 
   def lines(res: Result): List[String] =
@@ -173,17 +176,18 @@ object Printer extends cuvee.pipe.Printer:
       case SetLogic(name) =>
         text("logic") ~~ text(name)
 
+      // options and infos are annotations, whose names may contain hyphens
       case GetOption(name) =>
-        text("option") ~~ text(":" + name)
+        text("option") ~~ attribute(name, None)
 
       case SetOption(name, value) =>
-        Group(text("option") ~~ text(":" + name) ~~ text(":=") ~ Nest(2, line ~ any(value)))
+        text("option") ~~ attribute(name, Some(value))
 
       case GetInfo(name) =>
-        text("info") ~~ text(":" + name)
+        text("info") ~~ attribute(name, None)
 
       case SetInfo(name, value) =>
-        Group(text("info") ~~ text(":" + name) ~~ text(":=") ~ Nest(2, line ~ any(value)))
+        text("info") ~~ attribute(name, Some(value))
 
       // the parameters of declared sorts are anonymous
       case DeclareSort(Con(name_, arity), attrs) =>
@@ -318,6 +322,10 @@ object Printer extends cuvee.pipe.Printer:
   def attribute(name: String, arg: Option[Any]): Doc =
     arg match
       case None =>
+        text("{:" + name + "}")
+
+      // e.g. an empty modifies clause
+      case Some(Nil) =>
         text("{:" + name + "}")
 
       // the tags of SV-LIB, which need not be identifiers of Dafny, are strings

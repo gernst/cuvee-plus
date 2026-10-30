@@ -62,9 +62,10 @@ count as well. <proved>
 """
 
 # since 0.41.2: the rules applied by each -prove (formerly -simplify) to an assertion, (set-info :used ((name count) ...)), in SMT-LIB
-# on stderr with a solver or -verify, as info :used := ((name count) ...) in Dafny output
-INFO = re.compile(r":used\s*(?::=)?\s*\(((?:\s*\(\s*[^\s()]+\s+\d+\s*\))*)\s*\)")
-PAIR = re.compile(r"\(\s*([^\s()]+)\s+(\d+)\s*\)")
+# on stderr with a solver or -verify, as info :used := ((name count) ...) in Dafny output, since 0.53.22 as
+# info {:used ((name, count), ...)}
+INFO = re.compile(r":used\s*(?::=)?\s*\(((?:\s*\(\s*[^\s(),]+\s*,?\s+\d+\s*\)\s*,?)*)\s*\)")
+PAIR = re.compile(r"\(\s*([^\s(),]+)\s*,?\s+(\d+)\s*\)")
 # before 0.41.2: "used by goal 1, which simplified to true: counter_def 1, stores 1" (or "none") on stderr
 CLOSED = re.compile(r"^used by .+?, which simplified to true: (.*)$", re.M)
 # before 0.41.2: :used (name count) of the goals that remain, also across lines and as {:used (name count)} in Dafny

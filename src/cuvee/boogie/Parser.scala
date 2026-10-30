@@ -12,6 +12,10 @@ class Parser(var state: State):
   // annotate commands that refer to them are resolved (see smtlib.Parser.tags)
   var tags: Map[Name, List[Scope]] = Map()
 
+  // the states that pop returns to, and the one of reset, the state after the prelude (see Source.newParser)
+  var stack: List[State] = Nil
+  var init: State = state
+
   def record(attrs: Attrs, scope: Scope): Unit =
     for tag <- attrs.tags
     do tags = tags + (tag -> (tags.getOrElse(tag, Nil) :+ scope))
@@ -35,12 +39,74 @@ class Parser(var state: State):
         Error.report("tag in an annotate command", tag_):
           require(!attrs_.contains("tag"))
 
+        for scope <- tags(tag_).tail do
+          val unknown = attrs_.free.filterNot(x => scope.vars.get(x.name) == Some(x))
+          Error.report("variables of the annotation are not in scope at every statement with the tag", tag_, unknown):
+            require(unknown.isEmpty)
+
         List(core.AnnotateTag(tag_, attrs_))
 
       // the arguments are terms over the global variables (see smtlib.Parser.verifyCall)
       case Verify(proc, args) =>
         val scope = Scope.empty ++ state.globals
         List(core.VerifyCall(proc, state.exprs.arguments(scope, proc, args.map(resolve(scope, _)))))
+
+      // as smtlib.Parser does
+      case Control(name, arg) =>
+        (name, arg) match
+          case ("check", None)   => List(core.CheckSat)
+          case ("labels", None)  => List(core.Labels)
+          case ("model", None)   => List(core.GetModel)
+          case ("witness", None) => List(core.GetWitness)
+          case ("exit", None)    => List(core.Exit)
+
+          case ("reset", None) =>
+            state = init
+            stack = Nil
+            List(core.Reset)
+
+          case ("push", Some(digits)) =>
+            stack = List.fill(digits.toInt)(state) ++ stack
+            List(core.Push(digits.toInt))
+
+          case ("pop", Some(digits)) =>
+            val depth = digits.toInt
+            Error.report("cannot pop " + depth + " levels from stack of size " + stack.length):
+              require(depth <= stack.length)
+            if depth > 0 then
+              state = stack(depth - 1)
+              stack = stack.drop(depth)
+            List(core.Pop(depth))
+
+          case ("logic", Some(logic)) =>
+            state = state.setLogic(logic)
+            List(core.SetLogic(logic))
+
+          case _ =>
+            Error.raise("unsupported command", name)
+
+      // the values are s-expressions as in SMT-LIB, several of them a list
+      case Setting(kind, Attr(name, args)) =>
+        val value =
+          args match
+            case Nil        => None
+            case List(arg)  => Some(unresolved(arg))
+            case _          => Some(args.map(unresolved))
+
+        (kind, value) match
+          case ("option", None) =>
+            List(core.GetOption(name))
+
+          case ("option", Some(value_)) =>
+            state = state.setOption(name, value_)
+            List(core.SetOption(name, value_))
+
+          case (_, None) =>
+            List(core.GetInfo(name))
+
+          case (_, Some(value_)) =>
+            state = state.setInfo(name, value_)
+            List(core.SetInfo(name, value_))
 
       case Axiom(params, attrs, expr) =>
         val (params_, phi_, attrs_) = assertion(params, attrs, expr)
@@ -221,10 +287,41 @@ class Parser(var state: State):
         case Attr("decreases", exprs) =>
           Attrs(exprs.map(expr => "decreases" -> Some(measure(scope, expr))))
 
-        case _ =>
+        // a single attribute of all variables, {:modifies x, y}, as in SV-LIB
+        case Attr("modifies", xs) =>
+          val names = for case cuvee.sexpr.Id(x) <- xs.map(unresolved) yield x
+          Error.report("modifies clause of other than variables", xs):
+            require(names.length == xs.length)
+          val unknown = names.filterNot(scope.vars.contains(_))
+          Error.report("unknown variables in modifies clause", unknown):
+            require(unknown.isEmpty)
+          Attrs(List("modifies" -> Some(names.map(scope.vars(_)))))
+
+        case Attr("tag", _) =>
           attributes(scope, List(attr))
 
+        // other values are not resolved, e.g. the location of a loop, several of them a list (see unresolved)
+        case Attr(name, Nil) =>
+          Attrs(List(name -> None))
+
+        case Attr(name, List(arg)) =>
+          Attrs(List(name -> Some(unresolved(arg))))
+
+        case Attr(name, args) =>
+          Attrs(List(name -> Some(args.map(unresolved))))
+
     Attrs(attrs_.flatMap(_.attrs))
+
+  // the value of an attribute that is an s-expression, e.g. the location of a loop, {:location 9, 3, main} for
+  // (9 3 main), whose symbols the printer writes as identifiers
+  def unresolved(expr: Expr): Any =
+    expr match
+      case Inner(base, Nil) => unresolved(base)
+      case Num(digits)      => cuvee.sexpr.Num(digits)
+      case Dec(digits)      => cuvee.sexpr.Dec(digits)
+      case Str(text)        => cuvee.sexpr.Str(util.Strings.unescape(text))
+      case App(name, Nil)   => cuvee.sexpr.Id(name)
+      case _                => Error.raise("value of an attribute that is no s-expression", expr)
 
   // the attributes of a function or procedure `name`, resolved in `scope`, except the pattern of {:implement}, by which
   // it names the function that it implements and the positions of its arguments, an application to its inputs in

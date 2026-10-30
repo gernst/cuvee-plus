@@ -1,0 +1,22 @@
+; ./Cuvee.sh -print dfy examples/svlib/printing/script_dfy.svlib
+; the commands of a script in the dialect of Dafny: options and infos as attributes, push and pop, and a tag on two
+; loops with an annotation of a modifies clause
+
+(set-logic LIA)
+(set-option :produce-witnesses true)
+(set-info :format-version "1.0")
+(get-option :produce-witnesses)
+(declare-var g Int)
+(define-proc main ((n Int)) ((result Int)) ((i Int))
+  (! (sequence
+       (assign (i 0))
+       (! (while (< i n) (sequence (assign (i (+ i 1))) (assign (g (+ g 1))))) :tag loop)
+       (! (while (< 0 i) (assign (i (- i 1)))) :tag loop)
+       (assign (result 0))
+       (return))
+     :tag main))
+(annotate-tag loop :modifies (g) :invariant (<= 0 i))
+(push 1)
+(verify-call main (3))
+(pop 1)
+(get-witness)

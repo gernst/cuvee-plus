@@ -8,7 +8,7 @@ function {:smt2} {:dfy} seq.empty<a₀>(): Seq<a₀>;
 
 function {:smt2} {:dfy} seq.unit<a₀>(x₀: a₀): Seq<a₀>;
 
-function {:smt2} {:dfy} seq.++<a₀>(x₀: Seq<a₀>, x₁: Seq<a₀>): Seq<a₀>;
+function {:smt2} {:dfy} `seq.++`<a₀>(x₀: Seq<a₀>, x₁: Seq<a₀>): Seq<a₀>;
 
 function {:smt2} {:dfy} seq.len<a₀>(x₀: Seq<a₀>): int;
 

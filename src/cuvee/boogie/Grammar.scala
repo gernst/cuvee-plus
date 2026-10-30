@@ -75,7 +75,8 @@ object Grammar:
 
   // const names constant arrays, too, e.g. in the prelude of C
   // keywords that remain identifiers elsewhere
-  val op = P(sym | J("<") | J(">") | J("*") | J("const") | J("annotate") | J("verify"))
+  val op = P(sym | J("<") | J(">") | J("*") | J("const") | J("annotate") | J("verify")
+    | J("logic") | J("option") | J("info") | J("witness") | J("labels") | J("model") | J("exit") | J("push") | J("pop") | J("reset"))
   val id = Sym(op)
 
   val nil = R(Nil)
@@ -320,8 +321,18 @@ object Grammar:
   val verify =
     Verify(P("verify" ~ id ~ args ~ ";"))
 
+  val control =
+    P(
+      (((J("check") | J("labels") | J("model") | J("witness") | J("exit") | J("reset")) ~ R(None: Option[String])) |
+        ((J("push") | J("pop")) ~ num.map(Some(_))) |
+        (J("logic") ~ id.map(Some(_)))) ~ ";"
+    ).map(Control(_, _))
+
+  val setting =
+    P((J("option") | J("info")) ~ attr ~ ";").map(Setting(_, _))
+
   val cmd: Parser[Cmd] =
-    P(sortdef | datadef | constdef | vardef | fundef | axiom | lemma | procdef | annotate | verify)
+    P(sortdef | datadef | constdef | vardef | fundef | axiom | lemma | procdef | annotate | verify | control | setting)
 
   val script =
     P(cmd.*)

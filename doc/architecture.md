@@ -358,8 +358,23 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      `annotate "t" {:check-true φ}` and `verify-call` is `verify main(args)`
      (with a semicolon in Boogie). The parsers resolve the properties of a
      tagged statement and of an `annotate` command in the scope of the
-     statement, as `smtlib.Parser` does (`Parser.properties`, `Parser.tags`);
-     `annotate` and `verify` remain identifiers elsewhere. The body of a loop
+     statement, as `smtlib.Parser` does (`Parser.properties`, `Parser.tags`),
+     and check that their variables are in scope at every statement with the
+     tag; `{:modifies x, y}` is a single attribute of the variables. Other
+     values of these annotations are s-expressions, not resolved
+     (`Parser.unresolved`), e.g. the location of a C loop, written as a tuple
+     in Dafny, `{:location (9, 3, main)}`, and as the arguments of the
+     attribute in Boogie, `{:location 9, 3, main}`, which has no notation for
+     nested lists. The other commands of SMT-LIB are `check`, `labels`,
+     `model`, `witness`, `exit`, `reset`, `push n`, `pop n`, `logic L`, and the
+     options and infos as annotations, `option {:produce-models true}`, and
+     `option {:produce-models}` for `get-option`
+     ([script.dfy](../examples/dafny/printing/script.dfy),
+     [script.bpl](../examples/boogie/printing/script.bpl)); these words, like
+     `annotate` and `verify`, remain identifiers elsewhere. Names that are not identifiers of Boogie are
+     escaped by backticks, as in Dafny, e.g. `seq.++` of the prelude of
+     SMT-LIB. The output of SV-LIB and of C in either dialect reads back as
+     printed. The body of a loop
      and a branch, which both write in braces, is a single statement if the
      block has no locals and no annotations (`Parser.branch`), as in SV-LIB,
      `(while test s)`; other blocks of one statement stay blocks.
