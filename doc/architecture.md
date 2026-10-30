@@ -343,7 +343,23 @@ Each frontend follows the same structure (see `cuvee.dafny` and
    - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
      included; only `{:implement pattern}` and `{:context x}` have a value,
      resolved in the scope of the inputs (`Parser.annotations`; in SMT-LIB
-     and Boogie `implementation`, see [implement.md](implement.md)).
+     and Boogie `implementation`, see [implement.md](implement.md)), and the
+     tags of SV-LIB, `{:tag "t"}`. The opening `{:name` is a token of its own,
+     whose name may contain hyphens (`{:check-true`), such that a block after
+     annotations is not taken for another one.
+   - The tags and commands of SV-LIB in Dafny and Boogie, an extension of both
+     dialects that reads back as the SV-LIB script
+     ([tags.dfy](../examples/dafny/printing/tags.dfy),
+     [tags.bpl](../examples/boogie/printing/tags.bpl)): tags are strings,
+     `method {:tag "main"} main()`, `while {:tag "t"} test` (in Boogie
+     `while {:tag "t"} (test)`, where loops print all their attributes after
+     the keyword), and a tagged sequence is a block after its annotations,
+     `{:tag "t"} {:check-true φ} { ... }`; `annotate-tag` is
+     `annotate "t" {:check-true φ}` and `verify-call` is `verify main(args)`
+     (with a semicolon in Boogie). The parsers resolve the properties of a
+     tagged statement and of an `annotate` command in the scope of the
+     statement, as `smtlib.Parser` does (`Parser.properties`, `Parser.tags`);
+     `annotate` and `verify` remain identifiers elsewhere.
    - Dafny's `include "path"` parses the file at `path`, relative to the
      including file, by a fresh parser that starts from the state after the
      prelude (`dafny.Source.included`), which is immutable and shared by all
@@ -435,7 +451,8 @@ are written in the syntax of SV-LIB, which `smtlib.Parser` reads and
 to the `verify-call` that it applies to. Properties (`:requires`, `:ensures`,
 `:invariant`, `:decreases`, `:check-true`) are attributes of loops and of
 procedure bodies, written inline or linked by `annotate-tag` to the
-statements with the `:tag`; the parser resolves their variables in the scope
+statements with the `:tag`, which the attributes keep as written, an `Id`
+(`Attrs.tags` reads them as names); the parser resolves their variables in the scope
 of the tagged statement (`Parser.Tagged`, that of the signature for a body)
 and their functions in the state at the command, and keeps a table from tags
 to these statements. The stages collect the `AnnotateTag` commands in

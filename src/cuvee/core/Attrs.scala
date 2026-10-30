@@ -4,6 +4,7 @@ import scala.reflect.ClassTag
 
 import util.Name
 
+import cuvee.sexpr.Id
 import cuvee.sexpr.Kw
 
 object Attrs:
@@ -79,8 +80,12 @@ case class Attrs(attrs: List[(String, Option[Any])]):
   def checks =
     values[Expr]("check-true")
 
-  def tags =
-    values[Name]("tag")
+  // the tags of SV-LIB are kept as written, as identifiers, and looked up by their names (see State.annotations)
+  def tags: List[Name] =
+    for Id(tag) <- values[Id]("tag")
+    yield
+      val tag_ : Name = tag
+      tag_
 
   def invariant: Expr =
     And(invariants)

@@ -33,7 +33,11 @@ kw  = "function" | "predicate" | "axiom" | "lemma" | "goal" | "const" | "datatyp
     | "while" | "if" | "then" | "else" | "assert" | "assume" | "var"
     | "forall" | "exists" | "break" | "continue" | "return" | "parallel" | "as" | "assumes" | "commits" | "ode" | "check" | "map" | "multiset"
     | "trace" | "maps" | "invs" | "match" | "case" | "for" | "do" | "yield" | "fuse" | "include" | "???"
+    | "annotate" | "verify"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "=>" | "->" | "==" | "<" | ">" | "*" | "'" | "|" | "." | ".." | "⌊" | "⌋"
+
+// the opening of an annotation with its name, which may contain hyphens, e.g. {:check-true of SV-LIB
+attr = "{:" [a-zA-Zω_] [a-zA-Z0-9_\-]*
 
 sym = [a-zA-Zω_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*
     | "until+" | "unless+" | "release+"
@@ -47,6 +51,7 @@ sym = [a-zA-Zω_][a-zA-Z0-9⁰-⁹₀-₉_~#$?]*
 {ws}+ {}
 "//" .* {nl} {}
 
+{attr}      { return Syntax.apply("attr", yytext(2,0)); }
 {kw}        { return Syntax.apply(yytext()); }
 \" ([^\"\\] | \\.)* \"     { return Syntax.apply("str", yytext(+1,-1)); }
 {dec}       { return Syntax.apply("dec", yytext()); }

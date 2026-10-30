@@ -32,11 +32,15 @@ kw  = "type" | "data" | "and" | "const" | "function" | "axiom" | "lemma" | "var"
     | "returns" | "requires" | "ensures" | "modifies" | "invariant" | "decreases"
     | "if" | "then" | "else" | "while" | "break" | "continue" | "return"
     | "assert" | "assume" | "havoc" | "call" | "forall" | "exists" | "lambda"
-    | "trace" | "map" | "all" | "for" | "do" | "yield" | "check" | "case"
-    | "(" | ")" | "[" | "]" | "::" | [;,:{}|] | "{:" | ":=" | "=" | "=>" | "<" | ">" | "*" | "⌊" | "⌋"
+    | "trace" | "map" | "all" | "for" | "do" | "yield" | "check" | "case" | "annotate" | "verify"
+    | "(" | ")" | "[" | "]" | "::" | [;,:{}|] | ":=" | "=" | "=>" | "<" | ">" | "*" | "⌊" | "⌋"
 
 // identifiers as in Boogie, together with the subscripts of indexed names
 idchar = [a-zA-Z'~#$\^_.?`\\⁰-⁹₀-₉]
+
+// the opening of an attribute with its name, which may contain hyphens, e.g. {:check-true of SV-LIB
+attr = "{:" {idchar} ({idchar} | [0-9] | "-")*
+
 sym = {idchar} ({idchar} | [0-9])*
     | [+\-/] | "&&" | "||" | "==>" | "<==>" | "!"
     | "==" | "!=" | "<=" | ">="
@@ -49,6 +53,7 @@ sym = {idchar} ({idchar} | [0-9])*
 "//" .* {nl} {}
 "/*" ~"*/" {}
 
+{attr}      { return Syntax.apply("attr", yytext(2,0)); }
 {kw}        { return Syntax.apply(yytext()); }
 \" ([^\"\\] | \\.)* \"     { return Syntax.apply("str", yytext(+1,-1)); }
 {dec}       { return Syntax.apply("dec", yytext()); }

@@ -76,7 +76,9 @@ case class Call(lhs: List[String], proc: String, args: List[Expr]) extends Prog
 case class Local(vars: Typed)
 case class Block(locals: List[Local], progs: List[Prog]) extends Prog
 case class If(test: Option[Expr], left: Prog, right: Prog) extends Prog
-case class While(test: Option[Expr], specs: List[Spec], body: Prog) extends Prog
+case class While(attrs: List[Attr], test: Option[Expr], specs: List[Spec], body: Prog) extends Prog
+// a block with attributes, {:tag "t"} { ... }, e.g. the tagged sequences of SV-LIB
+case class Annotated(attrs: List[Attr], block: Prog) extends Prog
 
 object Assume extends (Expr => Prog)
 object Assert extends (Expr => Prog)
@@ -86,7 +88,8 @@ object Call extends ((List[String], String, List[Expr]) => Prog)
 object Local extends (Typed => Local)
 object Block extends ((List[Local], List[Prog]) => Prog)
 object If extends ((Option[Expr], Prog, Prog) => Prog)
-object While extends ((Option[Expr], List[Spec], Prog) => Prog)
+object While extends ((List[Attr], Option[Expr], List[Spec], Prog) => Prog)
+object Annotated extends ((List[Attr], Prog) => Prog)
 
 sealed trait Spec
 case class Requires(phi: Expr) extends Spec
@@ -105,6 +108,9 @@ case class Attr(name: String, args: List[Expr])
 object Attr extends ((String, List[Expr]) => Attr)
 
 case class Axiom(params: List[String], attrs: List[Attr], phi: Expr) extends Cmd
+// the commands annotate-tag and verify-call of SV-LIB, annotate "t" {:check-true x == n}; and verify main();
+case class Annotate(tag: String, attrs: List[Attr]) extends Cmd
+case class Verify(proc: String, args: List[Expr]) extends Cmd
 case class Lemma(params: List[String], attrs: List[Attr], phi: Expr) extends Cmd
 case class SortDef(attrs: List[Attr], name: String, params: List[String], alias: Option[Type]) extends Cmd
 case class DataDef(attrs: List[Attr], datas: List[Data]) extends Cmd
@@ -132,6 +138,8 @@ case class ProcDef(
 ) extends Cmd
 
 object Axiom extends ((List[String], List[Attr], Expr) => Cmd)
+object Annotate extends ((String, List[Attr]) => Cmd)
+object Verify extends ((String, List[Expr]) => Cmd)
 object Lemma extends ((List[String], List[Attr], Expr) => Cmd)
 object SortDef extends ((List[Attr], String, List[String], Option[Type]) => Cmd)
 object DataDef extends ((List[Attr], List[Data]) => Cmd)

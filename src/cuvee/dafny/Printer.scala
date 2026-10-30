@@ -153,9 +153,13 @@ object Printer extends cuvee.pipe.Printer:
       case Done =>
         Error.raise("internal command cannot be printed", cmd)
 
-      // the commands of SV-LIB have no counterpart
-      case _: AnnotateTag | _: VerifyCall =>
-        Error.raise("command not supported", cmd)
+      // the commands of SV-LIB, annotate "t" {:check-true x == n} and verify main()
+      case AnnotateTag(tag, attrs) =>
+        val attrs_ = for (name, arg) <- attrs.attrs yield line ~ attribute(name, arg)
+        Group(text("annotate") ~~ str(tag.indexed) ~ Nest(2, concat(attrs_)))
+
+      case VerifyCall(proc, args) =>
+        text("verify") ~~ call(name(proc), args.map(doc(_)))
 
       case Push(depth) =>
         text("push") ~~ text(depth.toString)
@@ -316,6 +320,10 @@ object Printer extends cuvee.pipe.Printer:
       case None =>
         text("{:" + name + "}")
 
+      // the tags of SV-LIB, which need not be identifiers of Dafny, are strings
+      case Some(sexpr.Id(tag)) if name == "tag" =>
+        text("{:" + name) ~~ str(tag) ~ text("}")
+
       case Some(arg) =>
         Group(text("{:" + name) ~ Nest(2, line ~ any(arg)) ~ text("}"))
 
@@ -361,9 +369,12 @@ object Printer extends cuvee.pipe.Printer:
     then text("{}")
     else text("{") ~ Nest(2, hardline ~ join(docs, hardline)) ~ hardline ~ text("}")
 
-  // the statements of a block, local variables are declared first
+  // the statements of a block, local variables are declared first; a block with annotations is a statement of its own
   def statements(prog: Prog): List[Doc] =
     prog match
+      case Block(_, _, attrs) if !attrs.isEmpty =>
+        List(doc(prog))
+
       case Block(Nil, progs, _) =>
         progs.map(doc(_))
 
@@ -418,6 +429,10 @@ object Printer extends cuvee.pipe.Printer:
 
       case Call(proc, args, res, _) =>
         Group(commas(res.map(doc(_))) ~~ text(":=") ~~ call(name(proc), args.map(doc(_)))) ~ text(";")
+
+      // the annotations of a block, e.g. the tags of SV-LIB, precede its braces
+      case prog @ Block(_, _, attrs) if !attrs.isEmpty =>
+        join(attrs.attrs.map(attribute(_, _)), space) ~~ block(prog.copy(attrs = Attrs.empty))
 
       case Block(_, _, _) =>
         block(prog)

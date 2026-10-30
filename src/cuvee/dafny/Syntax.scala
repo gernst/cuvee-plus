@@ -109,7 +109,9 @@ case class Assign(lhs: List[Lhs], rhs: List[Expr]) extends Prog
 case object Skip extends Prog
 case class Block(locals: List[Local], progs: List[Prog]) extends Prog
 case class If(test: Option[Expr], left: Prog, right: Prog) extends Prog
-case class While(test: Option[Expr], mod: List[List[String]], invs: List[Expr], dec: List[List[Expr]], body: Prog) extends Prog
+case class While(attrs: List[Annotation], test: Option[Expr], mod: List[List[String]], invs: List[Expr], dec: List[List[Expr]], body: Prog) extends Prog
+// a block with annotations, {:tag "t"} { ... }, e.g. the tagged sequences of SV-LIB
+case class Annotated(attrs: List[Annotation], block: Prog) extends Prog
 case class Ode(time: String, xs: List[String], rhs: List[Expr], dom: Option[Expr], invs: List[Expr]) extends Prog
 
 case class Local(vars: List[(String, Type)], init: Option[List[Expr]])
@@ -121,7 +123,8 @@ object Lhs extends ((String, List[Expr]) => Lhs)
 object Assign extends ((List[Lhs], List[Expr]) => Prog)
 object Block extends ((List[Local], List[Prog]) => Prog)
 object If extends ((Option[Expr], Prog, Prog) => Prog)
-object While extends ((Option[Expr], List[List[String]], List[Expr], List[List[Expr]], Prog) => Prog)
+object While extends ((List[Annotation], Option[Expr], List[List[String]], List[Expr], List[List[Expr]], Prog) => Prog)
+object Annotated extends ((List[Annotation], Prog) => Prog)
 object Ode extends ((String, List[String], List[Expr], Option[Expr], List[Expr]) => Prog)
 
 case class Par(calls: List[Prog]) extends Prog
@@ -156,6 +159,9 @@ case class Fuse(attrs: List[Annotation], term: Expr) extends Cmd
 case class VarDef(attrs: List[Annotation], vars: List[(String, Type)]) extends Cmd
 // include "path", the commands of another file, relative to the including one (see Source.included)
 case class Include(path: String) extends Cmd
+// the commands annotate-tag and verify-call of SV-LIB, annotate "t" {:check-true x == n} and verify main()
+case class Annotate(tag: String, attrs: List[Annotation]) extends Cmd
+case class Verify(proc: String, args: List[Expr]) extends Cmd
 case class SortDef(attrs: List[Annotation], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
 case class DataDef(attrs: List[Annotation], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
 case class DataDefs(datas: List[DataDef]) extends Cmd
@@ -208,6 +214,8 @@ object Goal extends ((List[String], List[Annotation], Expr) => Cmd)
 object Fuse extends ((List[Annotation], Expr) => Cmd)
 object VarDef extends ((List[Annotation], List[(String, Type)]) => Cmd)
 object Include extends (String => Cmd)
+object Annotate extends ((String, List[Annotation]) => Cmd)
+object Verify extends ((String, List[Expr]) => Cmd)
 object SortDef extends ((List[Annotation], String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
 object DataDef extends ((List[Annotation], String, List[String], List[Constr], Option[List[Cmd]]) => DataDef)
 object DataDefs extends (List[DataDef] => Cmd)

@@ -391,7 +391,7 @@ class Parser(private var init: State):
 
     // the tags of the body are declared with the signature, (at x tag) of the statements inside refers to them
     val (inner, attrs) = annotated(body)
-    val tags_ = Attrs(tagsOf(attrs).map("tag" -> Some(_)))
+    val tags_ = Attrs(for case ("tag", Some(tag: Id)) <- Parser.annotations(attrs) yield "tag" -> Some(tag))
     state = state.declare(name, params, in, out, tags_)
 
     val tagged = Tagged(outer, name)
@@ -591,9 +591,8 @@ class Parser(private var init: State):
     val attrs_ =
       for (kw, arg) <- Parser.annotations(from)
       yield (kw, arg) match
-        case ("tag", Some(Id(tag))) if inline =>
-          val tag_ : Name = tag
-          kw -> Some(tag_)
+        case ("tag", Some(Id(_))) if inline =>
+          kw -> arg
 
         case ("tag", _) =>
           Error.raise("tag in an annotate-tag command", arg.getOrElse(kw))

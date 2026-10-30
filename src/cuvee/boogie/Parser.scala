@@ -8,6 +8,14 @@ import cuvee.core.Scope
 import cuvee.core.Attrs
 
 class Parser(var state: State):
+  // the scopes of the statements with a tag of SV-LIB, {:tag "t"}, in the order of their occurrence, in which the
+  // annotate commands that refer to them are resolved (see smtlib.Parser.tags)
+  var tags: Map[Name, List[Scope]] = Map()
+
+  def record(attrs: Attrs, scope: Scope): Unit =
+    for tag <- attrs.tags
+    do tags = tags + (tag -> (tags.getOrElse(tag, Nil) :+ scope))
+
   def resolve(scope: Scope, name: String): core.Param =
     state.types.param(name)
 
@@ -17,6 +25,23 @@ class Parser(var state: State):
 
   def resolve(cmd: Cmd): List[core.Cmd] =
     cmd match
+      // the attributes are resolved as if written at the first statement with the tag (see smtlib.Parser.annotate)
+      case Annotate(tag, attrs) =>
+        val tag_ : Name = util.Strings.unescape(tag)
+        Error.report("unknown tag", tag_):
+          require(tags.contains(tag_))
+
+        val attrs_ = properties(tags(tag_).head, attrs)
+        Error.report("tag in an annotate command", tag_):
+          require(!attrs_.contains("tag"))
+
+        List(core.AnnotateTag(tag_, attrs_))
+
+      // the arguments are terms over the global variables (see smtlib.Parser.verifyCall)
+      case Verify(proc, args) =>
+        val scope = Scope.empty ++ state.globals
+        List(core.VerifyCall(proc, state.exprs.arguments(scope, proc, args.map(resolve(scope, _)))))
+
       case Axiom(params, attrs, expr) =>
         val (params_, phi_, attrs_) = assertion(params, attrs, expr)
         List(state.cmds.axiom(params_, phi_, attrs_))
@@ -153,6 +178,7 @@ class Parser(var state: State):
         state.progs.modifies(name, mod)
 
         state = state.declare(name, params_, formals_, rets_, Attrs(attrs_.attrs ++ contract_.attrs))
+        record(attrs_, scope__)
 
         body match
           case None =>
@@ -168,15 +194,37 @@ class Parser(var state: State):
             List(cmd_)
 
   // an attribute with several arguments is repeated for each of them, {:a x, y} is {:a x} {:a y},
-  // the arguments may be of any type
+  // the arguments may be of any type; the tags of SV-LIB are strings, {:tag "t"}, kept as identifiers
   def attributes(scope: Scope, attrs: List[Attr]): Attrs =
     val attrs_ =
       for
         Attr(name, args) <- attrs;
-        arg <- if args.isEmpty then List(None) else args.map(arg => Some(term(scope, arg)))
-      yield name -> arg
+        arg <- if args.isEmpty then List(None) else args.map(Some(_))
+      yield arg match
+        case Some(Inner(Str(tag), Nil)) if name == "tag" =>
+          name -> Some(cuvee.sexpr.Id(util.Strings.unescape(tag)))
+
+        case _ =>
+          name -> arg.map(term(scope, _))
 
     Attrs(attrs_)
+
+  // the attributes of tagged statements and of annotate commands, as the properties of SV-LIB, resolved in `scope`
+  // (see smtlib.Parser.properties)
+  def properties(scope: Scope, attrs: List[Attr]): Attrs =
+    val attrs_ =
+      for attr <- attrs
+      yield attr match
+        case Attr(name @ ("requires" | "check-true" | "invariant" | "ensures" | "assumes" | "commits"), phis) =>
+          Attrs(phis.map(phi => name -> Some(formula(scope, phi))))
+
+        case Attr("decreases", exprs) =>
+          Attrs(exprs.map(expr => "decreases" -> Some(measure(scope, expr))))
+
+        case _ =>
+          attributes(scope, List(attr))
+
+    Attrs(attrs_.flatMap(_.attrs))
 
   // the attributes of a function or procedure `name`, resolved in `scope`, except the pattern of {:implement}, by which
   // it names the function that it implements and the positions of its arguments, an application to its inputs in
@@ -475,6 +523,14 @@ class Parser(var state: State):
         val progs_ = progs.map(resolve(scope_, _))
         state.progs.block(locals_, progs_)
 
+      // the attributes are resolved in the scope of the block, without its local variables
+      case Annotated(attrs, block) =>
+        val attrs_ = properties(scope, attrs)
+        record(attrs_, scope)
+        resolve(scope, block) match
+          case core.Block(locals, progs, _) => core.Block(locals, progs, attrs_)
+          case prog                         => core.Block(Nil, List(prog), attrs_)
+
       case If(Some(test), left, right) =>
         val test_ = resolve(scope, test)
         val left_ = resolve(scope, left)
@@ -487,8 +543,9 @@ class Parser(var state: State):
         state.progs.choice(left_, right_)
 
       // loops without test are nondeterministic iterations
-      case While(test, specs, body) =>
-        val attrs_ = contract(scope, specs)
+      case While(attrs, test, specs, body) =>
+        val attrs_ = Attrs(properties(scope, attrs).attrs ++ contract(scope, specs).attrs)
+        record(attrs_, scope)
         val body_ = resolve(scope, body)
 
         test match

@@ -71,9 +71,11 @@ object Grammar:
   val num = T("num")
   val dec = T("dec")
   val str = T("str")
+  val attr_ = T("attr")
 
   // const names constant arrays, too, e.g. in the prelude of C
-  val op = P(sym | J("<") | J(">") | J("*") | J("const"))
+  // keywords that remain identifiers elsewhere
+  val op = P(sym | J("<") | J(">") | J("*") | J("const") | J("annotate") | J("verify"))
   val id = Sym(op)
 
   val nil = R(Nil)
@@ -252,13 +254,17 @@ object Grammar:
     If(P("if" ~ parens(guard) ~ block ~ else_or_skip))
 
   val while_ =
-    While(P("while" ~ parens(guard) ~ (invariant | modifies | decreases).* ~ block))
+    While(P("while" ~ attrs ~ parens(guard) ~ (invariant | modifies | decreases).* ~ block))
+
+  val annotated =
+    Annotated(P(attr.+ ~ block))
 
   val prog: Parser[Prog] =
-    P(break | continue_ | return_ | assume | assert | havoc | call | if_ | while_ | block | assign)
+    P(break | continue_ | return_ | assume | assert | havoc | call | if_ | while_ | annotated | block | assign)
 
+  // {:name is a token of its own, such that a block that follows attributes is not taken for another attribute
   val attr =
-    Attr(P("{:" ~ id ~ (expr ~* ",") ~ "}"))
+    Attr(P(attr_ ~ (expr ~* ",") ~ "}"))
 
   val attrs =
     P(attr.*)
@@ -308,8 +314,14 @@ object Grammar:
   val procdef =
     ProcDef(P("procedure" ~ attrs ~ id ~ params ~ formals ~ returns ~ contract))
 
+  val annotate =
+    Annotate(P("annotate" ~ str ~ attr.+ ~ ";"))
+
+  val verify =
+    Verify(P("verify" ~ id ~ args ~ ";"))
+
   val cmd: Parser[Cmd] =
-    P(sortdef | datadef | constdef | vardef | fundef | axiom | lemma | procdef)
+    P(sortdef | datadef | constdef | vardef | fundef | axiom | lemma | procdef | annotate | verify)
 
   val script =
     P(cmd.*)

@@ -140,9 +140,13 @@ object Printer extends cuvee.pipe.Printer:
       case Done =>
         Error.raise("internal command cannot be printed", cmd)
 
-      // the commands of SV-LIB have no counterpart
-      case _: AnnotateTag | _: VerifyCall =>
-        Error.raise("command not supported", cmd)
+      // the commands of SV-LIB, annotate "t" {:check-true x == n}; and verify main();
+      case AnnotateTag(tag, attrs) =>
+        val attrs_ = for (name, arg) <- attrs.attrs yield line ~ attribute(name, arg)
+        Group(text("annotate") ~~ str(tag.indexed) ~ Nest(2, concat(attrs_))) ~ text(";")
+
+      case VerifyCall(proc, args) =>
+        text("verify") ~~ call(name(proc), args.map(doc(_))) ~ text(";")
 
       case Push(depth) =>
         text("push") ~~ text(depth.toString) ~ text(";")
@@ -268,6 +272,10 @@ object Printer extends cuvee.pipe.Printer:
       case None =>
         text("{:" + name + "}")
 
+      // the tags of SV-LIB, which need not be identifiers of Boogie, are strings
+      case Some(cuvee.sexpr.Id(tag)) if name == "tag" =>
+        text("{:" + name) ~~ str(tag) ~ text("}")
+
       case Some(arg) =>
         Group(text("{:" + name) ~ Nest(2, line ~ any(arg)) ~ text("}"))
 
@@ -313,9 +321,12 @@ object Printer extends cuvee.pipe.Printer:
     then text("{}")
     else text("{") ~ Nest(2, hardline ~ join(docs, hardline)) ~ hardline ~ text("}")
 
-  // the statements of a block, local variables are declared first
+  // the statements of a block, local variables are declared first; a block with attributes is a statement of its own
   def statements(prog: Prog): List[Doc] =
     prog match
+      case Block(_, _, attrs) if !attrs.isEmpty =>
+        List(doc(prog))
+
       case Block(Nil, progs, _) =>
         progs.map(doc(_))
 
@@ -379,6 +390,10 @@ object Printer extends cuvee.pipe.Printer:
       case Call(proc, args, res, _) =>
         Group(text("call") ~~ commas(res.map(doc(_))) ~~ text(":=") ~~ call(name(proc), args.map(doc(_)))) ~ text(";")
 
+      // the attributes of a block, e.g. the tags of SV-LIB, precede its braces
+      case prog @ Block(_, _, attrs) if !attrs.isEmpty =>
+        join(attrs.attrs.map(attribute(_, _)), space) ~~ block(prog.copy(attrs = Attrs.empty))
+
       case Block(_, _, _) =>
         block(prog)
 
@@ -418,13 +433,10 @@ object Printer extends cuvee.pipe.Printer:
       case Par(_) =>
         Error.raise("parallel composition not supported in Boogie")
 
-  // loops have no attributes other than their specification clauses in Boogie
+  // the attributes of a loop other than its specification clauses follow the keyword, as in Dafny, which Boogie does
+  // not have, e.g. the tags of SV-LIB and the locations of loops in C
   def loop(test: Doc, body: Prog, attrs: Attrs): Doc =
-    val other = attrs.attrs.filterNot(isClause(_, _))
-    Error.report("attributes of loops not supported in Boogie", other):
-      require(other.isEmpty)
-
-    header(text("while") ~~ test, clauses(attrs), Some(block(body)))
+    header(text("while") ~ attributes(attrs) ~~ test, clauses(attrs), Some(block(body)))
 
   def parens(expr: Expr): Doc =
     Group(text("(") ~ Align(doc(expr)) ~ text(")"))

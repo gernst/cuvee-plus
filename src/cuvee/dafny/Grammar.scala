@@ -88,8 +88,10 @@ object Grammar:
   val num = T("num")
   val dec = T("dec")
   val str = T("str")
+  val attr = T("attr")
 
-  val op = P(sym | J("<") | J(">") | J("==") | J("*") | J("map") | J("multiset") | J("const"))
+  // keywords that remain identifiers elsewhere
+  val op = P(sym | J("<") | J(">") | J("==") | J("*") | J("map") | J("multiset") | J("const") | J("annotate") | J("verify"))
   val id = Sym(op)
 
   val id_prime = id ~ "'"
@@ -116,9 +118,6 @@ object Grammar:
 
   val lit =
     P(Num(num) | Dec(dec) | Str(str))
-
-  val attrs =
-    P(braces(":" ~ (id ~* ",")) | nil)
 
   val ids =
     P(id ~+ ",")
@@ -351,6 +350,9 @@ object Grammar:
   val block =
     Block(P(braces(local.* ~ prog.*)))
 
+  val annotated_block =
+    Annotated(P(annotation.+ ~ block))
+
   val else_or_skip =
     P(("else" ~ (if_ | block)) | skip)
 
@@ -361,7 +363,7 @@ object Grammar:
     If(P("if" ~ guard ~ block ~ else_or_skip))
 
   val while_ =
-    While(P("while" ~ guard ~ modifies.* ~ invariant.* ~ decreases.* ~ block))
+    While(P("while" ~ annotation.* ~ guard ~ modifies.* ~ invariant.* ~ decreases.* ~ block))
 
   val ode =
     Ode(P("ode" ~ id ~ "::" ~ (id_prime ~+ ",") ~ "==" ~ exprs ~ ("while" ~ expr).? ~ invariant.* ~ ";"))
@@ -370,7 +372,7 @@ object Grammar:
     Par(P("parallel" ~ braces((assign | call).*)))
 
   val prog: Parser[Prog] =
-    P(ctrl | spec | if_ | while_ | par | block | ode | assign | call)
+    P(ctrl | spec | if_ | while_ | par | annotated_block | block | ode | assign | call)
 
   val sel =
     Sel(P((id | num) ~ ":" ~ typ))
@@ -396,9 +398,10 @@ object Grammar:
   val sortimpl =
     P(braces(sortcmd.*) | nil)
 
-  // {:name} or {:name value}, whose value is resolved by the parser depending on the name
+  // {:name} or {:name value}, whose value is resolved by the parser depending on the name; {:name is a token of its
+  // own, such that a block that follows annotations is not taken for another annotation
   val annotation =
-    P(braces(":" ~ id ~ expr.?))
+    P(attr ~ expr.? ~ "}")
 
   val sortdef =
     SortDef(P("type" ~ annotation.* ~ id ~ params ~ (right(braces(sortcmd.*)) | left(sortalias.?))))
@@ -451,8 +454,14 @@ object Grammar:
   val include =
     Include(P("include" ~ str))
 
+  val annotate =
+    Annotate(P("annotate" ~ str ~ annotation.+))
+
+  val verify =
+    Verify(P("verify" ~ id ~ parens(elems)))
+
   val cmd: Parser[Cmd] =
-    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check | fuse | include)
+    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check | fuse | include | annotate | verify)
 
   val script =
     P(cmd.*)

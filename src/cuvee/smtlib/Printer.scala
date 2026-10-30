@@ -65,10 +65,6 @@ object Printer extends cuvee.pipe.Printer:
       case Some(prog: Prog) =>
         kw(name) ++ lines(prog)
 
-      // e.g. the tags of SV-LIB
-      case Some(tag: Name) =>
-        kw(name) ++ mangle(tag)
-
       // e.g. the variables of a modifies attribute
       case Some(exprs: List[?]) if exprs.forall(_.isInstanceOf[Expr]) =>
         kw(name) ++ list(exprs.flatMap(expr => lines(expr.asInstanceOf[Expr])))

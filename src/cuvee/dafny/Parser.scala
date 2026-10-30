@@ -14,6 +14,14 @@ class Parser(var state: State):
   var include: String => List[core.Cmd] =
     path => Error.raise("include not supported here", path)
 
+  // the scopes of the statements with a tag of SV-LIB, {:tag "t"}, in the order of their occurrence, in which the
+  // annotate commands that refer to them are resolved (see smtlib.Parser.tags)
+  var tags: Map[Name, List[Scope]] = Map()
+
+  def record(attrs: Attrs, scope: Scope): Unit =
+    for tag <- attrs.tags
+    do tags = tags + (tag -> (tags.getOrElse(tag, Nil) :+ scope))
+
   // the constructors and selectors of a datatype whose sort is declared already
   def datatype(data: DataDef) =
     val DataDef(_, name, params, constrs, _) = data
@@ -144,6 +152,23 @@ class Parser(var state: State):
         for case decl: core.Decl <- cmds do state = state.add(decl)
         cmds
 
+      // the annotations are resolved as if written at the first statement with the tag (see smtlib.Parser.annotate)
+      case Annotate(tag, attrs) =>
+        val tag_ : Name = util.Strings.unescape(tag)
+        Error.report("unknown tag", tag_):
+          require(tags.contains(tag_))
+
+        val attrs_ = properties(tags(tag_).head, attrs)
+        Error.report("tag in an annotate command", tag_):
+          require(!attrs_.contains("tag"))
+
+        List(core.AnnotateTag(tag_, attrs_))
+
+      // the arguments are terms over the global variables (see smtlib.Parser.verifyCall)
+      case Verify(proc, args) =>
+        val scope = Scope.empty ++ state.globals
+        List(core.VerifyCall(proc, state.exprs.arguments(scope, proc, args.map(resolve(scope, _)))))
+
       case VarDef(attrs, vars) =>
         val scope = Scope.empty
         for (name, typ) <- vars
@@ -267,14 +292,38 @@ class Parser(var state: State):
     val attrs_ = keywords(attrs)
     (params_ ++ phi_.params.toList.filterNot(params_.contains), phi_, attrs_)
 
-  // annotations without values, e.g. {:rw}
+  // annotations without values, e.g. {:rw}, and tags
   def keywords(attrs: List[Annotation]): Attrs =
-    for (name, arg) <- attrs
-    do
-      Error.report("annotation with a value", name):
-        require(arg.isEmpty)
+    val attrs_ =
+      for (name, arg) <- attrs
+      yield arg match
+        case Some(Inner(Str(tag), Nil)) if name == "tag" =>
+          name -> Some(sexpr.Id(util.Strings.unescape(tag)))
 
-    Attrs(attrs.map((name, _) => name -> None))
+        case Some(_) =>
+          Error.raise("annotation with a value", name)
+
+        case None =>
+          name -> None
+
+    Attrs(attrs_)
+
+  // the annotations of tagged statements and of annotate commands, as the properties of SV-LIB, resolved in `scope`
+  // (see smtlib.Parser.properties)
+  def properties(scope: Scope, attrs: List[Annotation]): Attrs =
+    val attrs_ =
+      for (name, arg) <- attrs
+      yield (name, arg) match
+        case ("requires" | "check-true" | "invariant" | "ensures" | "assumes" | "commits", Some(phi)) =>
+          name -> Some(formula(scope, phi))
+
+        case ("decreases", Some(expr)) =>
+          name -> Some(measure(scope, expr))
+
+        case _ =>
+          keywords(List(name -> arg)).attrs.head
+
+    Attrs(attrs_)
 
   // the annotations of an implementation `fun`, a function or a method, whose inputs are in `scope`, where
   // {:implement pattern} names the function that it implements and the positions of its arguments by an application
@@ -293,11 +342,8 @@ class Parser(var state: State):
         case Some(input) if name == "context" =>
           name -> Some(resolve(scope, input))
 
-        case Some(_) =>
-          Error.raise("annotation with a value", name)
-
-        case None =>
-          name -> None
+        case _ =>
+          keywords(List(name -> arg)).attrs.head
 
     Attrs(attrs_)
 
@@ -407,6 +453,7 @@ class Parser(var state: State):
 
         val attrs_ = Attrs(annots_.attrs ++ contract(scope__, mod, req, ens, dec).attrs ++ ac_)
         state = state.declare(qname, params_, formals_, rets_, attrs_)
+        record(attrs_, scope__)
 
         val mod_ = attrs_.modifies
         state.progs.modifies(qname, mod_)
@@ -940,16 +987,26 @@ class Parser(var state: State):
         val right_ = resolve(scope, right)
         state.progs.choice(left_, right_)
 
-      case While(Some(test), mod, invs, dec, body) =>
+      case While(attrs, Some(test), mod, invs, dec, body) =>
         val test_ = resolve(scope, test)
+        val attrs_ = Attrs(properties(scope, attrs).attrs ++ loop(scope, mod, invs, dec).attrs)
+        record(attrs_, scope)
         val body_ = resolve(scope, body)
-        val attrs_ = loop(scope, mod, invs, dec)
         state.progs.while_(test_, body_, attrs_)
 
-      case While(None, mod, invs, dec, body) =>
+      case While(attrs, None, mod, invs, dec, body) =>
+        val attrs_ = Attrs(properties(scope, attrs).attrs ++ loop(scope, mod, invs, dec).attrs)
+        record(attrs_, scope)
         val body_ = resolve(scope, body)
-        val attrs_ = loop(scope, mod, invs, dec)
         state.progs.iter(body_, attrs_)
+
+      // the annotations are resolved in the scope of the block, without its local variables
+      case Annotated(attrs, block) =>
+        val attrs_ = properties(scope, attrs)
+        record(attrs_, scope)
+        resolve(scope, block) match
+          case core.Block(locals, progs, _) => core.Block(locals, progs, attrs_)
+          case prog                         => core.Block(Nil, List(prog), attrs_)
 
       // verification supports calls only (see VCGen)
       case Par(progs) =>
