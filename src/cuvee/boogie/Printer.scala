@@ -23,14 +23,23 @@ object Printer extends cuvee.pipe.Printer:
   val untranslate =
     Grammar.translate.map(_.swap)
 
-  // indexed names are printed with the index as unicode subscript, e.g. a₃
+  // indexed names are printed with the index as unicode subscript, e.g. a₃; names that are neither identifiers nor
+  // operators are escaped by backticks, which Boogie does not have, e.g. seq.++ of the prelude of SMT-LIB
   def name(name: Name): String =
-    name match
-      case Name(name, None) =>
-        untranslate.getOrElse(name, name)
+    val name_ =
+      name match
+        case Name(name, None) =>
+          untranslate.getOrElse(name, name)
 
-      case _ =>
-        name.subscripted
+        case _ =>
+          name.subscripted
+
+    if identifier.matches(name_) || Grammar.prefix_ops.contains(name_) || Grammar.infix_ops.contains(name_)
+    then name_
+    else "`" + name_ + "`"
+
+  // identifiers as accepted by the scanner, including unicode subscripts (see Scanner.flex)
+  val identifier = "[a-zA-Z'~#$^_.?`\\\\⁰-⁹₀-₉][a-zA-Z0-9'~#$^_.?`\\\\⁰-⁹₀-₉]*".r
 
   // elements separated by commas, which go on separate lines if the enclosing group does not fit
   def commas(docs: List[Doc]): Doc =
@@ -56,8 +65,12 @@ object Printer extends cuvee.pipe.Printer:
       case value: String    => str(value)
       case exprs: List[?] if exprs.forall(_.isInstanceOf[Expr]) =>
         commas(exprs.map(expr => doc(expr.asInstanceOf[Expr])))
-      // attributes that have not been resolved are s-expressions
-      case value            => Doc.lines(cuvee.sexpr.Printer.lines(value))
+      // attributes that have not been resolved are s-expressions, whose lists are the arguments of the attribute,
+      // e.g. the location of a loop, {:location 9, 3, main} for (9 3 main), and whose strings are those of Boogie (see
+      // Parser.unresolved); Boogie has no notation for nested lists
+      case args: List[?]          => commas(args.map(any))
+      case cuvee.sexpr.Str(text)  => str(text)
+      case value                  => Doc.lines(cuvee.sexpr.Printer.lines(value))
 
   def lines(res: Result): List[String] =
     render(doc(res), width)
@@ -160,17 +173,18 @@ object Printer extends cuvee.pipe.Printer:
       case SetLogic(name) =>
         text("logic") ~~ text(name) ~ text(";")
 
+      // options and infos are attributes, whose names may contain hyphens
       case GetOption(name) =>
-        text("option") ~~ text(":" + name) ~ text(";")
+        text("option") ~~ attribute(name, None) ~ text(";")
 
       case SetOption(name, value) =>
-        Group(text("option") ~~ text(":" + name) ~~ text(":=") ~ Nest(2, line ~ any(value)) ~ text(";"))
+        text("option") ~~ attribute(name, Some(value)) ~ text(";")
 
       case GetInfo(name) =>
-        text("info") ~~ text(":" + name) ~ text(";")
+        text("info") ~~ attribute(name, None) ~ text(";")
 
       case SetInfo(name, value) =>
-        Group(text("info") ~~ text(":" + name) ~~ text(":=") ~ Nest(2, line ~ any(value)) ~ text(";"))
+        text("info") ~~ attribute(name, Some(value)) ~ text(";")
 
       // the parameters of declared sorts are anonymous
       case DeclareSort(Con(name_, arity), attrs) =>

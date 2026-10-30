@@ -58,9 +58,9 @@ function {:c} {:rw} number(b: bool): int { if b then 1 else 0 }
 // division and remainder of C, which truncate towards zero, e.g. -7 / 2 == -3 and -7 % 2 == -1,
 // unlike div and mod of SMT-LIB, whose remainder is nonnegative, with which they coincide for nonnegative dividends,
 // which the simplifier unfolds (rw); also in the prelude of Dafny (resources/cuvee/dafny/prelude.dfy)
-function {:c} {:rw} quot(a: int, b: int): int { if 0 <= a then a div b else -((-a) div b) }
+function {:c} {:dfy} {:rw} quot(a: int, b: int): int { if 0 <= a then a div b else -((-a) div b) }
 
-function {:c} {:rw} rem(a: int, b: int): int { if 0 <= a then a mod b else -((-a) mod b) }
+function {:c} {:dfy} {:rw} rem(a: int, b: int): int { if 0 <= a then a mod b else -((-a) mod b) }
 
 // the arithmetic of unsigned integers of 1, 2, 4, and 8 bytes, modulo the size of their range, e.g. UINT_MAX + 1 == 0
 // and 0 - 1 == UINT_MAX, which the C frontend applies to the results of +, -, *, and shifts left in an unsigned type,

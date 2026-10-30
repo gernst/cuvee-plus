@@ -162,6 +162,10 @@ case class Include(path: String) extends Cmd
 // the commands annotate-tag and verify-call of SV-LIB, annotate "t" {:check-true x == n} and verify main()
 case class Annotate(tag: String, attrs: List[Annotation]) extends Cmd
 case class Verify(proc: String, args: List[Expr]) extends Cmd
+// the other commands of SMT-LIB in the dialect: labels, model, witness, exit, reset, push n, pop n, logic name, and the
+// options and infos as annotations, option {:produce-models true} and option {:produce-models} for get-option
+case class Control(name: String, arg: Option[String]) extends Cmd
+case class Setting(kind: String, attr: Annotation) extends Cmd
 case class SortDef(attrs: List[Annotation], name: String, params: List[String], impl: Either[Option[Type], List[Cmd]]) extends Cmd
 case class DataDef(attrs: List[Annotation], name: String, params: List[String], constrs: List[Constr], impl: Option[List[Cmd]]) extends Cmd
 case class DataDefs(datas: List[DataDef]) extends Cmd
@@ -216,6 +220,8 @@ object VarDef extends ((List[Annotation], List[(String, Type)]) => Cmd)
 object Include extends (String => Cmd)
 object Annotate extends ((String, List[Annotation]) => Cmd)
 object Verify extends ((String, List[Expr]) => Cmd)
+object Control extends ((String, Option[String]) => Cmd)
+object Setting extends ((String, Annotation) => Cmd)
 object SortDef extends ((List[Annotation], String, List[String], Either[Option[Type], List[Cmd]]) => Cmd)
 object DataDef extends ((List[Annotation], String, List[String], List[Constr], Option[List[Cmd]]) => DataDef)
 object DataDefs extends (List[DataDef] => Cmd)

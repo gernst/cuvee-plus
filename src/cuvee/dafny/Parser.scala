@@ -18,6 +18,10 @@ class Parser(var state: State):
   // annotate commands that refer to them are resolved (see smtlib.Parser.tags)
   var tags: Map[Name, List[Scope]] = Map()
 
+  // the states that pop returns to, and the one of reset, the state after the prelude (see Source.newParser)
+  var stack: List[State] = Nil
+  var init: State = state
+
   def record(attrs: Attrs, scope: Scope): Unit =
     for tag <- attrs.tags
     do tags = tags + (tag -> (tags.getOrElse(tag, Nil) :+ scope))
@@ -162,12 +166,67 @@ class Parser(var state: State):
         Error.report("tag in an annotate command", tag_):
           require(!attrs_.contains("tag"))
 
+        for scope <- tags(tag_).tail do
+          val unknown = attrs_.free.filterNot(x => scope.vars.get(x.name) == Some(x))
+          Error.report("variables of the annotation are not in scope at every statement with the tag", tag_, unknown):
+            require(unknown.isEmpty)
+
         List(core.AnnotateTag(tag_, attrs_))
 
       // the arguments are terms over the global variables (see smtlib.Parser.verifyCall)
       case Verify(proc, args) =>
         val scope = Scope.empty ++ state.globals
         List(core.VerifyCall(proc, state.exprs.arguments(scope, proc, args.map(resolve(scope, _)))))
+
+      // as smtlib.Parser does
+      case Control(name, arg) =>
+        (name, arg) match
+          case ("labels", None)  => List(core.Labels)
+          case ("model", None)   => List(core.GetModel)
+          case ("witness", None) => List(core.GetWitness)
+          case ("exit", None)    => List(core.Exit)
+
+          case ("reset", None) =>
+            state = init
+            stack = Nil
+            List(core.Reset)
+
+          case ("push", Some(digits)) =>
+            stack = List.fill(digits.toInt)(state) ++ stack
+            List(core.Push(digits.toInt))
+
+          case ("pop", Some(digits)) =>
+            val depth = digits.toInt
+            Error.report("cannot pop " + depth + " levels from stack of size " + stack.length):
+              require(depth <= stack.length)
+            if depth > 0 then
+              state = stack(depth - 1)
+              stack = stack.drop(depth)
+            List(core.Pop(depth))
+
+          case ("logic", Some(logic)) =>
+            state = state.setLogic(logic)
+            List(core.SetLogic(logic))
+
+          case _ =>
+            Error.raise("unsupported command", name)
+
+      // the values are s-expressions as in SMT-LIB
+      case Setting(kind, (name, value)) =>
+        (kind, value.map(unresolved)) match
+          case ("option", None) =>
+            List(core.GetOption(name))
+
+          case ("option", Some(value_)) =>
+            state = state.setOption(name, value_)
+            List(core.SetOption(name, value_))
+
+          case (_, None) =>
+            List(core.GetInfo(name))
+
+          case (_, Some(value_)) =>
+            state = state.setInfo(name, value_)
+            List(core.SetInfo(name, value_))
 
       case VarDef(attrs, vars) =>
         val scope = Scope.empty
@@ -320,10 +379,38 @@ class Parser(var state: State):
         case ("decreases", Some(expr)) =>
           name -> Some(measure(scope, expr))
 
+        // the variables of {:modifies x, y}, {:modifies x}, or none, {:modifies}
+        case ("modifies", _) =>
+          val xs =
+            arg.map(unresolved) match
+              case None                => Nil
+              case Some(xs: List[?])   => xs
+              case Some(x)             => List(x)
+          val names = for case sexpr.Id(x) <- xs yield x
+          Error.report("modifies clause of other than variables", xs):
+            require(names.length == xs.length)
+          name -> Some(vars(scope, names, "unknown variables in modifies clause"))
+
+        // other values are not resolved, e.g. the location of a loop (see unresolved)
+        case (_, Some(value)) if name != "tag" =>
+          name -> Some(unresolved(value))
+
         case _ =>
           keywords(List(name -> arg)).attrs.head
 
     Attrs(attrs_)
+
+  // the value of an annotation that is an s-expression, e.g. the location of a loop, (9, 3, main) for (9 3 main), whose
+  // lists the printer writes as tuples, its symbols as identifiers
+  def unresolved(expr: Expr): Any =
+    expr match
+      case Inner(base, Nil) => unresolved(base)
+      case Tuple(args)      => args.map(unresolved)
+      case Num(digits)      => sexpr.Num(digits)
+      case Dec(digits)      => sexpr.Dec(digits)
+      case Str(text)        => sexpr.Str(util.Strings.unescape(text))
+      case App(name, Nil)   => sexpr.Id(name)
+      case _                => Error.raise("value of an annotation that is no s-expression", expr)
 
   // the annotations of an implementation `fun`, a function or a method, whose inputs are in `scope`, where
   // {:implement pattern} names the function that it implements and the positions of its arguments by an application

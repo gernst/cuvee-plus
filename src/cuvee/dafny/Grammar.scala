@@ -91,7 +91,8 @@ object Grammar:
   val attr = T("attr")
 
   // keywords that remain identifiers elsewhere
-  val op = P(sym | J("<") | J(">") | J("==") | J("*") | J("map") | J("multiset") | J("const") | J("annotate") | J("verify"))
+  val op = P(sym | J("<") | J(">") | J("==") | J("*") | J("map") | J("multiset") | J("const") | J("annotate") | J("verify")
+    | J("logic") | J("option") | J("info") | J("witness") | J("labels") | J("model") | J("exit") | J("push") | J("pop") | J("reset"))
   val id = Sym(op)
 
   val id_prime = id ~ "'"
@@ -399,9 +400,13 @@ object Grammar:
     P(braces(sortcmd.*) | nil)
 
   // {:name} or {:name value}, whose value is resolved by the parser depending on the name; {:name is a token of its
-  // own, such that a block that follows annotations is not taken for another annotation
+  // own, such that a block that follows annotations is not taken for another annotation; several values are a tuple,
+  // e.g. {:modifies x, y}
   val annotation =
-    P(attr ~ expr.? ~ "}")
+    P(attr ~ (expr ~* ",") ~ "}").map:
+      case (name, Nil)       => (name, None)
+      case (name, List(arg)) => (name, Some(arg))
+      case (name, args)      => (name, Some(Tuple(args)))
 
   val sortdef =
     SortDef(P("type" ~ annotation.* ~ id ~ params ~ (right(braces(sortcmd.*)) | left(sortalias.?))))
@@ -460,8 +465,18 @@ object Grammar:
   val verify =
     Verify(P("verify" ~ id ~ parens(elems)))
 
+  val control =
+    P(
+      ((J("labels") | J("model") | J("witness") | J("exit") | J("reset")) ~ R(None: Option[String])) |
+        ((J("push") | J("pop")) ~ num.map(Some(_))) |
+        (J("logic") ~ id.map(Some(_)))
+    ).map(Control(_, _))
+
+  val setting =
+    P((J("option") | J("info")) ~ annotation).map(Setting(_, _))
+
   val cmd: Parser[Cmd] =
-    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check | fuse | include | annotate | verify)
+    P(datadefs | sortdef | constdef | fundef | preddef | procdef | axiom | lemma | goal | vardef | check | fuse | include | annotate | verify | control | setting)
 
   val script =
     P(cmd.*)

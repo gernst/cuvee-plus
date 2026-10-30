@@ -111,6 +111,10 @@ case class Axiom(params: List[String], attrs: List[Attr], phi: Expr) extends Cmd
 // the commands annotate-tag and verify-call of SV-LIB, annotate "t" {:check-true x == n}; and verify main();
 case class Annotate(tag: String, attrs: List[Attr]) extends Cmd
 case class Verify(proc: String, args: List[Expr]) extends Cmd
+// the other commands of SMT-LIB in the dialect: check; labels; model; witness; exit; reset; push n; pop n; logic name;
+// and the options and infos as attributes, option {:produce-models true}; and option {:produce-models}; for get-option
+case class Control(name: String, arg: Option[String]) extends Cmd
+case class Setting(kind: String, attr: Attr) extends Cmd
 case class Lemma(params: List[String], attrs: List[Attr], phi: Expr) extends Cmd
 case class SortDef(attrs: List[Attr], name: String, params: List[String], alias: Option[Type]) extends Cmd
 case class DataDef(attrs: List[Attr], datas: List[Data]) extends Cmd
@@ -140,6 +144,8 @@ case class ProcDef(
 object Axiom extends ((List[String], List[Attr], Expr) => Cmd)
 object Annotate extends ((String, List[Attr]) => Cmd)
 object Verify extends ((String, List[Expr]) => Cmd)
+object Control extends ((String, Option[String]) => Cmd)
+object Setting extends ((String, Attr) => Cmd)
 object Lemma extends ((List[String], List[Attr], Expr) => Cmd)
 object SortDef extends ((List[Attr], String, List[String], Option[Type]) => Cmd)
 object DataDef extends ((List[Attr], List[Data]) => Cmd)

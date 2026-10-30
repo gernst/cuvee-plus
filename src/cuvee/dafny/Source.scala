@@ -25,8 +25,9 @@ object Source extends cuvee.pipe.Source:
     val parser = new Parser(State.empty)
     val prelude = parse("/cuvee/dafny/prelude.dfy", lifted(parser))
 
-    // the parser's state now contains the declarations of the prelude
+    // the parser's state now contains the declarations of the prelude, to which reset returns
     val init = parser.state
+    parser.init = init
     val dir = config.file.map(Path.of(_).toAbsolutePath.getParent).getOrElse(Path.of(""))
     parser.include = included(init, dir, _)
     (init, lifted(parser), prelude)

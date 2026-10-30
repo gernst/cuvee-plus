@@ -33,6 +33,7 @@ kw  = "type" | "data" | "and" | "const" | "function" | "axiom" | "lemma" | "var"
     | "if" | "then" | "else" | "while" | "break" | "continue" | "return"
     | "assert" | "assume" | "havoc" | "call" | "forall" | "exists" | "lambda"
     | "trace" | "map" | "all" | "for" | "do" | "yield" | "check" | "case" | "annotate" | "verify"
+    | "logic" | "option" | "info" | "witness" | "labels" | "model" | "exit" | "push" | "pop" | "reset"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}|] | ":=" | "=" | "=>" | "<" | ">" | "*" | "⌊" | "⌋"
 
 // identifiers as in Boogie, together with the subscripts of indexed names
@@ -59,6 +60,7 @@ sym = {idchar} ({idchar} | [0-9])*
 {dec}       { return Syntax.apply("dec", yytext()); }
 {num}       { return Syntax.apply("num", yytext()); }
 {sym}       { return Syntax.apply("sym", yytext()); }
+"`" [^`]* "`"  { return Syntax.apply("sym", yytext(+1,-1)); }
 
 [^]         { throw new RuntimeException("unexpected character '" + yytext() + "' at " + yyline + ":" + yycolumn); }
 

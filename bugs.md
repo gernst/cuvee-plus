@@ -369,7 +369,8 @@ Rules that should apply and do not; recorded as bugs, unlike the limitations of 
 ## Bugs of sv-benchmarks
 
 Tasks of [sv-benchmarks](https://gitlab.com/sosy-lab/benchmarking/sv-benchmarks) whose expected verdict is wrong or
-whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7c1d7ce). Not reported yet.
+whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7c1d7ce); both are resolved upstream
+or in review (Oct 30, 2026).
 
 - **`sv-lib/c-translated/loops-crafted-1/in-de20`: expected `false`, but the check holds.** The verdict was flipped
   from correct to incorrect in c2d3abfeb ("Fix verdict of task whose behavior depends on a bounded data type"), but
@@ -379,14 +380,15 @@ whose program is not well defined, found on Oct 14, 2026 (sv-benchmarks at 4d6b7
   otherwise (first loop), `x == n - z`, `z >= 0` (second loop). The C original (unsigned) is expected true. All three
   participants of SV-COMP 2026 time out on it. Our result files of Oct 14 take it as expected true (patched,
   originals in `results/*.orig`); those of Oct 23 (0.49.5, `cuvee.xml` and `cuvee-fallback.xml`) are not patched
-  and count Cuvée's `true` as `incorrect true`.
+  and count Cuvée's `true` as `incorrect true`. Fixed upstream in a17092a958c ("Fix expected verdict of SV-LIB task
+  loops-crafted-1/in-de20"), expected `true` again.
 - **`c/array-examples/standard_vararg_ground`: an out-of-bounds read in a task expected true.** `while (aa[a] >= 0)
   a++;` reads up to the first negative element of the nondeterministic array `aa[100000]`, beyond the array if
   there is none, which is undefined behavior in C; the verdicts `unreach-call` true and `termination` true assume
   that the read stops within the array. Verifiers that check memory safety refute it (TriCera, on a translation of
   ours, removed since); SV-LIB has no translation of it. Fix prepared on Oct 30, 2026, branch
-  `fix-standard-vararg-ground-bounds` of ~/Projects/sv-benchmarks (af1a5b02775, not pushed): the loop checks
-  `a < N` before the read, in the `.c` and in the `.i`, the input of the task.
+  `fix-standard-vararg-ground-bounds` of ~/Projects/sv-benchmarks (af1a5b02775): the loop checks `a < N` before the
+  read, in the `.c` and in the `.i`, the input of the task; a merge request is open (Oct 30, 2026).
 
 ## Fixed
 

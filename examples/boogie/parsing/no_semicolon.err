@@ -1,1 +1,1 @@
-error "parse error" "List(cmd, verify, 'verify')" "{ } ... "
+error "parse error" "List(cmd, setting, 'info')" "{ } ... "

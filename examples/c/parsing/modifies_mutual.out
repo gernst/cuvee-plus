@@ -12,14 +12,6 @@ function {:c} {:rw} number(b: bool): int {
   if b then 1 else 0
 }
 
-function {:c} {:rw} quot(a: int, b: int): int {
-  if 0 <= a then a / b else -(-a / b)
-}
-
-function {:c} {:rw} rem(a: int, b: int): int {
-  if 0 <= a then a % b else -(-a % b)
-}
-
 function {:c} {:rw} uchar(x: int): int {
   x % 256
 }
@@ -87,7 +79,7 @@ method even(n: int) returns (result: int)
 {
   var tmp₂: int;
   {
-    while {:location (7 19 even)} h < n {
+    while {:location (7, 19, even)} h < n {
       h := h + 1;
     }
     if n == 0 {

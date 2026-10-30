@@ -33,7 +33,7 @@ kw  = "function" | "predicate" | "axiom" | "lemma" | "goal" | "const" | "datatyp
     | "while" | "if" | "then" | "else" | "assert" | "assume" | "var"
     | "forall" | "exists" | "break" | "continue" | "return" | "parallel" | "as" | "assumes" | "commits" | "ode" | "check" | "map" | "multiset"
     | "trace" | "maps" | "invs" | "match" | "case" | "for" | "do" | "yield" | "fuse" | "include" | "???"
-    | "annotate" | "verify"
+    | "annotate" | "verify" | "logic" | "option" | "info" | "witness" | "labels" | "model" | "exit" | "push" | "pop" | "reset"
     | "(" | ")" | "[" | "]" | "::" | [;,:{}] | ":=" | "=" | "=>" | "->" | "==" | "<" | ">" | "*" | "'" | "|" | "." | ".." | "⌊" | "⌋"
 
 // the opening of an annotation with its name, which may contain hyphens, e.g. {:check-true of SV-LIB

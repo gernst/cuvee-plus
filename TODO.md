@@ -73,8 +73,6 @@ without `-fallback`); the open tasks with the verdict true by family, with the c
 - [ ] Arrays (ideas/database.md, "Workarounds"): the gaps of the engine behind the workarounds in the database (compactions and
       filters, copies from both ends, cases split at a position), each listed with its tasks; then replace the
       workarounds by their plain forms (ideas/engine-gaps.md).
-- [ ] Report the bugs of sv-benchmarks (bugs.md): the verdict of SV-LIB in-de20, the out-of-bounds read of
-      standard_vararg_ground.
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
 - [ ] Last: integrate the results into doc/paper/cuvee.tex (`scripts/paper.py`), `scripts/out/experiments.pdf`,
       ideas/experiments.md, doc/array-algorithms; commit all the work, then a single push.

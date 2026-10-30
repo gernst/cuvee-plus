@@ -1,0 +1,3 @@
+error "variables of the annotation are not in scope at every statement with the tag"
+  "Name(loop,None)"
+  "Set(Var(Name(k,None),Sort(Con(Name(Int,None),0),List())))"
