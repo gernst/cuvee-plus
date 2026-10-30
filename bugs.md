@@ -194,7 +194,13 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 - **"rewriting does not terminate" on the reducercommutativity max tasks** (0.53.10 cloud run, Oct 28, 2026):
   reducercommutativity/max05-1, max10-1, max20-1, max40-1, max60-2, array-patterns/array8_pattern, and
   nla-digbench-scaling/geo1-ll_unwindbound5, geo1-ll_valuebound50 (all expected true) end in this error instead of an
-  answer; the logs show no goal before it. Not yet reproduced or traced locally.
+  answer; the logs show no goal before it. Traced on nla-digbench/geo1-ll (Oct 30, 0.53.21, timeout or this error on
+  the cloud): only 78 rewrite steps in 120 s; every stack sample is a recursion of more than a hundred levels of
+  `Classes.substitute` -> `Classes.normalize` -> `Arith.toPoly`, the solutions of variables substituted into each
+  other (the values of x before and after `x = x * (z - 1)`, each modulo 2^64) and normalized again at every level
+  without a memo; acyclic, so it terminates, but not in time. A fix is in `Classes` (a memo of the normalized
+  solutions per class, or no substitution of solutions into solutions beyond a size), the canonical forms, to be
+  measured like 0.52.9. The max tasks not yet traced.
 
 - **`-prove` is slower than the former `-simplify` on polynomial loops** (Oct 13, 2026, 0.46.5 to 0.46.9, measured locally and on
   the cloud at 60 s): nla-digbench-scaling/bresenham-ll_valuebound1 takes 8 s with teq.dfy alone, 11 s with
