@@ -2222,6 +2222,10 @@ theorem current_trace_mod_affine : Stmt.current_trace_mod_affine := by
   have := N.trace_mod_affine_from m A B (List.zip (butlast (counter 0 1 n)) hs) x0
   rwa [Int.emod_eq_of_lt h2 h3] at this
 
+theorem current_trace_mod_affine_wrapped : Stmt.current_trace_mod_affine_wrapped := by
+  intro y m n hs A B hhs _
+  exact N.trace_mod_affine_from m A B (List.zip (butlast (counter 0 1 n)) hs) y
+
 theorem current_trace_mod_mul : Stmt.current_trace_mod_mul := by
   intro x0 m n hs A hhs ⟨h1, h2, h3⟩
   have := N.trace_mod_mul_from m A (List.zip (butlast (counter 0 1 n)) hs) x0

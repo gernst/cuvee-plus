@@ -264,6 +264,7 @@ example : Stmt.invs_counter_mod_upper_zero := @invs_counter_mod_upper_zero
 example : Stmt.invs_counter_mod_upper_cases := @invs_counter_mod_upper_cases
 example : Stmt.current_trace_mod_add_const := @current_trace_mod_add_const
 example : Stmt.current_trace_mod_add_cases := @current_trace_mod_add_cases
+example : Stmt.current_trace_mod_affine_wrapped := @current_trace_mod_affine_wrapped
 example : Stmt.current_trace_mod_affine := @current_trace_mod_affine
 example : Stmt.current_trace_mod_mul := @current_trace_mod_mul
 example : Stmt.squares_zero := @squares_zero

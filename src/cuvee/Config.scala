@@ -505,7 +505,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.53.20"
+  val release = "0.53.21"
 
   def version() =
     println("Cuvée " + release)

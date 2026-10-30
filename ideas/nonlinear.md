@@ -44,7 +44,8 @@ the value of a series for no and one iteration is a polynomial (`current_series_
 geometric sum, `x0 * pow(z, n) + a * geometric(z, n)` (0.53.19), lost geo1-3_valuebound5 and _valuebound10 on the
 cloud: the arithmetic does not multiply the definition of the value out, so the product of the value with z in the
 goal was no monomial of the forward fact about the sum (option B, substituting such definitions into products, is an
-engine change, not taken). geo1-ll
+engine change, not taken). geo3-ll, whose initial value is wrapped (`x = a` of int to unsigned long long), by
+`current_trace_mod_affine_wrapped` (correct locally in 33 s). geo1-ll
 ends in "rewriting does not terminate" (bugs.md).
 
 `x = (x*z + 1) % 2^64`, `y = (y*z) % 2^64` (unsigned long long) stay raw traces: `current_trace_geometric` and the fold
