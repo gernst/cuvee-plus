@@ -71,18 +71,24 @@ static void initialize() {
 
 unsigned long long generate(unsigned int sign) {
     if(sign) {
-        switch(rand()%4) {
+        /* the ranges reach one further up than down, such that 1 is drawn as often as -1 by the narrowest range
+           (skippedu needs exactly 1) */
+        switch(rand()%6) {
             case 0: return (unsigned long long)  0;
-            case 1: return (unsigned long long) (rand() %   2 -   1);
-            case 2: return (unsigned long long) (rand() %  32 -  16);
-            case 3: return (unsigned long long) (rand() %1024 - 512);
+            case 1: return (unsigned long long) (rand() %     2);
+            case 2: return (unsigned long long) (rand() %     8 -     3);
+            case 3: return (unsigned long long) (rand() %    32 -    15);
+            case 4: return (unsigned long long) (rand() %  1024 -   511);
+            case 5: return (unsigned long long) (rand() % 65536 - 32767);
         }
     } else {
-        switch(rand()%4) {
+        switch(rand()%6) {
             case 0: return (unsigned long long)  0;
-            case 1: return (unsigned long long) (rand() %   2);
-            case 2: return (unsigned long long) (rand() %  32);
-            case 3: return (unsigned long long) (rand() %1024);
+            case 1: return (unsigned long long) (rand() %     2);
+            case 2: return (unsigned long long) (rand() %     8);
+            case 3: return (unsigned long long) (rand() %    32);
+            case 4: return (unsigned long long) (rand() %  1024);
+            case 5: return (unsigned long long) (rand() % 65536);
         }
     }
 
