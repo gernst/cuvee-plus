@@ -9,23 +9,23 @@ Priority: more correct results, `true` first; speed only where a task times out 
 benchmarks are not rerun with Cuvée. Each change is checked on its tasks first, then by one cloud run of Arrays and
 Loops (no task lost). The state is that of the cloud runs of 0.53.13 (Oct 28, 2026, Ryzen, 120 s, one core, with and
 without `-fallback`); the open tasks with the verdict true by family, with the concept each needs, are in
-[ideas/open-tasks.md](ideas/open-tasks.md), the losses of the versions of Oct 28 in ideas/prove-next.md, A3.
+[ideas/open-tasks.md](ideas/open-tasks.md), the losses of the versions of Oct 28 in ideas/engine.md, section 10.
 
 - [ ] **Ground roots that are no literals.** Since 0.53.5 a term whose class has a literal as its root is written as
       that literal (`Classes.ground`); a root that is a ground term over constants is not, since such terms rank
       behind the variables (`Classes.rank`). Difficult: ranking them before the variables changes the root of many
-      classes, and a change of the order of roots lost 30 tasks of Loops before (ideas/engine-gaps.md, gap 3).
+      classes, and a change of the order of roots lost 30 tasks of Loops before (ideas/engine.md, 1.2).
 - [ ] **Strided stores** (array-tiling): nr3-nr5 correct locally in 0.53.14 (`select_current_tiles`, the tiles of an
       outer loop over the folded stores of an inner one, to be confirmed on the cloud); open nr2, mbpr4, mods, modsf; pnr4, pnr5, mbpr5 time out at 120 s
       (pnr4 in 514 s with 15 min). Difficult: the inner loop of nr2-nr5 over two positions leaves cases that store at
       `2 * k` and `2 * k + 1`, with the iteration variable written as the literal it equals in each case
-      (ideas/engine-gaps.md, gap 3; no evaluation of concrete traces, by decision), which nr3-nr5 do not have, since
+      (ideas/engine.md, 1.2; no evaluation of concrete traces, by decision), which nr3-nr5 do not have, since
       their inner loops of three to five iterations are folded into `stores`; nr2 needs the key `2 * k + k'`
       synthesized from the cases (ideas/open-tasks.md); mbpr4 needs the case `i == 2` of
       `0 < i < 3` after the choices are lifted out of an atom, which the case split of `-prove` does not take (z3
       proves it with `-fallback`); mods and modsf have conditional stores without a fixed number of cases
-      (ideas/cases-and-folds.md, section 6).
-- [ ] **Equalities from the simplex to the classes** (ideas/prove-next.md, section 1): two counts known equal only
+      (ideas/database.md, "Conditional stores").
+- [ ] **Equalities from the simplex to the classes** (ideas/engine.md, 1.4): two counts known equal only
       by inequalities stay different terms (`n₂ == SIZE == n₃` by the exit test and the bound of the iteration
       constraint). Difficult: the general exchange of all equalities lost 21 results of Arrays and 13 of Loops, by
       timeouts; the alternative is the equation `i == N` at the exit of a loop whose counter the test bounds, once per
@@ -53,29 +53,32 @@ without `-fallback`); the open tasks with the verdict true by family, with the c
       list of a given length exists, which neither the rules nor z3 decide. A predicate `haslength(n, xs)` that the
       engine drops when `xs` occurs nowhere else was considered and dropped by decision (Oct 28): one task, and a
       special case of the engine for one function of the database.
-- [ ] **Regressions since 0.51.4** (ideas/prove-next.md, plan A): linear_sea.ch (one of two), geo1, prodbin-ll
+- [ ] **Regressions since 0.51.4** (ideas/engine.md, section 10): linear_sea.ch (one of two), geo1, prodbin-ll
       (valuebound1; 2, 5, 10 with fallback), cohendiv-ll (with fallback only). Difficult: few rewrite steps, and the
       profile in plan A (side conditions of rules, hashes of terms, the simplex, `Context.fix`) suggests speedups are
       not worthwhile; unsigned arithmetic with division (linear_sea.ch, geo1, prodbin) is for the database.
 - [ ] **Tasks at the time limit** (solved in some runs, 73 to 120 s, alternating): string-1 (73 s with 15 min),
       divbin_unwindbound1, divbin2_unwindbound1, add-2-n-u, cohendiv-ll_valuebound2, nested3-1_abstracted (with
       fallback); diff-2-n-u ends in "rewriting does not terminate". They need speed, not lemmas.
-- [ ] **Rounds that do not settle**: with 15 min, 116 tasks end at the bound on the rewrite steps (ideas/prove-next.md,
-      plan A, section 4), e.g. fermat1, egcd2, mannadiv. Difficult: the rounds of simplification do not reach a
+- [ ] **Rounds that do not settle**: with 15 min, 116 tasks end at the bound on the rewrite steps (ideas/engine.md,
+      6.1), e.g. fermat1, egcd2, mannadiv. Difficult: the rounds of simplification do not reach a
       fixpoint, which is a larger target than their speed; `-prove:steps 10000` lost nothing on 0.53.4 but gains
       little.
 - [ ] **The cost of `-prove`**: forward instances are simplified at every firing; a memo of them was measured and
       costs more (Oct 27), so the remedy is fewer forward lemmas, rules on the atoms of the goals instead.
+      The memo of normalized solutions per call of `Classes.normalize` (0.53.23) costs 14 to 20 % median time;
+      postponed (Oct 30): entries for solved variables only, no map without solved variables, or the memo per
+      `Classes` value, doubtful since the values are short-lived (a new one at every assumption).
 - [ ] partial_mod_count_2 to 5 (true; partial_mod_count_1 is proved): conditional stores whose second value is not a
       constant, then a count of zeros.
 - [ ] Counterexamples by concrete evaluation of `sum`, `map`, `counter` for a literal `n` (30 unsafe array-fpi
-      tasks, e.g. brs2f); bounded unrolling for counterexamples (ideas/prove-next.md, plan B).
+      tasks, e.g. brs2f); bounded unrolling for counterexamples (ideas/engine.md, 6.3).
 - [ ] Arrays (ideas/database.md, "Workarounds"): the gaps of the engine behind the workarounds in the database (compactions and
       filters, copies from both ends, cases split at a position), each listed with its tasks; then replace the
-      workarounds by their plain forms (ideas/engine-gaps.md).
+      workarounds by their plain forms (ideas/engine.md).
 - [ ] SV-LIB: the new conventions of sv-benchmarks (`upto` and other tags).
 - [ ] Last: integrate the results into doc/paper/cuvee.tex (`scripts/paper.py`), `scripts/out/experiments.pdf`,
-      ideas/experiments.md, doc/array-algorithms; commit all the work, then a single push.
+      doc/benchmarks.md ("Experiments of the paper"), doc/array-algorithms; commit all the work, then a single push.
 
 ## General
 
@@ -134,8 +137,8 @@ Cleanup, none of it a bug.
 - The engine of `-prove`: `(config, state, ctx)` threaded everywhere (→ a class); the matchers of `Rewrite` take
   12 to 15 parameters (→ a matcher per rule); three matchers on types, two on patterns; `Subst.rename` with
   `ctx.bind` ten times (→ `Context.enter`); the matcher's signed summands beside `Poly` (kept on purpose, see
-  ideas/engine-consolidation.md, step 2); sequent decomposition three times (`Split`, `Normalize`,
-  `Context.assume`, kept by decision, step 8).
+  ideas/engine.md, 2.5); sequent decomposition three times (`Split`, `Normalize`,
+  `Context.assume`, kept by decision, ideas/engine.md, 5.4).
 - Transforms: abstractness from two sources (`VCGen.abstracts`, the solver's closure in the order of the stream,
   which misses mutual recursion; mark the functions in the `State` instead); `VCGen`, `TEQ`, `Horn` repeat the
   setup of a procedure and pass the four exits separately; `Monomorph` replays the prefix on every flush.
@@ -223,7 +226,7 @@ Cleanup, none of it a bug.
 - The composition of summarized inner loops (`k == n * m`) is not accelerated (nested-1).
 - The grammars of Dafny and Boogie need a comma after the last initial value of a trace before `for`.
 - `-teq` is exponential in sequences of conditionals and overflows at ten (bugs.md; conditional stores in
-  [ideas/conditional-stores.md](ideas/conditional-stores.md)).
+  [ideas/database.md](ideas/database.md), "Conditional stores").
 
 ## Dafny frontend
 

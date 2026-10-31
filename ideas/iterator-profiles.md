@@ -107,7 +107,7 @@ choose a form of invariant that Frama-C can check. In TEQs both are the database
 - **Accumulators**: `sum += a[i]`, `count++` under a condition (example 2; `array_sum`, `sum_even`,
   `occurences_of_x`). `sums`, `counts`, `current_sums`. A conditional increment `case C ⇒ x + f(k), case ¬C ⇒ x`
   needs the two cases merged into `x + (if C then f(k) else 0)` before `sums` applies. That is the same merge as
-  [conditional-stores.md](conditional-stores.md), for sums. Calls that the contract gives exactly
+  [database.md](database.md) ("Conditional stores"), for sums. Calls that the contract gives exactly
   (`get_load(...)` = a logic function) are plain terms in the update; the result stays symbolic,
   `x₀ + sum(map(… ↦ if online(k) then load(k) else 0))`.
 - **Early exit**: `if (c) break;` / `return` (example 3; `search`, `array_find`, `equal_arrays`, most of the FEC
@@ -165,7 +165,7 @@ These are estimates from reading the tasks, not runs.
    enumerates `{j | P(j)}` in increasing order, with `P` a function variable; the two-phase variant for `wrap`
    later. It needs a Dafny example that duplicates the declarations of `core.dfy` and models `find_next_bit` by a
    contract. Test it first on the three motivating examples, translated by hand to Dafny.
-2. **The merge of guarded increments** into a conditional summand for `sums` (see conditional-stores.md).
+2. **The merge of guarded increments** into a conditional summand for `sums` (see database.md, "Conditional stores").
 3. **The bridge from recursive logic functions**: an introduction rule generated from a recursive definition of
    the standard form.
 4. **A measure of description, not of verification**, for sets without properties (Linux): the fraction of loops

@@ -1,8 +1,9 @@
 # The lemma database: open points, workarounds, decisions
 
 One place for the ideas about the lemma database of `-teq` (teq.dfy and the modules of
-[resources/cuvee/teq](../resources/cuvee/teq)), merged on Oct 28, 2026 from database-review.md, array-lemmas.md, the
-sections on the database of [cases-and-folds.md](cases-and-folds.md) and of [engine-gaps.md](engine-gaps.md). The
+[resources/cuvee/teq](../resources/cuvee/teq)), merged on Oct 28, 2026 from database-review.md, array-lemmas.md and
+the sections on the database of engine-gaps.md, on Oct 31 also from cases-and-folds.md and conditional-stores.md; the
+engine's side and nla-digbench are [engine.md](engine.md). The
 open tasks by family, with the concept each needs, are in [open-tasks.md](open-tasks.md); the work queue is in
 TODO.md. Usage is counted by `-rules` over the results of Cuvée ([scripts/rules.py](../scripts/rules.py)); a lemma that
 at most three proved tasks use names them on its `(from ...)` line (doc/teq.md).
@@ -58,7 +59,7 @@ preempt them (`_reset_add` on brs1, ms2, ms3; `_reset_add_keep` on brs2-brs5; `_
 ## Workarounds for gaps of the engine
 
 Lemmas or shapes of lemmas that exist because the matcher or the engine lacks something; each could go once its gap
-is closed (the plan for the gaps: [engine-gaps.md](engine-gaps.md)). Tests of the workarounds: examples/c/teq
+is closed (the gaps of the engine: [engine.md](engine.md)). Tests of the workarounds: examples/c/teq
 (compacts.c, filters.c, max_seeded.c, copy_both_ends.c and their `_wrong` variants, which must stay unknown).
 
 | Gap | Lemmas |
@@ -84,6 +85,73 @@ their bound names in the arithmetic and the classes (also sumt2); congruence thr
 bound variables, once another case or store binds them; `ite(c, 1, 0) != 0` of `assume_abort_if_not` simplified to
 `c` inside `invs` (array_init_nondet_vars, pair_symmetr2); reading an iteration constraint at a witness `0 <= x < n`
 (standard_vararg, array_init_nondet_vars, standard_sentinel-2).
+
+## Cases and choices
+
+Settled on Oct 28 (0.53.1 to 0.53.10, documented in doc/prove.md): one form for values per case.
+- `Simplify.maps` lifts the conditionals of its update into cases, as traces do, so a fold with values per case and a
+  lemma with conditionals give one term; `stores_index_cases` went.
+- The right-hand sides of the lemmas are choices (`if { case ... }`, parsed by Dafny, not yet by Boogie); a choice in
+  an atom is lifted to the level of formulas by the polarity of the atom (0.53.9: in goals and neutral positions the
+  conjunction of `cᵢ ==> A[vᵢ]`, among the facts the disjunction of `cᵢ && A[vᵢ]`); the guards are complete in
+  context, a case for no guard lost large_const and was removed.
+- Keys stay keys: a bound variable of a synthesized dependency that is the index of a store takes no values per case
+  (`Rewrite.update`); otherwise `case k != c => a[k := F(k)] case k == c => a[c := F(c)]` folds into `stores` with
+  keys `maps(... :: case k != c => k case k == c => c)`, which no read lemma over counters matches. Only stored values
+  and guards take cases.
+- A choice nested in a term of an update is lifted like a conditional; the scalar version of the reset and
+  accumulation, `current_trace_reset_add_keep`, proves the sum of brs2 in a scalar (examples/dafny/teq/sum_cases.dfy).
+
+Open: mbpr4 (engine.md, 5.3) and nr2 (engine.md, 4.2).
+
+## Conditional stores (history)
+
+A loop body with `s` conditional stores, each choosing a value by a guard that does not depend on the iteration,
+becomes an update with `2^s` cases, one per path of `-teq` (pr3-pr5, see
+[benchmarks/monocera/summary.md](../benchmarks/monocera/summary.md)):
+
+```
+trace(a0, for ⌊counter(0, 1, n)⌋ do a, k ::
+  case 7 >= m && 3 >= m => a[2 * k := 7][2 * k + 1 := 3]
+  case 7 >= m && !(3 >= m) => a[2 * k := 7][2 * k + 1 := 0]
+  case !(7 >= m) && 3 >= m => a[2 * k := 0][2 * k + 1 := 3]
+  case !(7 >= m) && !(3 >= m) => a[2 * k := 0][2 * k + 1 := 0])
+```
+
+**Taken (0.53.1, Oct 28).** The folds `strides₂` to `strides₅` with one list of values per cell; the matcher matches
+a pattern without cases against the cases of an update one by one, the bound variables of the synthesized dependencies
+take a value per case, and the map gets the cases of the update (`Rewrite.update`). pr3-pr5, pnr2, pnr3 proved by
+0.53.10. The conditional stores that keep the array otherwise are the fold `stores_where` over the counter.
+
+**Rejected or not adopted:**
+- Merging the cases into stores of conditional values in the simplifier (`Simplify.eps`), by decision (Oct 27): the
+  case distinction of an update is what the lemmas match. Measured before: pr3 proved, rew and ms2 lost (a store of a
+  choice of arrays; a reset and an accumulation at one cell merged into one value). The variant as a local step on
+  `Eps` is engine.md, 5.2.
+- The merge as a rewrite rule (`trace_merge_store`, Oct 11): it applies to one conditional cell, but a pattern with two
+  cases cannot cover four cases pairwise, so a rule per number of cells and order of guards would be needed.
+- The merge in `-teq` (a conditional whose branches store at the same index kept as a store of a conditional value):
+  avoids the `2^s` paths and the overflow at ten conditionals, but only for that shape; not implemented.
+- Shape lemmas per number of cases (`select_current_trace_stride3_cases4` to `stride5_cases6`): removed in 0.53.1.
+- A generic lemma over the window of an iteration (measured Oct 28, not adopted): a loop whose iteration `k` changes
+  only the cells of its window, by any number of cases, leaves at `j` what iteration `j / s` stores there.
+
+  ```
+  lemma {:rw} {:teq} select_current_trace_window2(a0: array<int, int>, n: int, j: int, U: (array<int, int>, int) -> array<int, int>)
+    requires forall b: array<int, int>, k: int, i: int :: i != 2 * k && i != 2 * k + 1 ==> U(b, k)[i] == b[i]
+    requires forall b: array<int, int>, c: array<int, int>, k: int :: U(b, k)[2 * k] == U(c, k)[2 * k] && U(b, k)[2 * k + 1] == U(c, k)[2 * k + 1]
+    ensures current(trace(a0, for ⌊counter(0, 1, n)⌋ do a, k :: U(a, k)))[j]
+      == if 0 <= j < 2 * n then U(a0, j / 2)[j] else a0[j]
+  ```
+
+  pr2 in 46 s (10 s with the shape lemma), but its pattern matches every trace of an array over a counter, whose
+  quantified conditions are evaluated at every read: pr3 and nr2 do not finish in 90 s. A cheap first condition that
+  recognizes an update writing only its window from its shape would make it the principled form.
+
+Left of the kind: `stores_cases` (its first case stores a constant, since a higher-order instance must contain the
+term it abstracts), `select_current_trace_cap` (its guard reads the array), `select_current_trace_reset_keep`; mods
+and modsf (strided, no fixed number of cases). A sum with a conditional increment (`case C => x + f(k) case !C => x`)
+is the same merge for `sums` ([iterator-profiles.md](iterator-profiles.md)).
 
 ## The lemmas of examples/dafny/algorithms
 

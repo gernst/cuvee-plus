@@ -93,6 +93,30 @@ Scripts:
 - `scripts/missing.py <logfiles.zip> <tasks>`: the rules that a baseline applied to each task and that the current
   database lacks, e.g. after a migration of a module.
 - `scripts/table.py`, `scatter.py`, `quantile.py`, `rules.py`, `experiments.py`: the tables, plots, and rule
-  statistics of the papers (`ideas/experiments.md`, [SV-COMP.md](../SV-COMP.md)), from the most recent result
+  statistics of the papers ("Experiments of the paper" below, [SV-COMP.md](../SV-COMP.md)), from the most recent result
   files that meet their requirements. `experiments.py` also writes the quantile plots of SV-COMP with the legend below the plot
   (`quantile-<category>-bottom.pdf`), for slides.
+
+## Experiments of the paper
+
+The comparison of TEQ with other techniques (`scripts/experiments.py` makes `scripts/out/experiments.pdf` from the
+newest results that meet each experiment's requirements, blanks for missing ones; the other tools from the official
+results of SV-COMP 2026 in `scripts/official`, MonoCera from our run and its paper):
+1. Aggregates over arrays: the 125 MonoCera tests (forall 93, max 4, min 11, sum 17), against MonoCera (our run and
+   the paper's Table 3). MonoCera (TriCera, `-arithMode:math`) and the paper's other tools use mathematical integers,
+   so Cuvée runs them with `-unbounded` (the task sets `MonoCera-*`).
+2. SV-COMP ReachSafety-Arrays and -Loops, against the official results; no scores, which are only meaningful with
+   validated witnesses.
+3. Complementarity: the virtual portfolio of `-teq` and `-chc` (TEQ strong on arrays, Horn clauses on integer
+   loops).
+4. Annotations against automation: the ACSL tasks ([benchmarks/acsl](../benchmarks/acsl)) with `-vcgen -z3`
+   (`xml/cuvee-acsl.xml`), against TEQ without annotations on the same programs.
+5. SV-LIB `CTranslated` and `CoreVerification` (not `CoreValidation`, not the BTOR2 translations), against the
+   participants of the demonstration category of SV-COMP 2026.
+6. Ablations: teq.dfy alone against each optional module; the frequency of the rules (`scripts/rules.py`); time to
+   proof.
+
+Open: all of them with the current version at 15 min (`xml/cuvee.xml`, `cuvee-fallback.xml`, `cuvee-chc.xml`,
+`cuvee-acsl.xml`), which replaces the runs of 0.46 (`-verify`, removed in 0.48.0) and their patched result files; TEQ
+on the programs of the ACSL tasks; then the paper (TODO.md, "Last"). The numbers of 0.41 to 0.46 are in the git
+history of ideas/experiments.md (removed Oct 31, 2026).

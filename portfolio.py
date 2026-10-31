@@ -173,7 +173,7 @@ METHODS = [
     Fuzz("fuzz", ["c"], timeout=30),
     Cuvee("fallback", ["c", "svlib"], ["-svcomp", "-rules", "-fallback", "-z3", "-timeout", "900000"]),
     Cuvee("chc", ["c", "svlib"], ["-chc", "-prove", "-z3", "-timeout", "900000"]),
-    # bounded unrolling (ideas/prove-next.md, plan B), once -unroll exists
+    # bounded unrolling (ideas/engine.md, 6.3), once -unroll exists
 ]
 
 

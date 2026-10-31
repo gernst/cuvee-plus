@@ -1,7 +1,7 @@
 // ./Cuvee.sh -teq -prove examples/c/teq/assume_abort.c
 // values assumed by assume_abort_if_not in a loop, which C passes as ite(c, 1, 0) != 0: the iteration constraints
 // are the conditions themselves, 0 < tmp and tmp < 10 (Simplify.eq_ on conditionals with literal branches); the goal
-// remains, since the constraint is not instantiated at the position x (ideas/engine-gaps.md, "Not done")
+// remains, since the constraint is not instantiated at the position x (ideas/engine.md, section 8)
 extern void abort(void);
 void reach_error() { abort(); }
 void __VERIFIER_assert(int cond) { if (!(cond)) { ERROR: {reach_error(); abort();} } }

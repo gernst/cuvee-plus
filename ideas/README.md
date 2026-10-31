@@ -6,32 +6,19 @@ documented in `doc/`.
 The open work and its order are the work queue of [TODO.md](../TODO.md); this directory holds the plans and the
 analyses behind its items. Files marked as history record what was tried and not taken.
 
-- [nonlinear.md](nonlinear.md): the open tasks of nla-digbench (0.53.14): traces not folded (preserved invariants,
-  wrap-around modulo 2^64, last values, doubling, guarded increments, binary expansion, exploding systems) and the
-  arithmetic that remains, with an order by tasks per concept.
-- [open-tasks.md](open-tasks.md): the open tasks of 0.53.10 with the expected verdict true by family, with what each
-  still needs (the families done in 0.53.14 removed).
+- [engine.md](engine.md): the engine of `-prove`: the context and its canonical forms, the arithmetic (forward
+  instances in the final check, exact and symbolic division), decisions and derived facts, matching, choices and
+  guards in DNF, search and speed (rounds that do not settle, bounded unrolling), the open tasks of nla-digbench by
+  concept (preserved invariants, doubling, guarded increments, binary expansion), what is not done and why, the
+  design notes and the history of the regressions.
+- [database.md](database.md): the lemma database: the raw traces and their named folds, overlaps among the lemmas,
+  what could be unified, the workarounds for gaps of the engine, cases and choices, the conditional stores (history),
+  the candidates among the lemmas of the algorithms, and the decisions (removed, kept, rejected, not taken).
+- [open-tasks.md](open-tasks.md): the open tasks of 0.53.22 (cloud, 300 s) with the expected verdict true by family,
+  with what each still needs.
 
 - [slice.md](slice.md): whether `-slice` proves tasks on its own (three quarters of what `-teq` proves), why it cannot
   answer without a goal, the program as the unit of answer, `incorrect` and the fallback inside `-slice`.
-- [prove-next.md](prove-next.md): the plan (the regressions since 0.51.4, bounded unrolling for counterexamples and
-  bounded proofs) and the open changes to the engine of `-prove`, ordered by expected gain.
-- [canonical.md](canonical.md): the open points of the canonical forms of the context and of the integer counts.
-- [database.md](database.md): the lemma database: the raw traces and their named folds, overlaps among the lemmas,
-  what could be unified, the workarounds for gaps of the engine, the candidates among the lemmas of the algorithms,
-  and the decisions (removed, kept, rejected, not taken).
-- [engine-gaps.md](engine-gaps.md): a plan to close the gaps of `-prove` behind the workarounds of the database
-  (comparisons of conditionals, `-debug match`, iteration variables kept instead of literals, remainders and division,
-  higher-order values at arithmetic arguments), the database work, and what is not done and why.
-- [engine-consolidation.md](engine-consolidation.md): a review of the engine of `-prove`: the places that decide
-  normal forms, equality, derived facts, alternatives in matching, memos and choices, with proposals to unify them.
-- [dnf-guards.md](dnf-guards.md): the cases of updates with conjunctive guards (DNF) instead of cases merged by
-  equal results, the merging moved into the matcher for higher-order guard variables.
-- [conditional-stores.md](conditional-stores.md) (history): guarded stores merged into stores of conditional values, in
-  `-teq`, instead of `2^s` cases (the strided stores `pr3`-`pr5`).
-- [cases-and-folds.md](cases-and-folds.md): the plan after 0.53.1: cases instead of if-then-else in `maps` and at
-  the reads of maps with cases, keys without values per case, the overlaps among the lemmas, and the raw traces of
-  the database that could become named folds.
 - [iterator-profiles.md](iterator-profiles.md): the loop patterns of LoopAnnotator (ASE 2026, iterator
   profiles) read against TEQs: what is covered (counters, conditional stores, sums, searches), what needs new
   lemmas (enumerations of set bits as in `for_each_cpu`, wrap-around, halving, reads of `a[i-1]` as chains),
@@ -52,8 +39,5 @@ analyses behind its items. Files marked as history record what was tried and not
   nondeterministic implementations as expressions; and the plan, too complex for what it gains, to verify renc with
   `-vcgen` and cvc5: contracts over the abstract types, coupling invariants, the intended meaning of the predicates
   along the run with true answers, the global conditions checked separately, and the gaps of the current setup.
-- [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
-  techniques, with the reruns done and to do.
-
 The algorithms are described in [doc/algorithms.md](../doc/algorithms.md); the observations on the code are in
 [TODO.md](../TODO.md), the bugs in [bugs.md](../bugs.md).

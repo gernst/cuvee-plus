@@ -3,9 +3,7 @@
 The package [prove/](../src/cuvee/prove) proves the goals of trace equation systems by rewriting with the lemma
 database. `-prove` takes the assertions and lemmas with `:rw` as rules and simplifies the other assertions under a
 context, dropping those that become `true`; procedures are simplified by symbolic execution (`Slice`, "Programs").
-Open changes are in [ideas/prove-next.md](../ideas/prove-next.md), [ideas/canonical.md](../ideas/canonical.md),
-[ideas/engine-gaps.md](../ideas/engine-gaps.md), and the consolidation of the engine with what was tried and dropped in
-[ideas/engine-consolidation.md](../ideas/engine-consolidation.md).
+Open changes, with what was tried and dropped, are in [ideas/engine.md](../ideas/engine.md).
 
 ## Design
 
@@ -160,7 +158,7 @@ binders, derivatives, and `old`; `Split` uses it.
   are decided under the test; they come from the conditionals of programs, while the right-hand sides of the lemmas of
   the database are choices (`if { case 0 <= j < n => ... case !(0 <= j < n) => a0[j] }`, whose guards are exhaustive
   and disjoint). Whether cases and conditionals should leave comparisons and products as well is open
-  ([cases-and-folds.md](../ideas/cases-and-folds.md)).
+  ([ideas/engine.md](../ideas/engine.md), 4.5).
 - **Derivatives** follow the rules of dL ([hybrid.md](hybrid.md)); the body of a derivative is simplified with the
   facts that do not mention the variables it differentiates by.
 
@@ -239,7 +237,7 @@ disjuncts and the sides of equations, so alpha-variants and reorderings coincide
 by it. The memos of views, reads and combinator contexts are keyed by the facts of the position under a renaming of
 its bound variables (`Context.memo`, `Canon.key`). Building such a key hashes the facts, so a memo pays off only where
 the key is built rarely and the computation is expensive, once per combinator; memoizing the instances of forward
-lemmas by it (0.52.13) doubled the cpu time of SV-COMP Arrays and was removed (ideas/engine-consolidation.md, step 4).
+lemmas by it (0.52.13) doubled the cpu time of SV-COMP Arrays and was removed (ideas/engine.md, 3.2).
 
 ## Forward lemmas
 
