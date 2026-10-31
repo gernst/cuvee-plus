@@ -614,11 +614,14 @@ class Parser(var state: State):
         val base_ = state.exprs.app("store", List(base, index_, value_))
         resolve(scope, base_, rest)
 
-      // s[i..j] is the slice between the bounds, which default to 0 and |s|
+      // s[i..j] is the subsequence of length j - i from offset i, the bounds default to 0 and |s|
       case Array(from, Some(Upto(to))) :: rest =>
         val from_ = from.map(resolve(scope, _)).getOrElse(state.exprs.num(0))
         val to_ = to.map(resolve(scope, _)).getOrElse(state.exprs.app(core.Fun.seq.len, List(base)))
-        val base_ = state.exprs.app(core.Fun.seq.slice, List(base, from_, to_))
+        val len_ = from match
+          case None    => to_
+          case Some(_) => state.exprs.app("-", List(to_, from_))
+        val base_ = state.exprs.app(core.Fun.seq.extract, List(base, from_, len_))
         resolve(scope, base_, rest)
 
       case Array(None, _) :: _ =>
@@ -730,39 +733,50 @@ class Parser(var state: State):
         val args_ = args.map(resolve(scope, _))
         state.exprs.app(Name("tuple", Some(args.length)), args_)
 
-      // [a, b, c] extends the empty sequence by one element after the other, pointwise rather than concatenations of
-      // units, e.g. for encodings of implementations
+      // [a, b, c] is the concatenation of the sequences of length 1, [a] + [b] + [c]
+      case SeqLit(Nil) =>
+        state.exprs.app(core.Fun.seq.empty, Nil)
+
       case SeqLit(args) =>
-        val empty_ : core.Expr = state.exprs.app(core.Fun.seq.empty, Nil)
-        args.foldLeft(empty_):
-          case (seq_, elem) =>
-            state.exprs.app(core.Fun.seq.snoc, List(seq_, resolve(scope, elem)))
+        val units_ =
+          for arg <- args
+          yield state.exprs.app(core.Fun.seq.unit, List(resolve(scope, arg)))
+        units_.reduceLeft((left, right) => state.exprs.app(core.Fun.seq.concat, List(left, right)))
 
       // the length of a sequence, or the cardinality of a set or multiset, resolved by overloading (see core.Overload)
       case Len(arg) =>
         val arg_ = resolve(scope, arg)
         state.exprs.app(core.Overload.card, List(arg_))
 
-      // {a, b, c} inserts one element after the other into the empty set, s[a := true], pointwise rather than unions
-      // of singletons, e.g. for encodings of implementations; multiset{a, b, c} inserts one occurrence after the other into
-      // the empty multiset, alike
-      case SetLit(args) =>
-        val empty_ : core.Expr = state.exprs.app(core.Fun.set.empty, Nil)
-        args.foldLeft(empty_):
+      // {a, b, c} inserts b and c into the singleton {a}, s[b := true], pointwise rather than unions of singletons,
+      // e.g. for encodings of implementations; multiset{a, b, c} is the union of the elements with multiplicity 1
+      case SetLit(Nil) =>
+        state.exprs.app(core.Fun.set.empty, Nil)
+
+      case SetLit(first :: rest) =>
+        val singleton_ : core.Expr = state.exprs.app(core.Fun.set.singleton, List(resolve(scope, first)))
+        rest.foldLeft(singleton_):
           case (set_, elem) =>
             state.exprs.app(core.Fun.set.update, List(set_, resolve(scope, elem), state.exprs.app(core.Fun.true_, Nil)))
 
-      case BagLit(args) =>
-        val empty_ : core.Expr = state.exprs.app(core.Fun.bag.empty, Nil)
-        args.foldLeft(empty_):
-          case (bag_, elem) =>
-            state.exprs.app(core.Fun.bag.insert, List(bag_, resolve(scope, elem)))
+      case BagLit(Nil) =>
+        state.exprs.app(core.Fun.bag.empty, Nil)
 
-      // map[k := v, ...] stores the pairs into the empty map from left to right, such that later keys win, as in
-      // Dafny; stores rather than merges of singletons, which are pointwise, e.g. for encodings of implementations
-      case MapLit(pairs) =>
-        val empty_ : core.Expr = state.exprs.app(core.Fun.map.empty, Nil)
-        pairs.foldLeft(empty_):
+      case BagLit(args) =>
+        val elems_ =
+          for arg <- args
+          yield state.exprs.app(core.Fun.bag.make, List(resolve(scope, arg), state.exprs.num(1)))
+        elems_.reduceLeft((left, right) => state.exprs.app(core.Fun.bag.union, List(left, right)))
+
+      // map[k := v, ...] stores the further pairs into the singleton of the first from left to right, such that later
+      // keys win, as in Dafny; stores rather than merges of singletons, which are pointwise, e.g. for encodings of
+      // implementations
+      case MapLit(Nil) =>
+        state.exprs.app(core.Fun.map.empty, Nil)
+
+      case MapLit((key, value) :: rest) =>
+        val singleton_ : core.Expr = state.exprs.app(core.Fun.map.singleton, List(resolve(scope, key), resolve(scope, value)))
+        rest.foldLeft(singleton_):
           case (map_, (key, value)) =>
             state.exprs.app(core.Fun.map.store, List(map_, resolve(scope, key), resolve(scope, value)))
 
@@ -791,19 +805,6 @@ class Parser(var state: State):
       case App("!in", args) =>
         val expr_ = App("not", List(App("in", args)))
         resolve(scope, expr_)
-
-      // s + [a, b] extends s by the elements of the display, and m + multiset{a, b} inserts them, as the displays
-      // themselves do, such that [a] + [b] is the display [a, b], and the extensions have a syntax, e.g. this + [k] for
-      // the patterns of implementations
-      case App("+", List(left, Inner(SeqLit(args), Nil))) =>
-        args.foldLeft(resolve(scope, left)):
-          case (seq_, elem) =>
-            state.exprs.app(core.Fun.seq.snoc, List(seq_, resolve(scope, elem)))
-
-      case App("+", List(left, Inner(BagLit(args), Nil))) =>
-        args.foldLeft(resolve(scope, left)):
-          case (bag_, elem) =>
-            state.exprs.app(core.Fun.bag.insert, List(bag_, resolve(scope, elem)))
 
       // the combinators of trace equation systems, whose bound variables are typed by the dependencies; the first
       // bound variables of a trace are its accumulators, as many as it has initial values, with one result each;

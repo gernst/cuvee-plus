@@ -26,9 +26,9 @@ class Solver(cmd: String*):
   def destroy() =
     proc.destroy()
 
-  // the command in SMT-LIB, line by line, in the functions that the solvers know (see Solver.lower)
+  // the command in SMT-LIB, line by line
   def write(cmd: Cmd) =
-    for (line <- Printer.lines(cmd.map(Solver.lower, prog => prog)))
+    for (line <- Printer.lines(cmd))
     do
       Debug.info("solver", proc.pid.toString + "> " + line)
       out.println(line)
@@ -116,18 +116,6 @@ object Solver:
   // --strings-exp enables the extended functions on sequences, e.g. seq.nth
   def cvc5(timeout: Int = 1000) =
     new Solver("cvc5", "--lang=smt2", "--incremental", "--strings-exp", "--tlimit-per=" + timeout)
-
-  // the functions on sequences and multisets that are not part of SMT-LIB or cvc5 and have a definition there: the
-  // extension by one element, the slice, the insertion of one occurrence, and the update of a multiplicity, which
-  // removes all occurrences and adds the new ones
-  def lower(expr: Expr): Expr =
-    expr.map(lower) match
-      case Seqs.snoc(seq, elem)        => Seqs.concat(seq, Seqs.unit(elem))
-      case Seqs.slice(seq, from, to)   => Seqs.extract(seq, from, Ints.minus(to, from))
-      case Bags.insert(bag, elem)      => Bags.union(bag, Bags.make(elem, Ints.one))
-      case Bags.store(bag, elem, count) =>
-        Bags.union(Bags.minus(bag, Bags.make(elem, Bags.count(elem, bag))), Bags.make(elem, count))
-      case expr_ => expr_
 
   def sink(solver: Solver, init: State, stderr: PrintStream = System.err) =
     Sink(init, solver, stderr)
