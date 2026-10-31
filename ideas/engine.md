@@ -9,7 +9,7 @@ the engine).
 Procedure for a change: change the engine, run the examples of the affected lemmas, the test suite, and one cloud run
 of Arrays and Loops against the jar before (`scripts/compare.py`); then replace the workarounds of the database by
 their plain forms (Lean proofs by a subagent). The examples of the workarounds (examples/c/teq, examples/dafny/teq) are
-the regression tests: they stay `correct`, their `_wrong` variants `unknown`.
+the regression tests: they stay `correct`.
 
 ## 1. The context and its canonical forms
 

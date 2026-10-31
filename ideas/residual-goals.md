@@ -106,7 +106,7 @@ Also verifythis/elimination_max (`(<= (select (const 0) i) (select (const 0) x))
 constant array, `(not (occurs 0 (selects y ...)))` with `(= (select y i) 0)`). **Done (Oct 31):** the
 rule `select_const` of teq.dfy, `const(v)[k] == v` (`const` is the function of the prelude, also in Dafny); all three
 correct locally in 8 to 23 s (`-svcomp -rules`). nec40 needs no rule on `selects` of a constant array, since
-`earlier_selects` reduces its reads to `select`. Tests: examples/c/teq/const_array.c and `_wrong`.
+`earlier_selects` reduces its reads to `select`. Test: examples/c/teq/const_array.c.
 
 ## 4. Arithmetic arguments and binders compared modulo the context (4 tasks)
 

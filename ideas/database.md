@@ -60,7 +60,7 @@ preempt them (`_reset_add` on brs1, ms2, ms3; `_reset_add_keep` on brs2-brs5; `_
 
 Lemmas or shapes of lemmas that exist because the matcher or the engine lacks something; each could go once its gap
 is closed (the gaps of the engine: [engine.md](engine.md)). Tests of the workarounds: examples/c/teq
-(compacts.c, filters.c, max_seeded.c, copy_both_ends.c and their `_wrong` variants, which must stay unknown).
+(compacts.c, max_seeded.c, copy_both_ends.c).
 
 | Gap | Lemmas |
 |---|---|
