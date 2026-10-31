@@ -15,15 +15,18 @@ are lifted from the lists, the difference by erasing the elements of the second 
 zero like the core's (cvc5's bag.difference_subtract), and submultisets compare the multiplicities. The aggregates sum,
 parity, max, and min, which the modules declare without a body and characterize by their lemmas, are folds of the
 lists, lifted by the proof that the fold does not depend on the order; the generator checks and leaves out their
-printed declarations (AGGREGATES of scripts/lean/generate.py). So are the bit operations bitand and bitor of C,
-which core Lean lacks on integers: Mathlib's Int.land and Int.lor, two's complement on unbounded integers, which are
-associative and commutative by the bits (Bits.ext), and their aggregates band and bor, the folds from all ones (-1) and
-from zero.
+printed declarations (AGGREGATES of scripts/lean/generate.py). So are the bit operations bitand, bitor, bitxor of C,
+which core Lean lacks on integers: Mathlib's Int.land, Int.lor, and Int.xor, two's complement on unbounded integers,
+which are associative and commutative by the bits (Bits.ext), and their aggregates band, bor, and bxor, the folds from
+all ones (-1) and from zero.
 
 The value in two phases, phases x0 m n F G of counters.dfy, which the module declares without a body, is the trace of
 the comment above it, trace(x0, for ⌊counter(0, 1, n)⌋ do x, k :: case k < m => F(x, k) case m <= k => G(x, k)), over
 the iterations 0, ..., n - 1 (iterations, since the counters are defined by the printer); the generator leaves out its
 printed declaration as well.
+
+The constant array const v of the prelude, which the printer prints as an application without a declaration, is the
+constant function, as arrays are the functions from their keys to their values.
 -/
 open Classical
 
@@ -133,6 +136,13 @@ def lor : Int → Int → Int
   | .negSucc m, .ofNat n => .negSucc (ldiff m n)
   | .negSucc m, .negSucc n => .negSucc (m &&& n)
 
+-- the complement of one operand complements the result
+def lxor : Int → Int → Int
+  | .ofNat m, .ofNat n => .ofNat (m ^^^ n)
+  | .ofNat m, .negSucc n => .negSucc (m ^^^ n)
+  | .negSucc m, .ofNat n => .negSucc (m ^^^ n)
+  | .negSucc m, .negSucc n => .ofNat (m ^^^ n)
+
 -- the i-th bit in two's complement
 def testBit : Int → Nat → Bool
   | .ofNat m, i => m.testBit i
@@ -150,6 +160,11 @@ theorem testBit_land (a b : Int) (i : Nat) : testBit (land a b) i = (testBit a i
 theorem testBit_lor (a b : Int) (i : Nat) : testBit (lor a b) i = (testBit a i || testBit b i) := by
   cases a <;> cases b <;>
     simp only [lor, testBit, testBit_ldiff, Nat.testBit_and, Nat.testBit_or] <;>
+    cases Nat.testBit _ i <;> cases Nat.testBit _ i <;> rfl
+
+theorem testBit_lxor (a b : Int) (i : Nat) : testBit (lxor a b) i = (testBit a i ^^ testBit b i) := by
+  cases a <;> cases b <;>
+    simp only [lxor, testBit, Nat.testBit_xor] <;>
     cases Nat.testBit _ i <;> cases Nat.testBit _ i <;> rfl
 
 -- integers of the same bits are equal: a natural and a negative number differ at a bit above both
@@ -191,12 +206,23 @@ theorem lor_assoc (a b c : Int) : lor (lor a b) c = lor a (lor b c) :=
 theorem lor_zero (a : Int) : lor a 0 = a :=
   ext fun i => by rw [testBit_lor]; show (testBit a i || Nat.testBit 0 i) = _; simp
 
+theorem lxor_comm (a b : Int) : lxor a b = lxor b a :=
+  ext fun i => by rw [testBit_lxor, testBit_lxor, Bool.xor_comm]
+
+theorem lxor_assoc (a b c : Int) : lxor (lxor a b) c = lxor a (lxor b c) :=
+  ext fun i => by rw [testBit_lxor, testBit_lxor, testBit_lxor, testBit_lxor, Bool.xor_assoc]
+
+theorem lxor_zero (a : Int) : lxor a 0 = a :=
+  ext fun i => by rw [testBit_lxor]; show (testBit a i ^^ Nat.testBit 0 i) = _; simp
+
 end Bits
 
 -- the bit operations of the C prelude and their aggregates, the folds of the elements from all ones and from zero
 def bitand : Int → Int → Int := Bits.land
 
 def bitor : Int → Int → Int := Bits.lor
+
+def bitxor : Int → Int → Int := Bits.lxor
 
 noncomputable def band : Bag Int → Int :=
   Quotient.lift (fun xs => xs.foldr (fun v r => bitand v r) (-1))
@@ -209,6 +235,15 @@ noncomputable def bor : Bag Int → Int :=
     (Bag.foldr_perm _ (fun x y z => by
       show Bits.lor y (Bits.lor x z) = Bits.lor x (Bits.lor y z)
       rw [← Bits.lor_assoc, Bits.lor_comm y x, Bits.lor_assoc]) 0)
+
+noncomputable def bxor : Bag Int → Int :=
+  Quotient.lift (fun xs => xs.foldr (fun v r => bitxor v r) 0)
+    (Bag.foldr_perm _ (fun x y z => by
+      show Bits.lxor y (Bits.lxor x z) = Bits.lxor x (Bits.lxor y z)
+      rw [← Bits.lxor_assoc, Bits.lxor_comm y x, Bits.lxor_assoc]) 0)
+
+-- the constant array of the prelude, an array is a function from its keys to its values
+def const {α β : Type} (v : β) : α → β := fun _ => v
 
 -- the iterations s, s + 1, ... of a loop of t steps, the values of a counter from s by 1 (Proofs.lean: iterations_N)
 def iterations (s : Int) : Nat → List Int

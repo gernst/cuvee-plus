@@ -70,7 +70,7 @@ example : ¬ ((0 : Int) ≤ 0 ∧ (0 : Int) ≤ 0
         ↔ True)) :=
   by simp [trace, current, counter, butlast]
 
--- earlier_bands (and earlier_bors) at a negative position, where the read is unspecified and the prefix is empty,
+-- earlier_bands (and earlier_bors, earlier_bxors) at a negative position, where the read is unspecified and the prefix is empty,
 -- whose aggregate is the neutral element: the initial value would be unspecified, whatever it is
 example : ¬ ∀ x : Int, earlier (-1) (butlast (bands x [])) = bitand x (band (elems («prefix» (-1) ([] : List Int)))) := by
   intro h
@@ -79,8 +79,9 @@ example : ¬ ∀ x : Int, earlier (-1) (butlast (bands x [])) = bitand x (band (
   simp only [bands, trace, butlast, «prefix», band_N, List.foldr_nil, bitand_neg_one] at h0 h1
   rw [h0] at h1; contradiction
 
--- band_seed_earlier and bor_seed_earlier for a list shorter than the reads, whose read beyond its end is unspecified:
--- each holds exactly if that is its neutral element, all ones for band and zero for bor, hence not both
+-- band_seed_earlier and bor_seed_earlier (and bxor_seed_earlier, as bor_seed_earlier) for a list shorter than the
+-- reads, whose read beyond its end is unspecified: each holds exactly if that is its neutral element, all ones for band
+-- and zero for bor and bxor, hence not both
 example : ¬ ((bitand (earlier 0 ([] : List Int))
         (band (elems (maps (butlast (counter 0 1 0)) (fun k => earlier (k + 1) ([] : List Int))))))
       = band (elems («prefix» (0 + 1) ([] : List Int)))

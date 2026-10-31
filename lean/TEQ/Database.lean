@@ -187,6 +187,10 @@ def Stmt.indexof_counter_up : Prop :=
   ∀ (j : Int) (i : Int) (n : Int),
     i ≤ j ∧ j < i + n → indexof j (butlast (counter i 1 n)) = j - i
 
+def Stmt.indexof_counter_down : Prop :=
+  ∀ (j : Int) (i : Int) (n : Int),
+    i - n < j ∧ j ≤ i → indexof j (butlast (counter i (-1) n)) = i - j
+
 def Stmt.maps_const : Prop :=
   ∀ {α : Type} [Inhabited α] (x : α) (i : Int) (c : Int) (n : Int),
     maps (butlast (counter i c n)) (fun v => x) = butlast (consts n x)
@@ -275,6 +279,10 @@ def Stmt.consts_choice : Prop :=
 def Stmt.selects_nil : Prop :=
   ∀ {α β : Type} [Inhabited α] [Inhabited β] (a : α → β),
     selects a nil = nil
+
+def Stmt.select_const : Prop :=
+  ∀ {α β : Type} [Inhabited α] [Inhabited β] (v : β) (k : α),
+    const v k = v
 
 def Stmt.earlier_selects : Prop :=
   ∀ {α β : Type} [Inhabited α] [Inhabited β] (j : Int) (a : α → β) (keys : List α) (n : Int) (hkeys : length keys = n),
@@ -404,6 +412,17 @@ def Stmt.bor_union : Prop :=
   ∀ (m : Bag Int) (n : Bag Int),
     bor (m + n) = bitor (bor m) (bor n)
 
+def Stmt.bxor_empty : Prop :=
+  bxor ∅ = 0
+
+def Stmt.bxor_single : Prop :=
+  ∀ (x : Int),
+    bxor {x} = x
+
+def Stmt.bxor_union : Prop :=
+  ∀ (m : Bag Int) (n : Bag Int),
+    bxor (m + n) = bitxor (bxor m) (bxor n)
+
 def Stmt.single_earlier_le_elems : Prop :=
   ∀ {α : Type} [Inhabited α] (j : Int) (xs : List α),
     0 ≤ j ∧ j < length xs → ({earlier j xs} ≤ elems xs ↔ True)
@@ -485,6 +504,26 @@ def Stmt.earlier_mins : Prop :=
 def Stmt.prefix_mins : Prop :=
   ∀ (k : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
     «prefix» k (butlast (mins x values)) = butlast (mins x («prefix» k values))
+
+noncomputable def maxs_tie (x : Int) (values : List Int) : Trace Int :=
+  trace
+    x
+    values
+    (fun m v => if m ≤ v then v else if v < m then m else unspecified)
+
+def Stmt.maxs_tie_maxs : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    maxs_tie x values = maxs x values
+
+noncomputable def mins_tie (x : Int) (values : List Int) : Trace Int :=
+  trace
+    x
+    values
+    (fun m v => if v ≤ m then v else if m < v then m else unspecified)
+
+def Stmt.mins_tie_mins : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    mins_tie x values = mins x values
 
 noncomputable def counts {α : Type} [Inhabited α] (x : Int) (e : α)
                                                   (vs : List α) : Trace Int :=
@@ -689,6 +728,10 @@ def Stmt.count_nonnegative : Prop :=
   ∀ {α : Type} [Inhabited α] (e : α) (vs : List α),
     0 ≤ Bag.count (elems vs) e
 
+def Stmt.count_length : Prop :=
+  ∀ {α : Type} [Inhabited α] (e : α) (vs : List α),
+    Bag.count (elems vs) e ≤ length vs
+
 def Stmt.count_remainder : Prop :=
   ∀ (n : Int) (m : Int) (r : Int),
     0 ≤ n ∧ 0 < m ∧ 0 ≤ r ∧ r < m
@@ -810,6 +853,23 @@ def Stmt.earlier_bors : Prop :=
       (earlier j (butlast (bors x values))
          = bitor x (bor (elems («prefix» j values))))
 
+noncomputable def bxors (x : Int) (values : List Int) : Trace Int :=
+  trace x values (fun r v => bitxor r v)
+
+def Stmt.length_bxors : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    length (butlast (bxors x values)) = length values
+
+def Stmt.current_bxors : Prop :=
+  ∀ (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    current (bxors x values) = bitxor x (bxor (elems values))
+
+def Stmt.earlier_bxors : Prop :=
+  ∀ (j : Int) (x : Int) (values : List Int) (n : Int) (hvalues : length values = n),
+    0 ≤ j ∧ j < n →
+      (earlier j (butlast (bxors x values))
+         = bitxor x (bxor (elems («prefix» j values))))
+
 def Stmt.band_seed_selects : Prop :=
   ∀ (a : Int → Int) (q : Int) (n : Int) (v : Int),
     0 ≤ n ∧ v = a (q - 1)
@@ -839,6 +899,21 @@ def Stmt.bor_seed_earlier : Prop :=
         (bor
            (elems (maps (butlast (counter 0 1 n)) (fun k => earlier (k + 1) xs))))
         = bor (elems («prefix» (n + 1) xs))
+
+def Stmt.bxor_seed_selects : Prop :=
+  ∀ (a : Int → Int) (q : Int) (n : Int) (v : Int),
+    0 ≤ n ∧ v = a (q - 1)
+      → bitxor v (bxor (elems (selects a (butlast (counter q 1 n)))))
+        = bxor (elems (selects a (butlast (counter (q - 1) 1 (n + 1)))))
+
+def Stmt.bxor_seed_earlier : Prop :=
+  ∀ (xs : List Int) (n : Int) (hxs : n + 1 ≤ length xs),
+    0 ≤ n
+      → bitxor
+        (earlier 0 xs)
+        (bxor
+           (elems (maps (butlast (counter 0 1 n)) (fun k => earlier (k + 1) xs))))
+        = bxor (elems («prefix» (n + 1) xs))
 
 def Stmt.elems_selects_swap : Prop :=
   ∀ (a : Int → Int) (p : Int) (q : Int) (v : Int) (w : Int) (keys : List Int) (n : Int) (hkeys : length keys = n),
@@ -1129,6 +1204,10 @@ def Stmt.pow_zero : Prop :=
 def Stmt.pow_one : Prop :=
   ∀ (c : Int),
     pow c 1 = c
+
+def Stmt.pow_positive : Prop :=
+  ∀ (c : Int) (n : Int),
+    0 < c → (0 < pow c n ↔ True)
 
 def Stmt.square_eq_self : Prop :=
   ∀ (c : Int),

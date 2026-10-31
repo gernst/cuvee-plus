@@ -333,6 +333,21 @@ theorem indexof_counter_up : Stmt.indexof_counter_up := by
   rw [indexof_N, counter_N, N.indexof_counter_up j i n.toNat (by rw [N.integer_cast]; omega), N.natural_eq]
   omega
 
+-- the down counter from i holds j at the position i - j, as it holds it once
+theorem indexof_counter_down_N (j : Int) (n : Nat) : ∀ (i : Int), i - n < j ∧ j ≤ i →
+    indexof j (butlast (N.counter i (-1) n)) = i - j := by
+  induction n with
+  | zero => intro i h; omega
+  | succ m ih =>
+    intro i h
+    rw [N.butlast_counter_succ, indexof]
+    by_cases e : j ≤ i + -1
+    · rw [if_pos ((occurs_counter_down_N j m (i + -1)).mpr (by omega)), ih (i + -1) (by omega)]; omega
+    · rw [if_neg (fun hocc => by have := (occurs_counter_down_N j m (i + -1)).mp hocc; omega)]; omega
+
+theorem indexof_counter_down : Stmt.indexof_counter_down := by
+  intro j i n h; rw [counter_N]; exact indexof_counter_down_N j n.toNat i (by omega)
+
 theorem maps_const : Stmt.maps_const := by
   intro α _ x i c n; rw [counter_N, consts_N]; exact N.maps_const x i c n.toNat
 
@@ -415,6 +430,8 @@ theorem consts_choice : Stmt.consts_choice := by
   intro α _ n xs c hxs; rw [counter_N, consts_N]; exact N.consts_choice n.toNat xs c (by omega)
 
 theorem selects_nil : Stmt.selects_nil := N.selects_nil
+
+theorem select_const : Stmt.select_const := fun _ _ => rfl
 
 theorem earlier_selects : Stmt.earlier_selects := by
   intro α β _ _ j a keys n hkeys ⟨hj, hjn⟩
@@ -834,6 +851,14 @@ theorem count_true_above : Stmt.count_true_above := by
 theorem count_nonnegative : Stmt.count_nonnegative := by
   intro α _ e vs; rw [count_N]; exact N.count_nonnegative e vs
 
+theorem count_length_N {α : Type} [Inhabited α] (e : α) (vs : List α) : N.count e vs ≤ vs.length := by
+  induction vs with
+  | nil => simp [N.count]
+  | cons v ws ih => simp only [N.count, List.length_cons]; split <;> omega
+
+theorem count_length : Stmt.count_length := by
+  intro α _ e vs; rw [count_N]; exact count_length_N e vs
+
 theorem count_remainder : Stmt.count_remainder := by
   intro n m r ⟨hn, h⟩; simp only [count_N] at *
   rw [counter_N, N.count_remainder n.toNat m r h, N.integer_cast, Int.toNat_of_nonneg hn]
@@ -905,6 +930,23 @@ theorem earlier_mins : Stmt.earlier_mins := by
 
 theorem prefix_mins : Stmt.prefix_mins := by
   intro k x values n hvalues; exact prefix_trace_int k x values _
+
+-- the folds that take the new value also at a tie have the same updates, both cases agree there
+theorem maxs_tie_maxs : Stmt.maxs_tie_maxs := by
+  intro x values n hvalues; rw [maxs_tie, maxs]; congr 1; funext m v
+  by_cases h : m < v
+  · rw [if_pos (by omega), if_pos h]
+  · rw [if_neg h, if_pos (show v ≤ m by omega)]; by_cases e : m = v
+    · rw [if_pos (by omega), e]
+    · rw [if_neg (by omega), if_pos (by omega)]
+
+theorem mins_tie_mins : Stmt.mins_tie_mins := by
+  intro x values n hvalues; rw [mins_tie, mins]; congr 1; funext m v
+  by_cases h : v < m
+  · rw [if_pos (by omega), if_pos h]
+  · rw [if_neg h, if_pos (show m ≤ v by omega)]; by_cases e : v = m
+    · rw [if_pos (by omega), e]
+    · rw [if_neg (by omega), if_pos (by omega)]
 
 theorem max_initial : Stmt.max_initial := by
   intro x values; rw [← maxs_max]; exact N.current_maxs_initial x values values.length rfl
@@ -989,9 +1031,13 @@ theorem band_N (xs : List Int) : band (elems xs) = xs.foldr bitand (-1) := by rw
 
 theorem bor_N (xs : List Int) : bor (elems xs) = xs.foldr bitor 0 := by rw [elems_mk]; rfl
 
+theorem bxor_N (xs : List Int) : bxor (elems xs) = xs.foldr bitxor 0 := by rw [elems_mk]; rfl
+
 theorem bitand_assoc (a b c : Int) : bitand (bitand a b) c = bitand a (bitand b c) := Bits.land_assoc a b c
 
 theorem bitor_assoc (a b c : Int) : bitor (bitor a b) c = bitor a (bitor b c) := Bits.lor_assoc a b c
+
+theorem bitxor_assoc (a b c : Int) : bitxor (bitxor a b) c = bitxor a (bitxor b c) := Bits.lxor_assoc a b c
 
 theorem bitand_neg_one (a : Int) : bitand a (-1) = a := Bits.land_neg_one a
 
@@ -1002,6 +1048,11 @@ theorem bitor_zero (a : Int) : bitor a 0 = a := Bits.lor_zero a
 
 theorem zero_bitor (a : Int) : bitor 0 a = a := by
   show Bits.lor 0 a = a; rw [Bits.lor_comm]; exact Bits.lor_zero a
+
+theorem bitxor_zero (a : Int) : bitxor a 0 = a := Bits.lxor_zero a
+
+theorem zero_bitxor (a : Int) : bitxor 0 a = a := by
+  show Bits.lxor 0 a = a; rw [Bits.lxor_comm]; exact Bits.lxor_zero a
 
 theorem band_empty : Stmt.band_empty := rfl
 
@@ -1024,6 +1075,17 @@ theorem bor_union : Stmt.bor_union := by
   rename_i xs ys
   show (xs ++ ys).foldr bitor 0 = bitor (xs.foldr bitor 0) (ys.foldr bitor 0)
   rw [List.foldr_append]; exact foldr_neutral bitor 0 bitor_assoc zero_bitor xs _
+
+theorem bxor_empty : Stmt.bxor_empty := rfl
+
+theorem bxor_single : Stmt.bxor_single := fun x => bitxor_zero x
+
+theorem bxor_union : Stmt.bxor_union := by
+  intro m n
+  induction m using Quotient.ind; induction n using Quotient.ind
+  rename_i xs ys
+  show (xs ++ ys).foldr bitxor 0 = bitxor (xs.foldr bitxor 0) (ys.foldr bitxor 0)
+  rw [List.foldr_append]; exact foldr_neutral bitxor 0 bitxor_assoc zero_bitxor xs _
 
 theorem length_bands : Stmt.length_bands := by
   intro x values n hvalues; rw [bands, N.length_butlast_trace]
@@ -1049,6 +1111,18 @@ theorem earlier_bors : Stmt.earlier_bors := by
   rw [bors, earlier_trace_int j _ _ _ hj (by omega), current_trace_foldl, bor_N]
   exact foldl_neutral bitor 0 bitor_assoc bitor_zero _ x
 
+theorem length_bxors : Stmt.length_bxors := by
+  intro x values n hvalues; rw [bxors, N.length_butlast_trace]
+
+theorem current_bxors : Stmt.current_bxors := by
+  intro x values n hvalues
+  rw [bxors, current_trace_foldl, bxor_N]; exact foldl_neutral bitxor 0 bitxor_assoc bitxor_zero values x
+
+theorem earlier_bxors : Stmt.earlier_bxors := by
+  intro j x values n hvalues ⟨hj, hjn⟩
+  rw [bxors, earlier_trace_int j _ _ _ hj (by omega), current_trace_foldl, bxor_N]
+  exact foldl_neutral bitxor 0 bitxor_assoc bitxor_zero _ x
+
 -- the seeds: the counter from q - 1 is the counter from q after q - 1, and the reads of the list at k + 1 those of its
 -- tail at k, which are its prefix
 theorem counter_pred (q n : Int) (hn : 0 ≤ n) : counter (q - 1) 1 (n + 1) = .step (q - 1) (counter q 1 n) := by
@@ -1072,6 +1146,10 @@ theorem bor_seed_selects : Stmt.bor_seed_selects := by
   intro a q n v ⟨hn, hv⟩; subst hv
   rw [counter_pred q n hn, bor_N, bor_N]; rfl
 
+theorem bxor_seed_selects : Stmt.bxor_seed_selects := by
+  intro a q n v ⟨hn, hv⟩; subst hv
+  rw [counter_pred q n hn, bxor_N, bxor_N]; rfl
+
 theorem band_seed_earlier : Stmt.band_seed_earlier := by
   intro xs n hxs hn
   cases xs with
@@ -1085,6 +1163,13 @@ theorem bor_seed_earlier : Stmt.bor_seed_earlier := by
   | nil => simp at hxs; omega
   | cons x xs =>
     rw [maps_earlier_succ x xs n (by simp at hxs; omega), prefix_succ x xs n hn, bor_N, bor_N]; rfl
+
+theorem bxor_seed_earlier : Stmt.bxor_seed_earlier := by
+  intro xs n hxs hn
+  cases xs with
+  | nil => simp at hxs; omega
+  | cons x xs =>
+    rw [maps_earlier_succ x xs n (by simp at hxs; omega), prefix_succ x xs n hn, bxor_N, bxor_N]; rfl
 
 -- compacts without the dead branch of its update, from the count 0 on
 theorem compacts_N (c0 : Int → Int) (ks : List Int) (P : Int → Prop) : compacts c0 ks P = N.compacting P c0 0 ks := by
@@ -1270,6 +1355,13 @@ theorem pow_zero : Stmt.pow_zero := by
 
 theorem pow_one : Stmt.pow_one := by
   intro c; rw [pow_N]; simp [N.pow]
+
+theorem pow_positive_N (c : Int) (hc : 0 < c) : ∀ (n : Nat), 0 < N.pow c n
+  | 0 => by simp [N.pow]
+  | n + 1 => Int.mul_pos hc (pow_positive_N c hc n)
+
+theorem pow_positive : Stmt.pow_positive := by
+  intro c n hc; rw [pow_N]; exact iff_true_intro (pow_positive_N c hc n.toNat)
 
 theorem square_eq_self : Stmt.square_eq_self := by
   intro c

@@ -206,10 +206,11 @@ Lean 4 without Mathlib, in the Lake project at the root ([lean/README.md](../lea
   with the empty multiset `∅`, a single element `{x}`, union `+` (append), difference `-` (the elements of the second
   list erased once each, which cuts off at zero like the core's), the multiplicity `Bag.count m e` (`List.count`),
   and submultisets `n ≤ m` (by the multiplicities), each lifted by `Quotient.lift₂` or `Quotient.lift`. The
-  aggregates `sum`, `parity`, `max`, `min`, `band`, `bor`, which the modules declare without a body, are defined here
-  as right folds of the lists, lifted by the proof that the fold does not depend on the order (`band` and `bor` over
-  the bit operations `bitand` and `bitor` of C, Mathlib's `Int.land` and `Int.lor` in two's complement, defined in
-  `Bits` since core Lean lacks them, from `-1` and `0`); so is `phases` of the module counters,
+  aggregates `sum`, `parity`, `max`, `min`, `band`, `bor`, `bxor`, which the modules declare without a body, are
+  defined here as right folds of the lists, lifted by the proof that the fold does not depend on the order (`band`,
+  `bor` and `bxor` over the bit operations `bitand`, `bitor` and `bitxor` of C, Mathlib's `Int.land`, `Int.lor` and
+  `Int.xor` in two's complement, defined in `Bits` since core Lean lacks them, from `-1`, `0` and `0`); the constant
+  array `const` of the prelude is the constant function; so is `phases` of the module counters,
   also declared without a body, as the trace of its comment; the generator checks the printed declarations of these
   functions and leaves them out (`AGGREGATES`). Proofs.lean bridges `elems xs` to the class of `xs` and the
   aggregates of it to the folds of lists of Naturals.lean (`sum_N`, `parity_N`, `count_N`).

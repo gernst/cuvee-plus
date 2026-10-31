@@ -41,8 +41,10 @@ AGGREGATES = {"sum": "axiom sum : Bag Int → Int",
               "min": "axiom min : Int → Bag Int → Int",
               "bitand": "axiom bitand : Int → Int → Int",
               "bitor": "axiom bitor : Int → Int → Int",
+              "bitxor": "axiom bitxor : Int → Int → Int",
               "band": "axiom band : Bag Int → Int",
               "bor": "axiom bor : Bag Int → Int",
+              "bxor": "axiom bxor : Bag Int → Int",
               "phases": "axiom phases : Int → Int → Int → (Int → Int → Int) → (Int → Int → Int) → Trace Int"}
 
 def norm(s):

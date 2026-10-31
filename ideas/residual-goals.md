@@ -15,10 +15,10 @@ The goals are quoted as the log prints them (SMT-LIB), shortened where marked.
 |---|---|---|---|
 | induction with the iteration constraint as hypothesis | about 40 | a rule of the database, an open design question | 1 |
 | the iteration constraint at the last iteration | 7 | a rule over `invs`, cost to check | 2 |
-| reads of constant arrays | 3 | done locally: the rule `select_const` | 3 |
+| reads of constant arrays | 3 | done: `select_const`, 3 correct locally | 3 |
 | arithmetic arguments and binders compared modulo the context | 4 | engine (engine.md 1.2, section 8) | 4 |
-| max and min with the tie on the other side | 3 | a variant of `maxs`, `mins`, or the guards | 5 |
-| small lemmas missing from the database | about 20 | database | 6 |
+| max and min with the tie on the other side | 3 | done in part: `maxs_tie`, `mins_tie`, 1 correct locally | 5 |
+| small lemmas missing from the database | about 20 | done in part: 8 correct locally | 6 |
 | counts of residues under unsigned wrap-around | 8 | database | 7 |
 | arithmetic | about 35 | engine (engine.md, section 2) | 8 |
 | known gaps, unchanged | about 50 | open-tasks.md, engine.md | 9 |
@@ -135,28 +135,33 @@ loop that takes the new value also at a tie. sanfoundry_02_ground (the largest e
 ```
 
 loops/array-1 is the same for the minimum (`(<= tmp$13 menor$11) tmp$13`). Both cases agree at the tie, so the traces
-are the folds. **Change:** a second introduction per fold (the tie on the other side), or the guards normalized where
-the results agree at the boundary (a directed merge as in `Simplify.eps`, engine.md 5.1). reducercommutativity/max
+are the folds. **Done (Oct 31):** the folds `maxs_tie` and `mins_tie` (aggregation.dfy), whose bodies take the new
+value also at a tie, rewritten into `maxs` and `mins`; array-1 correct locally in 43 s (examples/c/teq/max_tie.c);
+sanfoundry_02_ground not tried locally (138 s on the cloud), its goals on the second largest element stay open.
+The alternative, the guards normalized where the results agree at the boundary, would be an engine change (a
+directed merge as in `Simplify.eps`, engine.md 5.1). reducercommutativity/max
 needs in addition that the multiset of `selects` of the function `swap` is that of the array (`elems_selects_swap`
 states it for a swap written as two stores) and that `select_swap` does not rewrite the reads into cases before the
 fold applies.
 
 ## 6. Small lemmas missing from the database (about 20 tasks)
 
-Each from a residual goal; none tried yet.
+Each from a residual goal. Done (Oct 31, correct locally with `-svcomp -rules`, one run each): 8 tasks. Not taken:
+`selects_counter_empty` (a small example was proved without it, and its task needs 148 s), the fold `lasts`
+(gj2007b timed out at 60 s with it, 31 s `unknown` before; to diagnose).
 
 | Lemma | Tasks | Goal |
 |---|---|---|
-| `indexof` over a counter down by 1 | eureka_05, array_init_both_ends_multiple_sum | `(indexof (+ (- k) 99999) (butlast (counter 99999 (- 1) 100000)))` |
-| `0 < pow(z, n)` for `0 < z` | trex01-2 (2 goals); the sign cases of the halving in divbin, hard | `(<= 1 z$27)` with `(= z$27 (pow 2 n$23))` |
+| **done**, `indexof_counter_down` | array_init_both_ends_multiple_sum (10 s); eureka_05 not tried (151 s) | `(indexof (+ (- k) 99999) (butlast (counter 99999 (- 1) 100000)))` |
+| **done**, `pow_positive` | trex01-2 (9 s); the sign cases of the halving in divbin, hard not tried | `(<= 1 z$27)` with `(= z$27 (pow 2 n$23))` |
 | closed `pow` evaluated | underapprox_1-2 | `(= y$11 (mod (pow 2 6) 4294967296))`, goal `(< 0 (mod y$11 3))` |
-| `selects` over an empty counter | array_min_and_copy_shift_sum_add (7 goals) | `(sum (elems (selects a$9 (butlast (counter 0 1 0)))))` |
-| a count at most the length | nest-if3, apache-escape-absolute | `(+ (bag.select (elems Tmp?$51) 0) c$59) = n`, goal `-1 <= c` |
+| `selects` over an empty counter, tried and dropped | array_min_and_copy_shift_sum_add (7 goals) | `(sum (elems (selects a$9 (butlast (counter 0 1 0)))))` |
+| **done**, `count_length` (forward) | apache-escape-absolute (26 s), nest-if3 (32 s) | `(+ (bag.select (elems Tmp?$51) 0) c$59) = n`, goal `-1 <= c` |
 | sums over the same keys add pointwise | bhmr2007 | `a` and `b` sums of `eps(c => 1, !c => 2)` and `eps(c => 2, !c => 1)`, goal `(= (+ a b) (* 3 n))` |
 | a trace that keeps its initial value | const | `s` from 0 with `case s == 0 => 0`: the initial value is a fixed point of the update |
-| an aggregate for xor | xor1-xor5 | `bitxor` folded in two orders, as `bands`, `bors` |
+| **done**, `bxor`, `bxors` and the seeds | xor1-xor4 (18 to 19 s); xor5 has a variable size (section 4) | `bitxor` folded in two orders, as `bands`, `bors` |
 | a counter that saturates at a bound | partial_mod_count_limited_1, _5 (the others time out) | `(eps ((< k tmp) (+ k 1)) ((<= tmp k) k))`, i.e. `min(k, tmp)` at iteration `k` |
-| the last position where a guard holds | gj2007b, sanfoundry_10_ground | `(eps ((not (= tmp 0)) k$15) ((= tmp 0) m$10))`: bounds and the guard at the position |
+| the last position where a guard holds, the fold `lasts` tried | gj2007b (timeout), sanfoundry_10_ground | `(eps ((not (= tmp 0)) k$15) ((= tmp 0) m$10))`: bounds and the guard at the position |
 | an element at most the sum of non-negative ones, a sum at most count times bound | linear-inequality-inv-a, -c, -d | `(<= (earlier (- n 1) V?) (mod (sum (elems V?)) 2^32))`; the bound needs a product with the count (section 8) |
 | bitwise and with a literal mask | bin-suffix-5 | `(= (bitand x 5) 5)` with `x = (8n + 5) mod 2^32`; C bitwise operators are uninterpreted (TODO.md, C frontend) |
 
@@ -214,7 +219,10 @@ as `current_trace_mod_add_*` does for unconditional ones; then counts of residue
 
 ## Order
 
-1. The small lemmas of section 6, each one or two tasks and cheap, then section 5 (section 3 is done).
+1. Done in part (Oct 31): sections 3, 5 and 6, 12 tasks correct locally, to be confirmed on the cloud (with the cost
+   of the forward lemma `count_length`). Left of section 6: `lasts`, the closed `pow`, the saturating counter (an
+   unused second counter among the dependencies, a gap of the matcher), the sums over the same keys (two
+   higher-order summands), the constant trace (a pattern on every trace), the bit mask (C).
 2. Section 1, after the design decision; it is the largest group by far.
 3. Section 4 with the prototype of engine.md 1.2.
 4. Sections 2, 7 and the products of section 8, each measured on the cloud.

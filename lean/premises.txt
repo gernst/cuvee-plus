@@ -22,12 +22,14 @@ earlier_stores_where: 0 ≤ j ∧ j < n -- the earlier states of a loop are read
 earlier_phases: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
 earlier_bands: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
 earlier_bors: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
+earlier_bxors: 0 ≤ j ∧ j < n -- the earlier states of a loop are read at its iterations
 max_earlier: 0 ≤ k ∧ k < length values -- the values of a loop are read at its iterations
 min_earlier: 0 ≤ k ∧ k < length values -- the values of a loop are read at its iterations
 max_prefix_earlier: (hxs : k < length xs) -- the list is read at the iterations of a loop that it covers
 min_prefix_earlier: (hxs : k < length xs) -- the list is read at the iterations of a loop that it covers
 band_seed_earlier: (hxs : n + 1 ≤ length xs) -- the list is read at the iterations of a loop that it covers, the first one and the n further ones
 bor_seed_earlier: (hxs : n + 1 ≤ length xs) -- the list is read at the iterations of a loop that it covers, the first one and the n further ones
+bxor_seed_earlier: (hxs : n + 1 ≤ length xs) -- the list is read at the iterations of a loop that it covers, the first one and the n further ones
 
 # prefixes: the prefixes that the lemmas make are those of the earlier states of a loop, at most its length
 prefix_counter: k ≤ n -- the prefixes of a counter are cut at the iterations of its loop
