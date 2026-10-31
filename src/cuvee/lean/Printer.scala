@@ -338,6 +338,7 @@ object Printer extends cuvee.pipe.Printer:
     expr match
       case Seqs.nth(`xs`, Ints.zero)        => hd
       case Seqs.extract(`xs`, Ints.one, _)  => tl
+      case Seqs.slice(`xs`, Ints.one, _)    => tl
       case _                               => expr.map(split(xs, hd, tl, _))
 
   // recursion on an integer, if n <= 0 then a else b for a formal parameter n, terminates by the measure n.toNat,
@@ -422,6 +423,9 @@ object Printer extends cuvee.pipe.Printer:
   def infix(expr: Expr): Option[(String, Int, Assoc, List[Expr])] =
     expr match
       case Seqs.concat(left, right)    => Some(("++", 65, Assoc.Left, List(left, right)))
+      // the first element of a display is a unit or a singleton
+      case Seqs.snoc(Seqs.empty(), _) | Bags.insert(Bags.empty(), _) => None
+      case Seqs.snoc(seq, elem)        => Some(("++", 65, Assoc.Left, List(seq, Seqs.unit(elem))))
       case Sets.member(elem, set)      => Some(("∈", 50, Assoc.Non, List(elem, set)))
       case Not(Sets.member(elem, set)) => Some(("∉", 50, Assoc.Non, List(elem, set)))
       case Sets.union(left, right)     => Some(("∪", 65, Assoc.Left, List(left, right)))
@@ -432,6 +436,7 @@ object Printer extends cuvee.pipe.Printer:
 
       // the union, difference, and submultisets of the multisets of Semantics.lean are its instances of +, -, and ≤
       case Bags.union(left, right)     => Some(("+", 65, Assoc.Left, List(left, right)))
+      case Bags.insert(bag, elem)      => Some(("+", 65, Assoc.Left, List(bag, Bags.make(elem, Ints.one))))
       case Bags.minus(left, right)     => Some(("-", 65, Assoc.Left, List(left, right)))
       case Bags.subbag(left, right)    => Some(("≤", 50, Assoc.Non, List(left, right)))
 
@@ -469,6 +474,7 @@ object Printer extends cuvee.pipe.Printer:
       case Component(_, _)                                  => max
       case Seqs.len(_) | Seqs.unit(_) | Seqs.empty() | Sets.empty() | Sets.singleton(_) => max
       case Bags.make(_, Ints.one)                           => max
+      case Seqs.snoc(Seqs.empty(), _) | Bags.insert(Bags.empty(), _) | Sets.update(Sets.empty(), _, True) => max
       case Distinct(exprs) if exprs.length > 2              => 35
       case As(_, _) | Is(_, _)                              => max
       case _ if prefix(expr).isDefined                      => prefix(expr).get._2
@@ -552,6 +558,9 @@ object Printer extends cuvee.pipe.Printer:
       case Seqs.unit(elem) =>
         text("[") ~ doc(elem) ~ text("]")
 
+      case Seqs.snoc(Seqs.empty(), elem) =>
+        text("[") ~ doc(elem) ~ text("]")
+
       case Seqs.len(seq) =>
         text("(") ~ doc(seq, max) ~ text(".length : Int)")
 
@@ -560,6 +569,9 @@ object Printer extends cuvee.pipe.Printer:
 
       case Seqs.nth(seq, index) =>
         app(doc(seq, max) ~ text(".getD"), Nil) ~~ text("(") ~ doc(index, max) ~ text(".toNat)") ~~ text("default")
+
+      case Seqs.slice(seq, from, to) =>
+        text("((") ~ doc(seq, max) ~ text(".drop ") ~ doc(from, max) ~ text(".toNat).take ") ~ doc(Ints.minus(to, from), max) ~ text(".toNat)")
 
       case Seqs.extract(seq, Lit(from: BigInt, _), len) if from >= 0 =>
         text("((") ~ doc(seq, max) ~ text(".drop " + from + ").take ") ~ doc(len, max) ~ text(".toNat)")
@@ -580,6 +592,9 @@ object Printer extends cuvee.pipe.Printer:
       case Sets.singleton(elem) =>
         text("{") ~ doc(elem) ~ text("}")
 
+      case Sets.update(Sets.empty(), elem, True) =>
+        text("{") ~ doc(elem) ~ text("}")
+
       case Sets.update(set, elem, True) =>
         app(text("insert"), List(elem, set))
 
@@ -591,6 +606,9 @@ object Printer extends cuvee.pipe.Printer:
         text("∅")
 
       case Bags.make(elem, Ints.one) =>
+        text("{") ~ doc(elem) ~ text("}")
+
+      case Bags.insert(Bags.empty(), elem) =>
         text("{") ~ doc(elem) ~ text("}")
 
       case Bags.make(elem, count) =>

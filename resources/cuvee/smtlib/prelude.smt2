@@ -36,8 +36,12 @@
 (declare-fun seq.extract (par (a$0) ((Seq a$0) Int Int) (Seq a$0) :smt2 :dfy))
 (declare-fun seq.contains (par (a$0) ((Seq a$0) (Seq a$0)) Bool :smt2 :dfy))
 (declare-fun seq.prefixof (par (a$0) ((Seq a$0) (Seq a$0)) Bool :smt2 :dfy))
-; not part of cvc5, the implementations of s[i := v], x in s, and s < t (see cuvee.core.Overload)
+; not part of cvc5, the implementations of s[i := v], x in s, and s < t (see cuvee.core.Overload), and the extension
+; by one element, of which displays are built (the solvers receive (seq.++ s (seq.unit x)), see cuvee.smtlib.Solver)
 (declare-fun seq.store (par (a$0) ((Seq a$0) Int a$0) (Seq a$0) :smt2 :dfy))
+(declare-fun seq.snoc (par (a$0) ((Seq a$0) a$0) (Seq a$0) :smt2 :dfy))
+; not part of cvc5, the slice s[i..j] (the solvers receive (seq.extract s i (- j i)), see cuvee.smtlib.Solver)
+(declare-fun seq.slice (par (a$0) ((Seq a$0) Int Int) (Seq a$0) :smt2 :dfy))
 (declare-fun seq.member (par (a$0) (a$0 (Seq a$0)) Bool :smt2 :dfy))
 (declare-fun seq.proper_prefixof (par (a$0) ((Seq a$0) (Seq a$0)) Bool :smt2 :dfy))
 
@@ -65,8 +69,11 @@
 (declare-fun bag.subbag (par (a$0) ((Bag a$0) (Bag a$0)) Bool :smt2 :dfy))
 (declare-fun bag.card (par (a$0) ((Bag a$0)) Int :smt2 :dfy))
 (declare-fun bag.member (par (a$0) (a$0 (Bag a$0)) Bool :smt2 :dfy))
-; not part of cvc5, the implementations of s[x] and s < t
+; not part of cvc5, the implementations of s[x], s[x := n], and s < t, and the insertion of one occurrence, of which
+; displays are built (the solvers receive (bag.union_disjoint s (bag x 1)), see cuvee.smtlib.Solver)
 (declare-fun bag.select (par (a$0) ((Bag a$0) a$0) Int :smt2 :dfy))
+(declare-fun bag.store (par (a$0) ((Bag a$0) a$0 Int) (Bag a$0) :smt2 :dfy))
+(declare-fun bag.insert (par (a$0) ((Bag a$0) a$0) (Bag a$0) :smt2 :dfy))
 (declare-fun bag.proper_subbag (par (a$0) ((Bag a$0) (Bag a$0)) Bool :smt2 :dfy))
 
 ; finite maps (see cuvee.core.Fun.map), which the solvers are not expected to support
