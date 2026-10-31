@@ -560,7 +560,10 @@ README; options in [options.md](options.md)), e.g.
   its examples ([Checked.scala](../test/src/cuvee/test/Checked.scala)).
   The algorithms of
   `examples/dafny/algorithms`, whose runs take minutes, run only if
-  `CUVEE_ALGORITHMS` is set (`Examples.excluded`), and the roundtrip suites
+  `CUVEE_ALGORITHMS` is set (`Examples.excluded`), the examples of trace
+  equation systems (the folders `c/teq` and `dafny/teq`, and the examples run
+  with `-teq` or `-slice` elsewhere), which take most of the time of the
+  tests, only if `CUVEE_TEQ` is set (`Examples.untraced`), and the roundtrip suites
   of the printers (`Roundtrip` and `Programs`, every example printed and
   parsed back, `Examples.printing`) only if `CUVEE_PRINTING` is set, which
   a change of a parser or a printer requires. The translations of SV-COMP

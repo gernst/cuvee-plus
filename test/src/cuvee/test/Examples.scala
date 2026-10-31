@@ -28,16 +28,27 @@ object Examples:
   val excluded: List[os.SubPath] =
     if sys.env.contains("CUVEE_ALGORITHMS") then Nil else List(os.sub / "dafny" / "algorithms")
 
+  // the examples of trace equation systems, which take most of the time of the tests, only if the environment variable
+  // CUVEE_TEQ is set: the folders teq, and the examples run with -teq or -slice (which injects the lemma database like
+  // -teq) elsewhere, except the algorithms, which CUVEE_ALGORITHMS decides alone
+  val teq: List[os.SubPath] = List(os.sub / "c" / "teq", os.sub / "dafny" / "teq")
+
+  def untraced(file: os.Path) =
+    sys.env.contains("CUVEE_TEQ") || file.startsWith(root / "dafny" / "algorithms") || {
+      val args = cuvee.test.Expected.command(workspace.toNIO, file.toNIO).getOrElse(Nil)
+      !teq.exists(sub => file.startsWith(root / sub)) && !args.contains("-teq") && !args.contains("-slice")
+    }
+
   // examples whose runs do not terminate, which are no tests
   val nonterminating = Set[String]()
 
   def terminating(file: os.Path) =
     !nonterminating.contains(file.relativeTo(root).toString)
 
-  // example files with extension `ext` below `dir`, relative to the examples directory, except the excluded ones and
-  // those that do not terminate
+  // example files with extension `ext` below `dir`, relative to the examples directory, except the excluded ones,
+  // those of trace equation systems without CUVEE_TEQ, and those that do not terminate
   def find(dir: os.SubPath, ext: String): List[os.Path] =
-    os.walk(root / dir).filter(_.ext == ext).filter(terminating).filterNot(file => excluded.exists(sub => file.startsWith(root / sub))).sorted.toList
+    os.walk(root / dir).filter(_.ext == ext).filter(terminating).filter(untraced).filterNot(file => excluded.exists(sub => file.startsWith(root / sub))).sorted.toList
 
   // utest builds its test tree at compile time with the Tests macro,
   // therefore the tests for example files found at runtime are assembled by hand,

@@ -58,7 +58,7 @@ cd cuvee-plus
 ```sh
 mill -i assembly                          # build out/assembly.dest/out.jar
 cp out/assembly.dest/out.jar cuvee.jar    # the jar that Cuvee.sh runs
-mill -i test                              # run the tests (CUVEE_PRINTING=1 after parser or printer changes, CUVEE_ALGORITHMS=1 for the slow suite)
+mill -i test                              # run the tests (CUVEE_PRINTING=1 after parser or printer changes, CUVEE_TEQ=1 for trace equation systems, CUVEE_ALGORITHMS=1 for the slow suite)
 ```
 
 `make` does the first two steps. `make native` builds `cuvee.native`, a native
