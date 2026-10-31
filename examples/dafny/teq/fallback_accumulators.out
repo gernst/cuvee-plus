@@ -1,16 +1,16 @@
-function S_0₃₃₄(x₀: int): int
+function S_0₃₃₈(x₀: int): int
 
-function S_1₃₃₄(x₀: int): int
+function S_1₃₃₈(x₀: int): int
 
 goal {:abstract}
   forall n: int, a₁₅: int ::
     0 <= n
-      && S_0₃₃₄(0) == 0
-      && (forall j₃₃₅: int ::
-            0 <= j₃₃₅ < n ==> S_0₃₃₄(j₃₃₅ + 1) == S_1₃₃₄(j₃₃₅))
-      && S_1₃₃₄(0) == 1
-      && (forall j₃₃₅: int ::
-            0 <= j₃₃₅ < n ==> S_1₃₃₄(j₃₃₅ + 1) == S_0₃₃₄(j₃₃₅) + S_1₃₃₄(j₃₃₅))
-      && a₁₅ == S_0₃₃₄(n)
+      && S_0₃₃₈(0) == 0
+      && (forall j₃₃₉: int ::
+            0 <= j₃₃₉ < n ==> S_0₃₃₈(j₃₃₉ + 1) == S_1₃₃₈(j₃₃₉))
+      && S_1₃₃₈(0) == 1
+      && (forall j₃₃₉: int ::
+            0 <= j₃₃₉ < n ==> S_1₃₃₈(j₃₃₉ + 1) == S_0₃₃₈(j₃₃₉) + S_1₃₃₈(j₃₃₉))
+      && a₁₅ == S_0₃₃₈(n)
       ==> 0 <= a₁₅
 

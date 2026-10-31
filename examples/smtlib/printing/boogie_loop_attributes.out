@@ -27,6 +27,10 @@ function {:smt2} {:dfy} seq.prefixof<a₀>(x₀: Seq<a₀>, x₁: Seq<a₀>): bo
 
 function {:smt2} {:dfy} seq.store<a₀>(x₀: Seq<a₀>, x₁: int, x₂: a₀): Seq<a₀>;
 
+function {:smt2} {:dfy} seq.snoc<a₀>(x₀: Seq<a₀>, x₁: a₀): Seq<a₀>;
+
+function {:smt2} {:dfy} seq.slice<a₀>(x₀: Seq<a₀>, x₁: int, x₂: int): Seq<a₀>;
+
 function {:smt2} {:dfy} seq.member<a₀>(x₀: a₀, x₁: Seq<a₀>): bool;
 
 function {:smt2} {:dfy} seq.proper_prefixof<a₀>(x₀: Seq<a₀>, x₁: Seq<a₀>): bool;
@@ -74,6 +78,10 @@ function {:smt2} {:dfy} bag.card<a₀>(x₀: Bag<a₀>): int;
 function {:smt2} {:dfy} bag.member<a₀>(x₀: a₀, x₁: Bag<a₀>): bool;
 
 function {:smt2} {:dfy} bag.select<a₀>(x₀: Bag<a₀>, x₁: a₀): int;
+
+function {:smt2} {:dfy} bag.store<a₀>(x₀: Bag<a₀>, x₁: a₀, x₂: int): Bag<a₀>;
+
+function {:smt2} {:dfy} bag.insert<a₀>(x₀: Bag<a₀>, x₁: a₀): Bag<a₀>;
 
 function {:smt2} {:dfy} bag.proper_subbag<a₀>(x₀: Bag<a₀>, x₁: Bag<a₀>): bool;
 
