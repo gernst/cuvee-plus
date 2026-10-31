@@ -99,8 +99,6 @@ without `-fallback`); the open tasks with the verdict true by family, with the c
   `-chc` with constants in procedure bodies (Horn solvers reject free constants).
 - Lambdas of function type printed in SMT-LIB (arrays) are not read back.
 - `-monomorph` leaves polymorphic assertions uninstantiated, which solvers reject.
-- Implementations ([ideas/datatype-verification.md](ideas/datatype-verification.md)): the start of the counter of `renc` (`tick := 0` by
-  hand in examples/dafny/renc).
 - The implementations of overloaded operators that cvc5 lacks (`seq.store`, `seq.member`, `seq.proper_prefixof`,
   `set.proper_subset`, `set.update`, `bag.select`, `bag.proper_subbag`, `map.store`) are declared but not defined; define them
   in terms of cvc5's functions (then `examples/dafny/vcgen/seq.dfy` and the cvc5 tests of sets).

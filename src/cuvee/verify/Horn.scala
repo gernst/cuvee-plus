@@ -303,7 +303,7 @@ object Horn extends Transform:
 
       // the goal pre ⇒ pre_, and pre ∧ post_[xs := xs_] ⇒ next(scope[xs := xs_]), where xs_ are the new values of xs
       // assume false ends the path: its precondition, if any, is checked, nothing after it is reachable, e.g. the side
-      // branches of encodings that only derive facts (renc)
+      // branches of encodings that only derive facts
       case Spec(_, pre_, False) :: _ =>
         clause(scope, pre, pre_, clauses)
 

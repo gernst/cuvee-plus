@@ -187,7 +187,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
 - `-test` crashes with `Error(not a type, Id(Nat))` instead of reporting a difference when a stale expected output
   in SMT-LIB uses a sort of the lemma database (`Nat`, `Trace`), which the output omits and the comparison does not
   declare when it parses the expected output back (`test.Expected`); seen on `examples/c/teq/unsigned_down.c` after
-  1318322c (Oct 23, 2026).
+  f9008f56 (Oct 23, 2026).
 
 ## Non-termination and timeouts
 
@@ -391,7 +391,7 @@ or in review (Oct 30, 2026).
 ## Fixed
 
 - **`-vcgen` answered a refutation out of the entry point's context `incorrect`** (found Oct 28, 2026, the ACSL run
-  of 0.53.13; fixed in 0.53.13, 46988318): verifythis/lcp of benchmarks/acsl (no annotations, expected true) was a
+  of 0.53.13; fixed in 0.53.13, ab1f4040): verifythis/lcp of benchmarks/acsl (no annotations, expected true) was a
   wrong false, from the goal of `check` for an arbitrary length, which `main` never passes; with an entry point, the
   goals of other procedures and of callers of procedures without contract are `:abstract` now (`VCGen`), so such
   refutations are `unknown`; linear_search and trex01-1, whose false answers rested on the same kind of refutation,
@@ -448,7 +448,7 @@ or in review (Oct 30, 2026).
   `xml/cuvee.xml` lost `sum/conda`, `s1lif` to `s5lif` (26 to 31 s with 0.50.4) and `condn` (33 to 35 s, forall and
   max), 87 to 79 of 125 proved; `xml/cuvee-fallback.xml` the same and `mbpr3`, `mbpr4`, 99 to 89; no wrong results.
   Cause: the forward lemma `integer_natural_facts` of teq.dfy (`0 <= integer(n) && natural(integer(n)) == n` wherever
-  `integer(n)` occurs, added in bcbef0d3), whose instances are simplified again at every fact (see "Forward instances
+  `integer(n)` occurs, added in 5a9a1df1), whose instances are simplified again at every fact (see "Forward instances
   use up the steps of a goal"): with it, `s1lif` and `condn` time out at 120 s locally, without it they prove in 14 s
   and 21 s. Fixed by dropping the lemma again (`integer_eq` alone, as before); `Eval` and `Simplify.eq_` stay.
   Confirmed on the cloud with 0.50.8 (60 s, AMD Ryzen 7 PRO 5750G): 87 and 99 of 125 proved, the same tasks as with
@@ -456,7 +456,7 @@ or in review (Oct 30, 2026).
 
 - **A cycle in `-prove` with `teq:unsigned` since 0.50** (Oct 23, 2026): `loop-acceleration/multivar_1-2` and
   `loops-crafted-1/nested3-2` of SV-COMP Loops (both expected false) timed out, while 0.49.4 refuted them in 25 s and
-  44 s. Two causes, bisected locally: (1) 1da27f83 (the range `0 <= t mod k <= |k| - 1` in the simplex) made the
+  44 s. Two causes, bisected locally: (1) d3a7a40c (the range `0 <= t mod k <= |k| - 1` in the simplex) made the
   instances of the counterexample search expensive (multivar_1-2: 10 s before, 113 s after): an instance at literal
   values, simplified by `Simplify.simplify` with all rules, assumed a premise like `natural(4294967296) == zero`
   (the case `n == zero` of a split, `n` instantiated), which the classes took as a fact without a clash, since
