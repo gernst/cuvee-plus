@@ -695,6 +695,25 @@ def Stmt.count_remainder : Prop :=
       → Bag.count (elems (maps (butlast (counter 0 1 n)) (fun k => k % m))) r
         = (n + m - 1 - r) / m
 
+def Stmt.count_remainder_offset : Prop :=
+  ∀ (n : Int) (m : Int) (c : Int) (r : Int),
+    0 ≤ n ∧ 0 < m ∧ 0 ≤ r ∧ r < m
+      → Bag.count
+        (elems (maps (butlast (counter 0 1 n)) (fun k => (k + c) % m)))
+        r
+        = (n + m - 1 - (r - c) % m) / m
+
+def Stmt.count_remainder_positive : Prop :=
+  ∀ (n : Int) (m : Int) (c : Int),
+    0 ≤ n ∧ 0 < m
+      → Bag.count
+        (elems (maps (butlast (counter 0 1 n)) (fun k => 0 < (k + c) % m)))
+        True
+        = n
+          - Bag.count
+            (elems (maps (butlast (counter 0 1 n)) (fun k => (k + c) % m)))
+            0
+
 def Stmt.count_false_true : Prop :=
   ∀ (i : Int) (c : Int) (n : Int) (hs : List Int) (P : Int → Int → Prop) (hhs : length hs = n),
     0 ≤ n

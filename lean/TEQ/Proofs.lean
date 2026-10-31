@@ -838,6 +838,16 @@ theorem count_remainder : Stmt.count_remainder := by
   intro n m r ⟨hn, h⟩; simp only [count_N] at *
   rw [counter_N, N.count_remainder n.toNat m r h, N.integer_cast, Int.toNat_of_nonneg hn]
 
+theorem count_remainder_offset : Stmt.count_remainder_offset := by
+  intro n m c r ⟨hn, hm, hr0, hrm⟩; simp only [count_N] at *
+  rw [counter_N, N.count_remainder_offset n.toNat m c r hm hr0 hrm, Int.toNat_of_nonneg hn]
+
+theorem count_remainder_positive : Stmt.count_remainder_positive := by
+  intro n m c ⟨hn, hm⟩; simp only [count_N] at *
+  rw [counter_N, N.maps_counter_shift 0 c n.toNat (fun k => 0 < k % m),
+      N.maps_counter_shift 0 c n.toNat (fun k => k % m), N.count_remainder_positive _ m hm,
+      N.length_butlast_counter, Int.toNat_of_nonneg hn]
+
 theorem count_false_true : Stmt.count_false_true := by
   intro i c n hs P hhs hn; simp only [count_N] at *
   rw [counter_N, N.count_false_true i c n.toNat hs P (by omega), N.integer_cast, Int.toNat_of_nonneg hn]

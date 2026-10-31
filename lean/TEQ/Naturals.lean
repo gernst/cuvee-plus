@@ -2873,13 +2873,11 @@ theorem count_nonnegative {α : Type} [Inhabited α] (e : α) (vs : List α) :
 
 -- the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m
 -- (from half, sumt2)
-theorem count_remainder : Stmt.count_remainder := by
-    intro n m r ⟨hm, hr0, hrm⟩
-    rw [integer_cast]
-    have hr : r % m = r := Int.emod_eq_of_lt hr0 hrm
-    -- the count from s on: the remainder r of the values s, ..., s + n - 1 is the remainder of r - s of 0, ..., n - 1
-    have gen : ∀ (s : Int), count r (maps (butlast (counter s 1 n)) (fun k => k % m))
+-- the count from s on: the remainder r of the values s, ..., s + n - 1 is the remainder of r - s of 0, ..., n - 1
+theorem count_remainder_from (n : Nat) (m : Int) (r : Int) (hm : 0 < m) (hr0 : 0 ≤ r) (hrm : r < m) :
+    ∀ (s : Int), count r (maps (butlast (counter s 1 n)) (fun k => k % m))
         = ((n : Int) + m - 1 - (r - s) % m) / m := by
+      have hr : r % m = r := Int.emod_eq_of_lt hr0 hrm
       induction n with
       | zero =>
         intro s
@@ -2927,9 +2925,45 @@ theorem count_remainder : Stmt.count_remainder := by
         · simp only [hu, ite_false]
           rw [show ((t : Int) + m - 1 - (u - 1)) = t + 1 + m - 1 - u by omega]
           omega
-    have := gen 0
+
+theorem count_remainder : Stmt.count_remainder := by
+    intro n m r ⟨hm, hr0, hrm⟩
+    rw [integer_cast]
+    have hr : r % m = r := Int.emod_eq_of_lt hr0 hrm
+    have := count_remainder_from n m r hm hr0 hrm 0
     simp only [Int.sub_zero, hr] at this
     exact this
+
+-- a map of the values s, ..., s + n - 1 shifted by c is the map of the values s + c, ..., s + c + n - 1
+theorem maps_counter_shift {β : Type} (s c : Int) (n : Nat) (f : Int → β) :
+    maps (butlast (counter s 1 n)) (fun k => f (k + c)) = maps (butlast (counter (s + c) 1 n)) f := by
+  induction n generalizing s with
+  | zero => rfl
+  | succ t ih =>
+    rw [butlast_counter_succ, butlast_counter_succ]; simp only [maps]
+    rw [ih (s + 1), show s + 1 + c = s + c + 1 by omega]
+
+-- the numbers 0, ..., n - 1 whose sum with c has the remainder r modulo m: those of the remainder (r - c) mod m
+-- (from loops-crafted-1: iftelse)
+theorem count_remainder_offset (n : Nat) (m c r : Int) (hm : 0 < m) (hr0 : 0 ≤ r) (hrm : r < m) :
+    count r (maps (butlast (counter 0 1 n)) (fun k => (k + c) % m)) = ((n : Int) + m - 1 - (r - c) % m) / m := by
+  rw [maps_counter_shift 0 c n (fun k => k % m), Int.zero_add]
+  exact count_remainder_from n m r hm hr0 hrm c
+
+-- the values with a positive remainder are the others than those with the remainder 0, as remainders are not negative
+-- (from loops-crafted-1: iftelse)
+theorem count_remainder_positive (ks : List Int) (m : Int) (hm : 0 < m) :
+    count True (maps ks (fun k => 0 < k % m)) = (ks.length : Int) - count 0 (maps ks (fun k => k % m)) := by
+  induction ks with
+  | nil => simp [maps, count]
+  | cons k ks ih =>
+    have h := Int.emod_nonneg k (by omega : m ≠ 0)
+    simp only [maps, count, List.length_cons] at *
+    by_cases e : 0 < k % m
+    · have e' : ¬ (k % m = 0) := by omega
+      simp only [e, e']; simp; omega
+    · have e' : k % m = 0 := by omega
+      simp only [e']; simp; omega
 
 -- among the truth values of a map over the n iterations, those that are false are the others than those that are
 -- true; the dependencies are kept as matched, such that the counts are syntactically equal to those of the program
