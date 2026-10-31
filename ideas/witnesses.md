@@ -3,7 +3,8 @@
 SV-COMP scores a correct verdict without a confirmed witness with 0, but a wrong one with −32 (true) or −16 (false).
 Implemented (Oct 14-15, 2026): trivial witnesses of format 2.0 for C, `-witness <file>`
 ([doc/options.md](../doc/options.md), `yml.Witness`), and the source positions of loops and of the calls of
-`reach_error`. Open: witnesses that carry invariants or the values of a violation (the plan below, from step 2).
+`reach_error`. Open: witnesses that carry invariants or the values of a violation (the plan below, from step 2), and
+the witnesses of the portfolio's methods (section "After the portfolio", Oct 31).
 
 ## The formats
 
@@ -148,6 +149,73 @@ Implemented as `-slice` (Oct 25, 2026, [doc/prove.md](../doc/prove.md), "Program
 `invariant` over the program variables, the remaining choices quantified existentially, e.g. `tot == 2 * idx && idx
 <= len && 0 <= idx`. Open: lowering the traces and `invs` that remain, printing the invariants as `annotate-tag`
 commands of SV-LIB at the tags of the loops, and checking them (`-vcgen`).
+
+## After the portfolio (Oct 31, 2026): who needs which witness
+
+The portfolio (portfolio.py, doc/benchmarks.md) answers with the first method that is definite; its cloud run of
+Oct 31 (0.53.26, 300 s, 4 cores) answered as follows (the correct answers, by the method that answered):
+
+| | fuzz | `-teq -fallback` | `-chc` |
+|---|---:|---:|---:|
+| Arrays false | 89 | – | – |
+| Arrays true | – | 216 | 4 |
+| Loops false | 172 | 1 | 8 |
+| Loops true | – | 172 | 146 |
+
+Scored as if all answers were confirmed, Loops would be 817, between UAutomizer (887) and CPAchecker (815) of SV-COMP
+2026; with the real rules it is 0, since no answer has a confirmed witness. The drafts below follow the methods.
+
+### A. Violation witnesses of the fuzzer (261 of the 270 false answers)
+
+The fuzzer writes no witness yet (portfolio.py, "Open are the replay of a trace of fuzzing and its witness").
+`__VERIFIER_random.c` already records every value it draws with the name of its function, and prints the trace on
+`reach_error`. A witness needs the location of each value:
+
+1. **Call sites.** Before compiling, the portfolio rewrites each call `__VERIFIER_nondet_T()` of the `.i` file into
+   `__VERIFIER_nondet_T_at(k)`, where `k` is the index of the call site in a table computed on the original text
+   (line, column of the closing parenthesis, which is where a `function_return` waypoint is located, and the
+   enclosing function); declarations (`(void)`) stay. The harness stores `k` with each sample, as it stores `fn` now.
+2. **The witness.** On `unsat`, the recorded values in their order become a `violation_sequence` of format 2.0: one
+   segment per value, a `follow` waypoint of type `function_return` at its call site with the constraint
+   `\result == v` (`ext_c_expression`, with a cast where the type is narrower than `int` or unsigned), and a final
+   segment with the target at the call of `reach_error`, as `yml.Witness` finds it now. Written by portfolio.py
+   as `witness.fuzz.yml` (the program's SHA-256, the data model from `-arch`), copied like the witnesses of the other
+   methods.
+3. **Long traces.** A task that fills an array draws one value per cell, up to 100,000. Whether validators accept
+   such witnesses is to be measured; otherwise a cap (e.g. 10,000 values), beyond which the witness has the target
+   only, which validators that search on their own may still confirm.
+4. **Undefined behavior.** A run whose violation needs a signed overflow is no valid counterexample. Compiling with
+   `-fsanitize=undefined -fno-sanitize-recover=all` aborts such runs before `reach_error`, so the fuzzer does not
+   answer from them; to check: the 32-bit sanitizer runtime on the workers, and the slowdown.
+5. **Cheaper first step:** the target-only witness of `yml.Witness` for the fuzzer's answers, written by
+   portfolio.py, to measure how many validators confirm without values.
+
+### B. Measuring what the validators confirm (before the work of A, C, D)
+
+The validators of svcomp-bench-defs (`validate-violation-witnesses-2.0`, `validate-correctness-witnesses-2.0`) on
+the witnesses of the portfolio's run: the target-only violation witnesses and the empty correctness witnesses that
+`-witness` writes now. The estimate of Oct 13 (above) is for an empty correctness witness only: most of Loops,
+almost nothing of Arrays. The measurement decides the order of A, C and D.
+
+### C. Correctness witnesses of `-chc` (150 true answers, 146 of them on Loops)
+
+Plan step 2 above, now with its share: Spacer's model gives the predicates of the loop heads, `Horn` carries the
+`:location` of each loop, the arguments of a predicate are the variables in scope at the loop. Translated to C
+expressions (challenge 6: casts to `long long` against overflow in the invariant itself, `div`/`mod` only for
+non-negative operands, no `store` terms), as `loop_invariant` entries of an `invariant_set`, written by `-chc` to
+`witness.chc.yml`. The 48 true tasks that only `-chc` proves (nla-digbench fermat, prod4br, prodbin, and others) have
+polynomial invariants of a few variables, the case where this is straightforward.
+
+### D. Correctness witnesses of `-teq -fallback` (388 true answers)
+
+First the empty witness that `-witness` writes now, measured by B. Then the invariants of `-slice` (the trace
+equation system of a loop simplified in its context, above) for scalar loops, printed as C expressions; for Arrays
+(216 answers) they need quantifiers, which the format lacks (plan step 4).
+
+### Order
+
+B first, since it says how much each of A, C, D can gain; then A (the most answers, the least mathematics), C
+(Loops true), and D for scalar loops; quantified invariants for Arrays stay a question of the format.
 
 ## Source positions in the C frontend
 
