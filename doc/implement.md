@@ -76,7 +76,7 @@ would otherwise give polymorphic Horn clauses.
 
 ## renc
 
-[renc.dfy](../resources/cuvee/implement/renc.dfy) implements maps and sets by Enc_R (Esen, Rümmer, Weber,
+[renc.dfy](../resources/cuvee/implement/renc.dfy) implements maps, sets, sequences, and multisets by Enc_R (Esen, Rümmer, Weber,
 arXiv 2504.15844), for `-include implement:renc -instrument -chc -entry main -monomorph -flat -z3`; its header is the
 reference, in short:
 
@@ -84,8 +84,15 @@ reference, in short:
   (`last_in`), plus its `version`; every observation (read, test) is numbered by the global `tick` and answered by a
   static predicate, `R` (values), `K` (tests of maps), `S` (tests of sets), which the run whose prophecy is the
   observed key asserts and every other run assumes. The arguments are the context, the number, and the answer.
-- **Operations:** reads, tests, stores, set updates `s[x := b]`, displays (singletons with stores or updates, see the
-  Dafny frontend), merges `m + n`, removals `m - s`, unions, intersections, differences, and `m.Keys` are exact;
+- **Sequences and multisets** carry a prophecy index or element, its element or multiplicity, and their length or
+  size as exact state (no version, no `N`): reads (and tests of multisets) are observations with the predicates `R`
+  of sequences and `C` of multisets; stores, slices, extensions `s + [x]` and `m + multiset{x}` (of which displays
+  are built), and lengths and sizes are exact functions; updates of multiplicities `m[x := n]` observe the old one
+  for the size; concatenations and unions of multisets observe their right operand at the prophecy; intersections
+  and differences of multisets choose their size within the bounds of the true one; `x in s`, prefixes, and
+  submultisets are weak.
+- **Operations:** reads, tests, stores, set updates `s[x := b]`, displays (stores or updates of the empty container,
+  see the Dafny frontend), merges `m + n`, removals `m - s`, unions, intersections, differences, and `m.Keys` are exact;
   `m.Values`, `m <= n`, `s <= t`, `s < t` are constrained at the prophecy key only (sound, weak).
 - **Sizes** are a predicate `N(version, z)` of the version, the number of the last change: changes derive it in side
   branches from the size before and their observation of the old membership, bulk operations within the bounds of the
@@ -104,5 +111,7 @@ reference, in short:
   [boogie/transform/implement.bpl](../examples/boogie/transform/implement.bpl),
   [instrument.bpl](../examples/boogie/transform/instrument.bpl).
 - [dafny/renc](../examples/dafny/renc): reads, tests, displays, merges, removals, keys, sets and set updates, sizes,
+  sequences (`seq_*`) and multisets (`multiset_*`; `multiset_ops` is unknown to z3 after 30 s, each operation alone is
+  solved),
   loops (fills, counters, tests, insertions, overwrites), the context (`inputs.dfy`), the weak operations, and the
   conditions of soundness (`invalid_absent.dfy`, `invalid_merge.dfy`); the `invalid_*` examples are refuted.

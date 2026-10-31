@@ -171,6 +171,8 @@ object Seqs:
   object contains extends Sugar.binary(Fun.seq.contains)
   object prefixof extends Sugar.binary(Fun.seq.prefixof)
   object store extends Sugar.ternary(Fun.seq.store)
+  object snoc extends Sugar.binary(Fun.seq.snoc)
+  object slice extends Sugar.ternary(Fun.seq.slice)
   object member extends Sugar.binary(Fun.seq.member)
   object proper extends Sugar.binary(Fun.seq.proper)
 
@@ -213,6 +215,8 @@ object Bags:
   object card extends Sugar.unary(Fun.bag.card)
   object member extends Sugar.binary(Fun.bag.member)
   object select extends Sugar.binary(Fun.bag.select)
+  object store extends Sugar.ternary(Fun.bag.store)
+  object insert extends Sugar.binary(Fun.bag.insert)
   object proper extends Sugar.binary(Fun.bag.proper)
 
 object FinMaps:
