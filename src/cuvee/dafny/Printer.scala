@@ -594,10 +594,6 @@ object Printer extends cuvee.pipe.Printer:
       case Seqs.concat(left, right) =>
         infix(App(Fun.seq.concat.copy(name = Name("+", None)), Nil, Sort.bool, List(left, right)))
 
-      // an extension by one element that is not part of a display is the concatenation with the unit
-      case Seqs.snoc(seq, elem) =>
-        infix(Seqs.concat(seq, Seqs.unit(elem)))
-
       case Seqs.prefixof(left, right) =>
         infix(App(Fun.seq.prefixof.copy(name = Name("<=", None)), Nil, Sort.bool, List(left, right)))
 
@@ -622,7 +618,6 @@ object Printer extends cuvee.pipe.Printer:
       case Bags.member(elem, bag)       => operator("in", List(elem, bag))
       case Not(Bags.member(elem, bag))  => operator("!in", List(elem, bag))
       case Bags.union(left, right)      => operator("+", List(left, right))
-      case Bags.insert(bag, elem)       => operator("+", List(bag, Bags.make(elem, Ints.one)))
       case Bags.inter(left, right)      => operator("*", List(left, right))
       case Bags.minus(left, right)      => operator("-", List(left, right))
       case Bags.subbag(left, right)     => operator("<=", List(left, right))
@@ -632,7 +627,6 @@ object Printer extends cuvee.pipe.Printer:
       case FinMaps.update(_, FinMaps.singleton(_, _)) => None
       case FinMaps.store(_, _, _)                     => None
       case Sets.update(_, _, _)                       => None
-      case Bags.store(_, _, _)                        => None
       case FinMaps.member(key, map)                   => operator("in", List(key, map))
       case Not(FinMaps.member(key, map))              => operator("!in", List(key, map))
       case FinMaps.update(left, right)                => operator("+", List(left, right))
@@ -720,12 +714,11 @@ object Printer extends cuvee.pipe.Printer:
         yield left_ ++ right_
       case _ => None
 
-  // the elements of multiset literals, multiset{}, multiset{a}, insertions into these, and unions of these
+  // the elements of multiset literals, multiset{}, multiset{a}, and unions of these
   def multiset(expr: Expr): Option[List[Expr]] =
     expr match
       case Bags.empty()                   => Some(Nil)
       case Bags.make(elem, Ints.one)       => Some(List(elem))
-      case Bags.insert(bag, elem)          => multiset(bag).map(_ :+ elem)
       case Bags.union(left, right) =>
         for left_ <- multiset(left); right_ <- multiset(right)
         yield left_ ++ right_
@@ -742,7 +735,7 @@ object Printer extends cuvee.pipe.Printer:
         yield left_ ++ right_
       case _ => None
 
-  // the elements of sequence literals, [], [a], extensions of these by one element, and concatenations of these
+  // the elements of sequence literals, [], [a], and concatenations of these
   def elems(expr: Expr): Option[List[Expr]] =
     expr match
       case Seqs.empty() =>
@@ -750,9 +743,6 @@ object Printer extends cuvee.pipe.Printer:
 
       case Seqs.unit(elem) =>
         Some(List(elem))
-
-      case Seqs.snoc(seq, elem) =>
-        elems(seq).map(_ :+ elem)
 
       case Seqs.concat(left, right) =>
         for left_ <- elems(left); right_ <- elems(right)
@@ -972,9 +962,6 @@ object Printer extends cuvee.pipe.Printer:
       case Bags.select(bag, elem) =>
         doc(bag, operand) ~ text("[") ~ doc(elem) ~ text("]")
 
-      case Bags.store(bag, elem, count) =>
-        Group(doc(bag, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(elem) ~~ text(":=") ~ line ~ doc(count)) ~ text("]"))
-
       case Seqs.nth(seq, index) =>
         doc(seq, operand) ~ text("[") ~ doc(index) ~ text("]")
 
@@ -983,14 +970,6 @@ object Printer extends cuvee.pipe.Printer:
 
       case Seqs.store(seq, index, value) =>
         Group(doc(seq, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
-
-      // the slice between two bounds, the default bounds 0 and |s| are left out
-      case Seqs.slice(seq, from, to) =>
-        val from_ = if from == Ints.zero then empty else doc(from)
-        val to_ = to match
-          case Seqs.len(`seq`) => empty
-          case _               => doc(to)
-        doc(seq, operand) ~ text("[") ~ from_ ~ text("..") ~ to_ ~ text("]")
 
       // the length is the difference of the bounds, s[i..j] is extract(s, i, j - i)
       case Seqs.extract(seq, from, len) =>

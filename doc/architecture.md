@@ -335,16 +335,11 @@ Each frontend follows the same structure (see `cuvee.dafny` and
      their instances. Inside the type, members are called without `this`,
      outside as `x.f(args)`, static ones as `T.f(args)`
      ([static.dfy](../examples/dafny/parsing/static.dfy)).
-   - Dafny's displays are pointwise updates of the empty container, one
-     element after the other: `{a, b}` updates `{}` (`s[a := true]`,
-     `set.update`), `map[k := v, l := w]` stores into `map[]` (`map.store`),
-     `[a, b]` extends `[]` (`seq.snoc`), `multiset{a, b}` inserts one
-     occurrence into `multiset{}` (`bag.insert`), and so do `s + [a, b]` and
-     `m + multiset{a, b}`, such that `[a] + [b]` is the display `[a, b]`;
-     `s[x := b]` updates sets (an extension of the dialect), `m[x := n]` the
-     multiplicities of multisets (`bag.store`), and `s[i..j]` is the slice
-     between the bounds (`seq.slice`). Other expressions as written are not
-     changed, e.g. `s + {x}` stays a union.
+   - Dafny's displays are pointwise: `{a, b}` updates the singleton `{a}`
+     (`s[b := true]`, `set.update`), `map[k := v, l := w]` stores into the
+     singleton `map[k := v]`; `s[x := b]` updates sets (an extension of the
+     dialect). Expressions as written are not changed, e.g. `s + {x}` stays a
+     union.
    - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
      included; only `{:implement pattern}` and `{:context x}` have a value,
      resolved in the scope of the inputs (`Parser.annotations`; in SMT-LIB
