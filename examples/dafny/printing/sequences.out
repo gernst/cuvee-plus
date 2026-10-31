@@ -8,6 +8,6 @@ function f(x: int, y: int, p: bool, q: bool, s: seq<int>): bool {
     && s[0] == x
     && s[0 := x] == s
     && s[1..x - 1] == s
-    && s[..x] == s
+    && s[0..x] == s
 }
 
