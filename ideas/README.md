@@ -14,6 +14,9 @@ analyses behind its items. Files marked as history record what was tried and not
 - [database.md](database.md): the lemma database: the raw traces and their named folds, overlaps among the lemmas,
   what could be unified, the workarounds for gaps of the engine, cases and choices, the conditional stores (history),
   the candidates among the lemmas of the algorithms, and the decisions (removed, kept, rejected, not taken).
+- [residual-goals.md](residual-goals.md): the residual goals of the unknown tasks of 0.53.22 by principle: induction
+  with the iteration constraint as hypothesis, the constraint at the last iteration, reads of constant arrays,
+  arguments modulo the context, ties of max and min, missing lemmas, residue counts under wrap-around, arithmetic.
 - [open-tasks.md](open-tasks.md): the open tasks of 0.53.22 (cloud, 300 s) with the expected verdict true by family,
   with what each still needs.
 

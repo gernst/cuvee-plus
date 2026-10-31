@@ -3,7 +3,8 @@
 The tasks of Arrays and Loops with the expected verdict true that the cloud run `all05322x5` did not prove (0.53.22
 with the memo of solutions, released as 0.53.23; `-svcomp -rules`, 300 s, one core, Xeon E3-1230 v5; Arrays 271 true
 proved, Loops 254), classified by their status and residual goals; MonoCera from `all05319r` (0.53.19, 120 s, Ryzen).
-The engine's side of each gap is in [engine.md](engine.md), the database's in [database.md](database.md).
+The engine's side of each gap is in [engine.md](engine.md), the database's in [database.md](database.md); the residual
+goals of the unknown tasks by principle are in [residual-goals.md](residual-goals.md).
 
 | | Arrays | Loops |
 |---|---|---|
