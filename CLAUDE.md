@@ -56,9 +56,12 @@ or solvers consume.
 - Test: `mill -i test` (four groups; check every `Tests: n, Passed: n,
   Failed: 0` line, failures are marked `X`). The algorithms of
   `examples/dafny/algorithms` run only with `CUVEE_ALGORITHMS=1 mill -i test`
-  (about five minutes), the roundtrip suites of the printers (every example
-  printed and parsed back) only with `CUVEE_PRINTING=1`, which a change of a
-  parser or a printer requires.
+  (about five minutes), the examples of trace equation systems (`c/teq`,
+  `dafny/teq`, and those run with `-teq` or `-slice`) only with
+  `CUVEE_TEQ=1`, which a change of the engine or the database requires, the
+  roundtrip suites of the printers (every example printed and parsed back)
+  only with `CUVEE_PRINTING=1`, which a change of a parser or a printer
+  requires.
 - Lean proofs of the stable database modules: `scripts/lean/check.sh`
   (`--regenerate` after changing a module of `MODULES` in
   scripts/lean/generate.py; see lean/README.md); `lean` works in the repository through
