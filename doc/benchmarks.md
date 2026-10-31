@@ -38,7 +38,7 @@ Cuvée and other verifiers run on the SV-COMP tasks and on the local benchmarks 
 | `xml/cuvee-fallback.xml` | the same with `-fallback -z3 -timeout 900000`, Z3 for the goals that remain |
 | `xml/cuvee-acsl.xml`, `cuvee-chc.xml` | `-vcgen -z3` on `benchmarks/acsl` (the categories Arrays and Loops as in sv-benchmarks, the true tasks annotated with ACSL; `-split` for the task set `C.unreach-call.Loops-split`), `-chc` |
 | `xml/cuvee-native.xml` | `cuvee.xml` with the native executable (`make native`, `Cuvee-native.sh`), which starts without a JVM: `PYTHONPATH=xml ./benchmark xml/cuvee-native.xml ...` with the tool-info module `xml/toolinfo/cuvee_native.py`, which uploads `Cuvee-native.sh`, `cuvee.native` and `z3`; the binary needs glibc 2.34 and zlib on the workers |
-| `xml/cuvee-portfolio.xml` | the portfolio of [ideas/portfolio.md](../ideas/portfolio.md): `portfolio.py` runs Korn's fuzzer (`fuzz/`, 30 s), `-fallback -z3` and `-chc` in parallel on the native executable and prints the output of the first definite answer; `PYTHONPATH=xml ./benchmark xml/cuvee-portfolio.xml ...` with the tool-info module `xml/toolinfo/cuvee_portfolio.py`, which uploads the script, `Cuvee-native.sh`, `cuvee.native`, `z3` and the harness; the fuzzer needs `gcc` with `-m32` on the workers |
+| `xml/cuvee-portfolio.xml` | the portfolio (see "The portfolio" below): `portfolio.py` runs Korn's fuzzer (`fuzz/`, 30 s), `-fallback -z3` and `-chc` in parallel on the native executable and prints the output of the first definite answer; `PYTHONPATH=xml ./benchmark xml/cuvee-portfolio.xml ...` with the tool-info module `xml/toolinfo/cuvee_portfolio.py`, which uploads the script, `Cuvee-native.sh`, `cuvee.native`, `z3` and the harness; the fuzzer needs `gcc` with `-m32` on the workers |
 | `xml/cpachecker.xml`, `uautomizer.xml`, `korn.xml`, `symbiotic.xml`, `aise.xml`, `monocera.xml` | the other verifiers |
 
 The definitions of Cuvée pass `-witness witness.yml`, a witness of SV-COMP for each answer to a C program
@@ -49,10 +49,35 @@ Run definitions and tasks of `cuvee.xml`:
 
 | run definition | tasks |
 |---|---|
-| `SV-COMP27_unreach-call` | `C.unreach-call.Arrays`, `C.unreach-call.Loops` (the categories ReachSafety-Arrays and -Loops of `sv-benchmarks`) |
+| `SV-COMP27_unreach-call` | `C.unreach-call.Arrays`, `C.unreach-call.Loops` (the categories ReachSafety-Arrays and -Loops of `sv-benchmarks`, the standard sets), and `C.unreach-call.ControlFlow`, `-ECA`, `-Sequentialized`, the other categories of ReachSafety in which Korn participates (not Recursive and XCSP) |
 | `MonoCera_unreach-call` | `C.unreach-call.MonoCera-Forall`, `-Max`, `-Min`, `-Sum` |
 | `SV-LIB_correct-tags` | `SV-LIB.correct-tags.CoreVerification`, `SV-LIB.correct-tags.CTranslated` |
 | `RAPID_unreach-call` | `Boogie.unreach-call.RAPID` (the 33 RAPID benchmarks in Boogie, [benchmarks/rapid](../benchmarks/rapid), with `-entry main`; also in `cuvee-fallback.xml` and `cuvee-chc.xml`) |
+
+## The portfolio
+
+[portfolio.py](../portfolio.py) is a wrapper outside the tool, which Cuvée itself does not know: it runs several
+methods in parallel on a task and answers with the first definite result, after which it stops the others, since the
+methods solve different tasks; Cuvée stays one method per call. The methods are a list in the script (`METHODS`):
+
+- **fuzz**, Korn's fuzzer, for C only: the task compiled with `gcc` (`-m32` for `-arch 32`) and the harness in
+  [fuzz](../fuzz) (copied from Korn, [fuzz/README.md](../fuzz/README.md)), whose `__VERIFIER_nondet_*` draw small
+  values around 0 and record them, and whose `reach_error` prints `unsat` with the trace; each run ends after one
+  second, runs repeat until 30 s of CPU time. A violation is answered `false`; the fuzzer never answers `true`.
+- **fallback**, `-svcomp -rules -fallback -z3 -timeout 900000`, for C and SV-LIB: the TEQ proof, then the goals that
+  remain for z3.
+- **chc**, `-chc -prove -z3 -timeout 900000`, for C and SV-LIB: Horn clauses for Spacer.
+
+The options of the call are passed to every method of Cuvée (e.g. `-arch 32`, `-unbounded`, `-witness witness.yml`).
+The methods of Cuvée run until they answer or the limit of the run ends them, sharing the CPU time of the run, which
+SV-COMP limits for all processes together; each method runs in its own process group, which stops z3 and the
+compiled task with it. The output is that of the method that answers, so the tool-info module reads it as Cuvée's
+(`xml/toolinfo/cuvee_portfolio.py`, after `cuvee.py`); a line on stderr names the method. With `-witness`, each
+method of Cuvée writes its own file (`witness.fallback.yml`, `witness.chc.yml`), and the one of the method that
+answers is copied to the requested file. The methods of Cuvée use the native executable (`cuvee.native`,
+`Cuvee-native.sh`) if it is next to the script, which starts without a JVM and uses less of the shared memory,
+otherwise the jar; `portfolio.py -version` prints Cuvée's version. Two methods that ever disagree on a task are a
+bug of one of them, which is investigated, never decided by majority. Open points are in TODO.md ("SV-COMP").
 
 ## Results
 

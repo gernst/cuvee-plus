@@ -4,8 +4,8 @@ Built-in sorts and functions (sets, sequences, maps) and declared functions can 
 programs are verified against; an implementation may be nondeterministic. Functions are implemented, by functions or
 by methods (procedures); methods are not implemented. The code is
 [transform/Implement.scala](../src/cuvee/transform/Implement.scala); open points are in
-[ideas/implement.md](../ideas/implement.md), the determinization of their nondeterminism in
-[ideas/nondet.md](../ideas/nondet.md).
+[ideas/datatype-verification.md](../ideas/datatype-verification.md), with the determinization of their
+nondeterminism by an oracle.
 
 ## Modules and sorts
 

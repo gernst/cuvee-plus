@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """portfolio.py [options] <file>: Cuvée's methods in parallel on a task, the answer of the first that is definite,
-after which the others are stopped (ideas/portfolio.md); a method may have a timeout of CPU time (the fuzzer), the
-others run until they answer or the limit of the run ends them. The options are passed to
+after which the others are stopped (doc/benchmarks.md, "The portfolio"); a method may have a timeout of CPU time
+(the fuzzer), the others run until they answer or the limit of the run ends them. The options are passed to
 every method of Cuvée (e.g. -arch 32, -unbounded, -witness witness.yml).
 
 The output is that of the method that answers, so the tool-info module reads it as Cuvée's (benchexec cuvee.py): a line

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.3.dtd">
-<!-- the portfolio of Cuvée's methods (portfolio.py, ideas/portfolio.md): fuzzing, -fallback and -chc in parallel on the
+<!-- the portfolio of Cuvée's methods (portfolio.py, doc/benchmarks.md): fuzzing, -fallback and -chc in parallel on the
      native executable; the tool-info module toolinfo/cuvee_portfolio.py uploads it (PYTHONPATH=xml) -->
 <benchmark tool="toolinfo.cuvee_portfolio" displayName="Cuvée (portfolio)" timelimit="15 min" hardtimelimit="16 min" memlimit="7 GB" cpuCores="2">
 

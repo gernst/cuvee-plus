@@ -1,4 +1,4 @@
-# Cuvée as in benchexec.tools.cuvee (cuvee.py), but the portfolio of its methods (portfolio.py, ideas/portfolio.md),
+# Cuvée as in benchexec.tools.cuvee (cuvee.py), but the portfolio of its methods (portfolio.py, doc/benchmarks.md),
 # which runs them in parallel on the native executable and prints the output of the one that answers, so that the
 # answers are read as Cuvée's; portfolio.py -version is Cuvée's version
 import benchexec.tools.cuvee
