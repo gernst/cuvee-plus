@@ -334,7 +334,7 @@ object Implement extends Transform:
     types(Block(formals ++ olds, progs))
 
   // the context of the client at a call of an implementation, which tells its executions apart, e.g. as an argument of
-  // the predicates of an encoding (renc): the variables in `scope`, where locals shadow globals of the same name,
+  // the predicates of an encoding: the variables in `scope`, where locals shadow globals of the same name,
   // except those that carry the state of implementations, which may differ between their runs (prophecies), i.e.,
   // their global variables and the variables of implemented sorts; as a value: true for none, the variable for one,
   // a tuple otherwise, nested beyond the tuples of the prelude

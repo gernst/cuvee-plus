@@ -76,7 +76,7 @@ object Examples:
   // use its types Nat and List
   // and the modules of the lemma database that it includes (-include teq:<concept>), whose declarations its output
   // may refer to, and those of implementations (-include implement:<name>), whose declarations its input may refer
-  // to, e.g. the counter cnt of renc, which are known (-known implement) such that the output does not contain them,
+  // to, which are known (-known implement) such that the output does not contain them,
   // and the features it declares known (-known teq), e.g. the syntax examples of traces
   def options(file: os.Path): List[String] =
     val args = cuvee.test.Expected.command(workspace.toNIO, file.toNIO).getOrElse(Nil)

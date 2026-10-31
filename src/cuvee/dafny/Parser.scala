@@ -731,7 +731,7 @@ class Parser(var state: State):
         state.exprs.app(Name("tuple", Some(args.length)), args_)
 
       // [a, b, c] extends the empty sequence by one element after the other, pointwise rather than concatenations of
-      // units, e.g. for the encoding of renc
+      // units, e.g. for encodings of implementations
       case SeqLit(args) =>
         val empty_ : core.Expr = state.exprs.app(core.Fun.seq.empty, Nil)
         args.foldLeft(empty_):
@@ -744,7 +744,7 @@ class Parser(var state: State):
         state.exprs.app(core.Overload.card, List(arg_))
 
       // {a, b, c} inserts one element after the other into the empty set, s[a := true], pointwise rather than unions
-      // of singletons, e.g. for the encoding of renc; multiset{a, b, c} inserts one occurrence after the other into
+      // of singletons, e.g. for encodings of implementations; multiset{a, b, c} inserts one occurrence after the other into
       // the empty multiset, alike
       case SetLit(args) =>
         val empty_ : core.Expr = state.exprs.app(core.Fun.set.empty, Nil)
@@ -759,7 +759,7 @@ class Parser(var state: State):
             state.exprs.app(core.Fun.bag.insert, List(bag_, resolve(scope, elem)))
 
       // map[k := v, ...] stores the pairs into the empty map from left to right, such that later keys win, as in
-      // Dafny; stores rather than merges of singletons, which are pointwise, e.g. for the encoding of renc
+      // Dafny; stores rather than merges of singletons, which are pointwise, e.g. for encodings of implementations
       case MapLit(pairs) =>
         val empty_ : core.Expr = state.exprs.app(core.Fun.map.empty, Nil)
         pairs.foldLeft(empty_):

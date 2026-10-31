@@ -121,11 +121,9 @@ lists them.
 - **Implementations** (`-implement`): built-in sorts and functions, e.g.
   sets, get implementations that programs are verified against, functions
   and possibly nondeterministic methods with `{:implement pattern}`, from
-  modules such as `-include implement:renc`; `-instrument` inlines the
-  methods instead of calling them, e.g. for `renc`, maps
-  and sets by the heap encoding Enc_R, whose contents a Horn solver infers
-  (`-chc`, [examples/dafny/renc](examples/dafny/renc))
-  ([doc/implement.md](doc/implement.md)).
+  modules (`-include implement:<name>`); `-instrument` inlines the
+  methods instead of calling them, e.g. for encodings that instrument the
+  program ([doc/implement.md](doc/implement.md)).
 - **Verification conditions** (`-vcgen`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;

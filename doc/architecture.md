@@ -179,7 +179,7 @@ for every sink.
     clause by the test, and `break`, `continue`, `return`, and the end of a
     block lead directly to the predicate of their target, whose variables are
     those in scope there; `assume false` ends the path (no clauses after it),
-    e.g. the side branches of `renc` that only derive facts.
+    e.g. side branches that only derive facts.
   - Annotations (`invariant`, `decreases`), preconditions of procedures
     without body, and assertions are goals in the head of clauses,
     `facts ⇒ φ`.
@@ -556,8 +556,7 @@ README; options in [options.md](options.md)), e.g.
   `svlib`, `yml`) with a subfolder per module, e.g. `language`, `parsing` (the cases
   of the frontend, e.g. `examples/dafny/parsing/globals_call.dfy` with
   `-quiet` for its errors), `printing`, `vcgen`, `horn`, `teq`, `solver`,
-  `prove`, `hybrid`, `transform`, and `renc` (the maps and sets of
-  `-include implement:renc`); one suite per language checks all of
+  `prove`, `hybrid`, and `transform`; one suite per language checks all of
   its examples ([Checked.scala](../test/src/cuvee/test/Checked.scala)).
   The algorithms of
   `examples/dafny/algorithms`, whose runs take minutes, run only if
