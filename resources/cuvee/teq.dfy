@@ -290,6 +290,12 @@ lemma {:rw} {:teq} selects_nil<a, b>(a: array<a, b>)
   ensures selects(a, nil)
     == nil
 
+// a constant array, e.g. the zero-initialized global arrays of C, reads its value everywhere
+// (from lcp, elimination_max, nec40)
+lemma {:rw} {:teq} select_const<a, b>(v: b, k: a)
+  ensures const(v)[k]
+    == v
+
 lemma {:rw} {:teq} earlier_selects<a, b>(j: int, a: array<a, b>, keys: List<a>)
   ensures earlier(j, selects(a, keys))
     == a[earlier(j, keys)]

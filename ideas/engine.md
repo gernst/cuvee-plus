@@ -82,16 +82,16 @@ fix variables that a new fact does not mention (`Context.fix` fixes only those o
 
 ## 2. Arithmetic
 
-### 2.1 Forward instances in the final check (11 geo unwindbound tasks)
+### 2.1 Forward instances in the final check (18 geo unwindbound tasks)
 
-geo1-ll_unwindbound and geo3-ll_unwindbound variants end in `p % 2^64 == 0`, where the forward fact of `series`
-(`current_series`) makes `p == 0`; `-debug forward` shows the instance. It exists only in the final check of the goal
-(`Simplify.forward`), while `Simplify.mod`, which would take the centered representative of the remainder (known to be
-in range in the context) and so write the remainder as `p`, ran before, without the instance. Change: when the check
-with the instances fails, simplify the atom once more in the context with the instances. Not a fix: a rewrite rule
-`x % m == x` for `0 <= x < m` (tried Oct 31): the argument of the remainder is written with its coefficients reduced
-modulo `2^64` (`18446744073709551615 * S + S * z + ...`), only congruent to `p`, so the condition fails; a forward
-lemma with a general trigger costs on every task.
+The unwindbound variants of geo1-ll, geo2-ll and geo3-ll (6 each) end in `p % 2^64 == 0`, where the forward fact of
+`series` (`current_series`) makes `p == 0`; `-debug forward` shows the instance. It exists only in the final check of
+the goal (`Simplify.forward`), while `Simplify.mod`, which would take the centered representative of the remainder
+(known to be in range in the context) and so write the remainder as `p`, ran before, without the instance. Change:
+when the check with the instances fails, simplify the atom once more in the context with the instances. Not a fix: a
+rewrite rule `x % m == x` for `0 <= x < m` (tried Oct 31): the argument of the remainder is written with its
+coefficients reduced modulo `2^64` (`18446744073709551615 * S + S * z + ...`), only congruent to `p`, so the condition
+fails; a forward lemma with a general trigger costs on every task.
 
 ### 2.2 Definitions multiplied into products
 
@@ -321,8 +321,8 @@ both cases).
 
 ### Open, elsewhere
 
-- **geo1-ll and geo3-ll unwindbound variants** (11 tasks): `p % 2^64 == 0` with `p == 0` by the forward fact of
-  `series`, which exists only in the final check (2.1).
+- **The unwindbound variants of geo1-ll, geo2-ll, geo3-ll** (18 tasks): `p % 2^64 == 0` with `p == 0` by the forward
+  fact of `series`, which exists only in the final check (2.1).
 - **geo1-3 valuebound5 and 10 with a closed form**: proved with the forward fact; a closed form over `geometric`
   needs definitions multiplied into products (2.2).
 - **cohencu-ll** (7 tasks): exact division by 2 in polynomials (2.3).
@@ -335,7 +335,7 @@ both cases).
 ### Order, by tasks per concept
 
 1. A1, the general rule: most of the remaining tasks, after a design decision (above).
-2. The final check with forward instances (2.1): 11 tasks, one change of the engine.
+2. The final check with forward instances (2.1): 18 tasks, one change of the engine.
 3. A4 and A5, small lemmas, then A6 if A1 is not taken.
 4. Exact division (2.3), cohencu.
 5. A7, the size of the trace systems of nested loops, in TEQ.
