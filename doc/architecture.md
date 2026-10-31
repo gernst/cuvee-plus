@@ -174,7 +174,8 @@ for every sink.
     monomorphic clauses; those with a body yield predicates (also of their
     program points) and clauses that are polymorphic in their type
     parameters, which Horn solvers do not accept (`-instrument` inlines
-    implementations instead, [implement.md](implement.md)).
+    implementations and the client's procedures that call them instead,
+    [implement.md](implement.md)).
   - The body starts from `p_pre`; branches extend the facts of the first
     clause by the test, and `break`, `continue`, `return`, and the end of a
     block lead directly to the predicate of their target, whose variables are

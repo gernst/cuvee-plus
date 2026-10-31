@@ -248,7 +248,7 @@ object Config:
         (config.implementing, rest)
 
   val instrument =
-    flag("-instrument", "-implement, where the applications of the functions implemented by methods with a body become those bodies instead of calls, e.g. for encodings that instrument the program; the inlined methods are dropped"):
+    flag("-instrument", "-implement, where the applications of the functions implemented by methods with a body become those bodies instead of calls, and the calls of the client's procedures with a body their bodies, down to the implementations, e.g. for encodings that instrument the program; the inlined procedures are dropped, recursive ones are an error"):
       case (config, rest) =>
         (config.implementing.copy(instrument = true), rest)
 
@@ -505,7 +505,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.53.28"
+  val release = "0.53.29"
 
   def version() =
     println("Cuvée " + release)

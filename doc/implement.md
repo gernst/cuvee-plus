@@ -51,6 +51,9 @@ they are, their bodies are not rewritten.
   in the order of evaluation, into fresh locals `test`; the right operands of `&&`, `||`, `==>` and the branches of
   `ite` become conditionals, a loop guard with calls becomes `iter { calls; if !g break; body }`, whose invariants
   hold before the calls.
+- **Modified globals:** a procedure of the client modifies the global variables that the methods it applies modify,
+  also through its calls (a fixpoint over the calls): `-implement` adds them to its modifies clause, to those of its
+  loops that have one, and to `Call.vars` of its calls, since the type check has filled these before.
 - **Errors:** applications of functions implemented by methods in specifications (which are deterministic), under
   binders, and under `old`.
 - **Backends:** a method with a contract is called by its contract in `-vcgen` and `-teq`; one with a body only is
@@ -63,6 +66,11 @@ asserts the precondition (the postcondition is not needed, the body is exact), k
 if the body has `old`, and assigns the output to the result; `return` in such a body is an error. The inlined methods
 are dropped, methods without body are called. Encodings that instrument the program need it: their generic methods
 would otherwise give polymorphic Horn clauses.
+
+The calls of the client's own procedures with a body are inlined as well, alike, except that their postcondition is
+asserted at the end; their bodies are rewritten in the scope of the caller, such that the contexts of their
+applications include the variables of the caller, and inlining stops at the implementations. The procedures that are
+called are dropped, recursive ones are an error.
 
 ## Writing modules
 

@@ -122,8 +122,9 @@ lists them.
   sets, get implementations that programs are verified against, functions
   and possibly nondeterministic methods with `{:implement pattern}`, from
   modules (`-include implement:<name>`); `-instrument` inlines the
-  methods instead of calling them, e.g. for encodings that instrument the
-  program ([doc/implement.md](doc/implement.md)).
+  methods instead of calling them, and the client's own procedures down to
+  them, e.g. for encodings that instrument the program
+  ([doc/implement.md](doc/implement.md)).
 - **Verification conditions** (`-vcgen`): weakest preconditions for
   procedures, covering:
   - contracts (`requires`, `ensures`, `modifies`) and `old(e)`;

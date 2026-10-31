@@ -44,8 +44,12 @@ object Implement extends Transform:
 
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
     val impls = implementations(state, config.instrument)
-    // the implementations that are inlined, which nothing calls anymore, whose clauses would be polymorphic in -chc
-    val inlined = impls.values.flatten.collect { case ByMethod(proc, _, _, Some(_)) => proc.name }.toSet
+    val modified = this.modified(state, impls)
+    // the procedures that are inlined, which nothing calls anymore, whose clauses would be polymorphic in -chc: the
+    // implementations with a body, and with -instrument the procedures of the client that are called
+    val inlined =
+      impls.values.flatten.collect { case ByMethod(proc, _, _, Some(_)) => proc.name }.toSet ++
+        (if config.instrument then clients(state).flatMap(state.procdefs(_).calls).filter(client(state, _)) else Nil)
 
     val cmds_ =
       cmds.flatMap:
@@ -61,10 +65,12 @@ object Implement extends Transform:
 
         case cmd =>
           cmd.map(expr(state, impls, _), prog(state, impls, _)) match
+            // a procedure modifies the global variables of the implementations that it applies, also by its calls
             case DefineProc(proc, body, attrs) =>
               specification(impls, attrs.funs)
               val scope = state.globals ++ proc.in ++ proc.out
-              Some(DefineProc(proc, implement(state, impls, scope, body), attrs))
+              val body_ = implement(state, impls, modified, config.instrument, proc.name, scope, body)
+              Some(DefineProc(proc, body_, modifies(attrs, modified.getOrElse(proc.name, Nil))))
 
             case cmd_ =>
               specification(impls, cmd_.funs)
@@ -174,6 +180,65 @@ object Implement extends Transform:
       case (App(_, _, _, patterns), App(fun, inst, typ, args)) => App(fun, inst, typ, patterns.zip(args).map(arguments(_, _, f)))
       case _                                                   => expr
 
+  // the procedures of the client, those with a body that are not implementations
+  def clients(state: State): List[Name] =
+    state.procdefs.keys.filter(client(state, _)).toList
+
+  def client(state: State, name: Name): Boolean =
+    state.procdefs.contains(name) && !state.procattrs(name).isImplementation
+
+  // the global variables that the procedures of the client modify in addition to their modifies clauses, those of
+  // the implementations by methods that they apply, directly or by their calls, by a fixpoint over the calls
+  def modified(state: State, impls: Map[Fun, List[Impl]]): Map[Name, List[Var]] =
+    val direct =
+      for name <- clients(state)
+      yield name -> applied(impls, state.procdefs(name)).flatMap(impl => state.procattrs(impl.proc.name).modifies).distinct
+
+    def close(mods: Map[Name, List[Var]]): Map[Name, List[Var]] =
+      val mods_ =
+        for (name, mod) <- mods
+        yield name -> (mod ++ state.procdefs(name).calls.toList.flatMap(mods.getOrElse(_, Nil))).distinct
+      if mods_ == mods then mods else close(mods_)
+
+    close(direct.toMap).filter((_, mod) => mod.nonEmpty)
+
+  // whether `target` is called from the body of `name`, directly or through the bodies of the procedures it calls,
+  // where `seen` are those already visited
+  def reachable(state: State, name: Name, target: Name, seen: Set[Name] = Set()): Boolean =
+    val callees = state.procdefs.get(name).map(_.calls).getOrElse(Set())
+    callees.contains(target) || callees.exists(callee => !seen.contains(callee) && reachable(state, callee, target, seen + callee))
+
+  // the implementations by methods that the expressions of `prog` apply, chosen as by expr and lift
+  def applied(impls: Map[Fun, List[Impl]], prog: Prog): List[ByMethod] =
+    val applied = List.newBuilder[ByMethod]
+    prog.map(
+      expr => { applied ++= this.applied(impls, expr); expr },
+      prog_ => { applied ++= this.applied(impls, prog_); prog_ }
+    )
+    applied.result()
+
+  def applied(impls: Map[Fun, List[Impl]], expr: Expr): List[ByMethod] =
+    implementation(impls, expr) match
+      case Some((impl, su)) =>
+        val args = su.values.toList.flatMap(applied(impls, _))
+        impl match
+          case impl: ByMethod => impl :: args
+          case _              => args
+
+      case None =>
+        val applied = List.newBuilder[ByMethod]
+        expr.map: arg =>
+          applied ++= this.applied(impls, arg)
+          arg
+        applied.result()
+
+  // the attributes with the global variables `mod` in addition to the modifies clause, those not yet in it
+  def modifies(attrs: Attrs, mod: List[Var]): Attrs =
+    val added = mod.filterNot(attrs.modifies.contains)
+    if added.isEmpty
+    then attrs
+    else attrs ++ Attrs(List("modifies" -> Some(added)))
+
   // the bodies and contracts of implementations are not rewritten, they work on representations, on which an implemented
   // function would stay uninterpreted, which is unsound (e.g. x in s for an implemented set s); the patterns and the
   // context name implemented functions on purpose
@@ -227,8 +292,11 @@ object Implement extends Transform:
     used.exists(byMethod(impls, _))
 
   // the program with the applications of functions implemented by methods in its executed expressions replaced by
-  // calls, and none in its specifications
-  def implement(state: State, impls: Map[Fun, List[Impl]], scope: List[Var], prog: Prog): Prog =
+  // calls, and none in its specifications, in the body of procedure `proc`; the calls of procedures of the client
+  // modify the global variables of the implementations that these apply, with -instrument (`instrument`) they are
+  // replaced by their bodies, rewritten in the scope of the caller, such that the contexts of their applications
+  // include the variables of the caller; inlining stops at the implementations, recursive procedures are errors
+  def implement(state: State, impls: Map[Fun, List[Impl]], modified: Map[Name, List[Var]], instrument: Boolean, proc: Name, scope: List[Var], prog: Prog): Prog =
     prog match
       case Assign(lhs, rhs) =>
         val (xs, pre, rhs_) = lift(state, impls, scope, rhs)
@@ -236,34 +304,41 @@ object Implement extends Transform:
 
       case Call(name, args, res, vars) =>
         val (xs, pre, args_) = lift(state, impls, scope, args)
-        block(xs, pre, Call(name, args_, res, vars))
+        if instrument && client(state, name)
+        then
+          Error.report("recursive procedure inlined by -instrument", name.subscripted):
+            require(!reachable(state, name, name))
+          val body = inlining(state, state.procs(name), this.prog(state, impls, state.procdefs(name)), args_, res, true)
+          block(xs, pre, implement(state, impls, modified, instrument, proc, scope, body))
+        else block(xs, pre, Call(name, args_, res, (vars ++ Type.expand(state, modified.getOrElse(name, Nil))).distinct))
 
       case If(test, left, right) =>
         val (xs, pre, test_) = lift(state, impls, scope, test)
-        block(xs, pre, If(test_, implement(state, impls, scope, left), implement(state, impls, scope, right)))
+        block(xs, pre, If(test_, implement(state, impls, modified, instrument, proc, scope, left), implement(state, impls, modified, instrument, proc, scope, right)))
 
       // the guard is evaluated anew at the beginning of each iteration, including after continue
       case While(test, body, attrs) =>
         specification(impls, attrs.funs)
         val (xs, pre, test_) = lift(state, impls, scope, test)
-        val body_ = implement(state, impls, scope, body)
+        val body_ = implement(state, impls, modified, instrument, proc, scope, body)
+        val attrs_ = loop(modified, proc, attrs)
         if pre.isEmpty
-        then While(test, body_, attrs)
-        else Iter(Block(xs, pre ++ List(If(Not(test_), Break, Skip), body_)), attrs)
+        then While(test, body_, attrs_)
+        else Iter(Block(xs, pre ++ List(If(Not(test_), Break, Skip), body_)), attrs_)
 
       case Block(locals, progs, attrs) =>
         specification(impls, attrs.funs)
-        Block(locals, progs.map(implement(state, impls, scope ++ locals, _)), attrs)
+        Block(locals, progs.map(implement(state, impls, modified, instrument, proc, scope ++ locals, _)), attrs)
 
       case Iter(body, attrs) =>
         specification(impls, attrs.funs)
-        Iter(implement(state, impls, scope, body), attrs)
+        Iter(implement(state, impls, modified, instrument, proc, scope, body), loop(modified, proc, attrs))
 
       case Choice(progs) =>
-        Choice(progs.map(implement(state, impls, scope, _)))
+        Choice(progs.map(implement(state, impls, modified, instrument, proc, scope, _)))
 
       case Par(progs) =>
-        Par(progs.map(implement(state, impls, scope, _)))
+        Par(progs.map(implement(state, impls, modified, instrument, proc, scope, _)))
 
       // assertions, assumptions, and the differential equations are specifications
       case _: Spec | _: Ode =>
@@ -272,6 +347,13 @@ object Implement extends Transform:
 
       case Break | Continue | Return =>
         prog
+
+  // the attributes of a loop in procedure `proc`, whose modifies clause, if any, includes the global variables of the
+  // implementations that the procedure modifies
+  def loop(modified: Map[Name, List[Var]], proc: Name, attrs: Attrs): Attrs =
+    if attrs.contains("modifies")
+    then modifies(attrs, modified.getOrElse(proc, Nil))
+    else attrs
 
   // `prog` after the statements `pre` in the scope of the locals `xs`
   def block(xs: List[Var], pre: List[Prog], prog: Prog): Prog =
@@ -329,7 +411,7 @@ object Implement extends Transform:
                 (xs ++ List(res), pre ++ List(call), res)
 
               case Some(body) =>
-                val block = inlining(state, proc, body, inputs_, res)
+                val block = inlining(state, proc, body, inputs_, List(res), false)
                 (xs ++ List(res), pre ++ List(block), res)
 
           case _ =>
@@ -363,31 +445,34 @@ object Implement extends Transform:
       case _ =>
         (Nil, Nil, expr)
 
-  // the body of implementation `proc` in place of a call with the arguments `args` and the result `res` (-instrument):
+  // the body of procedure `proc` in place of a call with the arguments `args` and the results `res` (-instrument):
   // a block whose locals are the formal parameters renamed apart from the variables of the caller, with the type
-  // parameters instantiated by the types of the arguments and the result; it assigns the arguments to the inputs,
-  // asserts the precondition, runs the body, and assigns the output to the result, the postcondition is not needed,
-  // since the body is the exact meaning; old(e) refers to the values of the global variables at the beginning, which
-  // further locals keep if the body has old; return would leave the caller, hence it is an error
-  def inlining(state: State, proc: Proc, body: Prog, args: List[Expr], res: Var): Prog =
+  // parameters instantiated by the types of the arguments and the results; it assigns the arguments to the inputs,
+  // asserts the precondition, runs the body, asserts the postcondition if it is `checked` (procedures of the client;
+  // that of an implementation is not needed, since its body is the exact meaning), and assigns the outputs to the
+  // results; old(e) refers to the values of the global variables at the beginning, which further locals keep if the
+  // body or the checked postcondition has old; return would leave the caller, hence it is an error
+  def inlining(state: State, proc: Proc, body: Prog, args: List[Expr], res: List[Var], checked: Boolean): Prog =
     val Proc(name, _, in, out) = proc
 
-    Error.report("return in an implementation that is inlined", name.subscripted):
+    Error.report("return in a procedure that is inlined", name.subscripted):
       require(!body.returns)
 
-    val types = Type.bind(state, in.types ++ out.types, args.types ++ List(res.typ))
+    val types = Type.bind(state, in.types ++ out.types, args.types ++ res.types)
     val (formals, rename) = Subst.rename(in ++ out)
     val (in_, out_) = formals.splitAt(in.length)
 
     val annotated = state.annotated(body)
+    val attrs = state.annotated(name)
+    val ensures = if checked then attrs.ensures else True
     val gs = state.globals
     val gs_ = gs.fresh
     val body_ = Old.elim(gs, gs_, annotated)
-    val olds = if body_ == annotated then Nil else gs_
+    val ensures_ = Old.elim(gs, gs_, ensures)
+    val olds = if body_ == annotated && ensures_ == ensures then Nil else gs_
 
-    val requires = rename(state.annotated(name).requires)
     val progs =
-      List(Assign(in_, args), Assign(olds, if olds.isEmpty then Nil else gs), Spec.assert(requires), rename(body_), Assign(List(res), out_)).filter:
+      List(Assign(in_, args), Assign(olds, if olds.isEmpty then Nil else gs), Spec.assert(rename(attrs.requires)), rename(body_), Spec.assert(rename(ensures_)), Assign(res, out_)).filter:
         case Assign(Nil, Nil)      => false
         case Spec(Nil, True, True) => false
         case _                     => true

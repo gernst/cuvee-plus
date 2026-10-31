@@ -1,1 +1,1 @@
-error "return in an implementation that is inlined" "g"
+error "return in a procedure that is inlined" "g"
