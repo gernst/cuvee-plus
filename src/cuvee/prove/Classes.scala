@@ -115,7 +115,7 @@ case class Classes(
         this
 
   // the policy of canonical forms, the only operations by which the simplifier, the context and the matcher write
-  // terms and facts over the classes (see ideas/engine-consolidation.md, 1):
+  // terms and facts over the classes (see ideas/engine.md, section 1):
   // term: how a variable is written in a term, the root of its class (a literal before a variable, see rank);
   // value: a leaf of a polynomial with the solutions of its variables (see substitute);
   // fixed: whether a variable has a literal value, which then is its root;

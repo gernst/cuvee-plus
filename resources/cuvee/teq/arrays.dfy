@@ -21,7 +21,7 @@ lemma {:rw} {:teq} current_trace_row(A0: array<int, array<int, int>>, r: int, n:
 // a loop that updates each position once, by cases on its old value, stores the values computed from the initial
 // array, since a[k] is not modified before iteration k; the first case stores a constant, since a higher-order
 // instance must contain the term it abstracts, a[k] (see Rewrite.abstraction); a workaround for two gaps of the
-// engine, like the conditional stores below (ideas/conditional-stores.md)
+// engine, like the conditional stores below (ideas/database.md, "Conditional stores")
 // (from MonoCera: conda, s1lif-s5lif)
 lemma {:rw} {:teq} stores_cases(a0: array<int, int>, n: int, c: int, P: (int) -> bool, G: (int) -> int)
   ensures
@@ -68,7 +68,7 @@ lemma {:rw} {:teq} selects_stores_counter(a: array<int, int>, i: int, c: int, n:
 
 // stores at the positions of a counter where a guard holds, the other positions kept: the case that keeps the array
 // is no store, so the fold stores does not apply; the guards and the values are lists, which the matcher synthesizes
-// over the dependencies they read, e.g. the index, choices, or other arrays (ideas/conditional-stores.md); the keys
+// over the dependencies they read, e.g. the index, choices, or other arrays (ideas/database.md, "Conditional stores"); the keys
 // are a counter among the dependencies, which every loop has, e.g. the variable of a loop by 2 (array_monotonic),
 // not a list, so that stores at other positions, e.g. the compactions at a count j of the module aggregation
 // (filters_above, standard_partition_ground-2) or a reset at one position, keep their own folds and lemmas

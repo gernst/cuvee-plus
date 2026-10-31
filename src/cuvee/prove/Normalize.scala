@@ -157,7 +157,7 @@ object Normalize:
         cases(phi, positive)
 
   // the cases of the outermost leftmost choice of an atom as a formula, in the form that fits the polarity of the atom
-  // (ideas/cases-and-folds.md, section 9): in a goal or a neutral position the conjunction of cᵢ ==> A[vᵢ], which the
+  // (ideas/database.md, "Cases and choices"): in a goal or a neutral position the conjunction of cᵢ ==> A[vᵢ], which the
   // simplifier takes conjunct by conjunct, and among the facts the disjunction of cᵢ && A[vᵢ], which the case split
   // of -prove and -split take apart, so that a definition a == t[eps(...)] holds in each case; the guards are complete
   // in context, by the iteration constraint of the loop of the update, also where the context at hand does not contain

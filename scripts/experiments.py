@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The experiments of ideas/experiments.md as one LaTeX document, compiled to PDF.
+"""The experiments of doc/benchmarks.md ("Experiments of the paper") as one LaTeX document, compiled to PDF.
 
 Each experiment takes, for each benchmark and category, the most recent result file that meets its requirements
 (options such as -verify or -unbounded, and the time limit), so that older runs of other configurations are not
@@ -300,7 +300,7 @@ DOCUMENT = r"""\documentclass[a4paper]{article}
 {\small\today\par}
 \end{center}
 
-\noindent The experiments of \texttt{ideas/experiments.md}, with the current versions of Cuvée only (0.49 and 0.50,
+\noindent The experiments of \texttt{doc/benchmarks.md}, with the current versions of Cuvée only (0.49 and 0.50,
 after the migration of the lemma database and with the answers per goal). Cuvée (TEQ) runs with \texttt{-teq -prove
 -split -prove -split -prove} (one trace per strongly connected component of the variables of a loop, the deduction
 engine \texttt{-prove}), the lemma database \texttt{teq.dfy} with the modules \texttt{aggregation},

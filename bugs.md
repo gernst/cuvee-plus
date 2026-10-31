@@ -206,7 +206,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   that, about 20 s are the three forward lemmas of aggregation (`count_nonnegative`, `current_maxs_initial`,
   `current_mins_initial`), the rest its rewrite rules. A profile (15 samples) has 6 of 15 in `Forward.saturate` and
   `fire` (the instances are matched and simplified again at every assumed fact, without a memo, see
-  ideas/prove-next.md) and 12 of 15 in `Rewrite.matches`. The matcher changes of 0.46.5 are not the cause (46 s
+  ideas/engine.md, 3.2) and 12 of 15 in `Rewrite.matches`. The matcher changes of 0.46.5 are not the cause (46 s
   before, 41 s after). On SV-COMP Loops at 60 s, `xml/cuvee-fallback.xml` lost 63 tasks against 0.42.1 (`-simplify`,
   Oct 12, i9-9900), 38 of them in nla-digbench-scaling, mostly timeouts (bresenham-ll_valuebound1 38 s before, 68 s
   now, almost all of it in `-prove`): 196 true, 20 false against 233, 28. The same without `-fallback` gained.
@@ -214,7 +214,7 @@ Not bugs, but they decide verdicts; the details are in TODO.md (C frontend).
   instantiated and simplified again wherever they fire, which uses up the 1000 steps of the goal on array-crafted
   bAnd*, bor*, xor*, reducercommutativity avg*, sum*, data_structures_set_multi_proc_ground-2 ("rewriting does not
   terminate" instead of `unknown`, no correct result lost). Steps of their own for each instance (0.46.8) turned the
-  breaks into timeouts and were reverted (ideas/prove-next.md). At 120 s (xml/cuvee-fallback.xml, 0.50.15, Oct 24,
+  breaks into timeouts and were reverted (ideas/engine.md, 6.1). At 120 s (xml/cuvee-fallback.xml, 0.50.15, Oct 24,
   2026, i7-6700) also nla-digbench-scaling/mannadiv_unwindbound* (7 tasks, the same error at 900 s with 0.49.5) and
   cohencu-ll_unwindbound1, ps5-ll_unwindbound1 (both expected false; instances of teq:series at every variable of the
   class of integer(n) and at squares(0, zero), fixed in 0.50.16: answered incorrect, as expected).
@@ -429,7 +429,7 @@ or in review (Oct 30, 2026).
   the wrong invariant `sum == sum(Tmp?)` of the second loop of zero_sum1 itself. Fixed on Oct 26, 2026, 0.51.2, confirmed on the cloud (fallback, 120 s, AMD Ryzen 7 PRO 5750G, against 0.51.0): no
   flips, Arrays 159 to 157 true (standard_maxInArray_ground and standard_minInArray_ground-2, which read the values of
   a filling loop in a second one, now time out: the prefix needs the equal numbers of iterations of the two loops,
-  ideas/prove-next.md, item 1), Loops unchanged (one cohendiv lost and one gained at the limit): the right-hand side of `maps_earlier` is `prefix(n, xs)`,
+  ideas/engine.md, 1.4), Loops unchanged (one cohendiv lost and one gained at the limit): the right-hand side of `maps_earlier` is `prefix(n, xs)`,
   sound without a condition, since the reads on its left-hand side presuppose `n <= length(xs)`, the precondition
   of `earlier`, which all reads of `-teq` meet; no length facts (which were costly). The Lean premise of lists that
   are only read is `integer n ≤ integer (length xs)` now, not `length xs = n` (`lean.Printer.lengths`), under

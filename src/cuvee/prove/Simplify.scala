@@ -1101,7 +1101,7 @@ object Simplify:
   // the updates of trace equation systems hold in all iterations by their iteration constraints;
   // without cases, e.g. when all guards are false, the result of type `typ` is not specified; only cases with equal
   // results are merged, the case distinction of an update is kept otherwise (conditional stores are not merged into
-  // stores of conditional values, ideas/conditional-stores.md)
+  // stores of conditional values, ideas/database.md, "Conditional stores")
   def eps(config: Config, state: State, ctx: Context, typ: Type, updates: List[Upd]): Expr =
     val merged =
       Eps.flatten(updates).foldLeft(List.empty[Upd]): (merged, update) =>
