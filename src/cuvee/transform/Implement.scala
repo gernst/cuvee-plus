@@ -412,11 +412,17 @@ object Implement extends Transform:
       case _ if xs.length <= 10 => App(state, state.funs((Tuples.name(xs.length), xs.length)), xs)
       case _                     => tuple(state, xs.take(9) :+ tuple(state, xs.drop(9)))
 
-  // whether `typ` mentions a sort that an implementation defines
-  def implemented(state: State, typ: Type): Boolean =
+  // whether `typ` mentions a sort that an implementation defines, also in the fields of datatypes, which would carry
+  // its state as well, e.g. a datatype that wraps an implemented sequence; `seen` are the datatypes being visited
+  def implemented(state: State, typ: Type, seen: Set[Name] = Set()): Boolean =
     typ match
-      case Sort(con, args) => state.sortattrs.get(con.name).exists(_.isImplementation) || args.exists(implemented(state, _))
-      case _               => false
+      case Sort(con, args) =>
+        state.sortattrs.get(con.name).exists(_.isImplementation) || args.exists(implemented(state, _, seen)) ||
+        !seen.contains(con.name) && state.datatypes.get(con.name).exists:
+          _.constrs.exists((constr, _) => constr.args.exists(implemented(state, _, seen + con.name)))
+
+      case _ =>
+        false
 
   // the operator `fun` of `left` and `right`, whose right operand is evaluated only if the left one is `needed` (true
   // or false), and whose value is `short` otherwise: as is if the right operand calls no implementation, otherwise a

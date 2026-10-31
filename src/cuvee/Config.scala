@@ -243,7 +243,7 @@ object Config:
 
   // a transformation of the task, not a technique, hence a translation without it keeps the task as written
   val implement =
-    flag("-implement", "replace the functions that functions and methods with {:implement pattern} implement, the pattern an application of the implemented function to a permutation of the inputs: an implementation by a function everywhere except in the implementations, one by a method, which may be nondeterministic, by calls in the expressions that programs execute, in the order of evaluation; applications of those in specifications are errors"):
+    flag("-implement", "replace the functions that functions and methods with {:implement pattern} implement, the pattern an application of the implemented function to the inputs, each once, possibly under applications of further functions, which specialize it (the largest matching pattern wins): an implementation by a function everywhere except in the implementations, one by a method, which may be nondeterministic, by calls in the expressions that programs execute, in the order of evaluation; applications of those in specifications are errors"):
       case (config, rest) =>
         (config.implementing, rest)
 
@@ -505,7 +505,7 @@ object Config:
     println("    print the version")
 
   // the version, also of the producer of witnesses (see yml.Witness)
-  val release = "0.53.27"
+  val release = "0.53.28"
 
   def version() =
     println("Cuvée " + release)

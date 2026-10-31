@@ -34,7 +34,8 @@ by methods (procedures); methods are not implemented. The code is
 - **Context** (Dafny only): `{:context ctx}` on an implementing method names an input that the pattern leaves out,
   which receives the context of the client at each application (`Implement.context`): the variables in scope there
   as a tuple (`true` for none, the variable for one, nested beyond the tuples of the prelude), except those that
-  carry the state of implementations, i.e., variables of implemented sorts and global variables declared
+  carry the state of implementations, i.e., variables of implemented sorts, also inside type arguments and the
+  fields of datatypes (a datatype that wraps an implemented sequence), and global variables declared
   `{:implement}`. Encodings use it to tell executions apart; `-monomorph` instantiates the tuples, `-flat`
   then flattens them, in this order.
 
