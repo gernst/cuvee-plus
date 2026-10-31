@@ -382,6 +382,22 @@ lemma {:rw} {:teq} count_remainder(n: int, m: int, r: int)
   requires 0 <= n && 0 < m && 0 <= r < m
   ensures elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: k % m))[r] == (n + m - 1 - r) / m
 
+// the same for the remainders of k + c, whose remainder r is that of k at (r - c) mod m; the counts of a test
+// (k + c) % m == r reach it by count_true_eq; the case c == 0 is count_remainder above, since a summand is not
+// matched as 0
+// (from loops-crafted-1: iftelse)
+lemma {:rw} {:teq} count_remainder_offset(n: int, m: int, c: int, r: int)
+  requires 0 <= n && 0 < m && 0 <= r < m
+  ensures elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: (k + c) % m))[r] == (n + m - 1 - (r - c) % m) / m
+
+// a positive remainder, the form in which the simplifier writes (k + c) % m != 0: the iterations other than those of
+// the remainder 0
+// (from loops-crafted-1: iftelse, if (i % 2) of a counter by 3)
+lemma {:rw} {:teq} count_remainder_positive(n: int, m: int, c: int)
+  requires 0 <= n && 0 < m
+  ensures elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: 0 < (k + c) % m))[true]
+    == n - elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: (k + c) % m))[0]
+
 // among the truth values of a map over the n iterations, those that are false are the others than those that are
 // true; the dependencies are kept as matched, such that the counts are syntactically equal to those of the program
 // (from sumt2)
