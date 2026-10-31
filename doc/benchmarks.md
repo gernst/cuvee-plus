@@ -63,14 +63,18 @@ methods solve different tasks; Cuvée stays one method per call. The methods are
 - **fuzz**, Korn's fuzzer, for C only: the task compiled with `gcc` (`-m32` for `-arch 32`) and the harness in
   [fuzz](../fuzz) (copied from Korn, [fuzz/README.md](../fuzz/README.md)), whose `__VERIFIER_nondet_*` draw small
   values around 0 and record them, and whose `reach_error` prints `unsat` with the trace; each run ends after one
-  second, runs repeat until 30 s of CPU time. A violation is answered `false`; the fuzzer never answers `true`.
+  second, runs repeat until 10 s, measured by the clock (one process at a time). A violation is answered `false`; the
+  fuzzer never answers `true`.
 - **fallback**, `-svcomp -rules -fallback -z3 -timeout 900000`, for C and SV-LIB: the TEQ proof, then the goals that
   remain for z3.
-- **chc**, `-chc -prove -z3 -timeout 900000`, for C and SV-LIB: Horn clauses for Spacer.
+- **chc**, `-chc -prove -z3 -timeout 900000`, for C and SV-LIB: Horn clauses for Spacer, limited to 60 s of CPU
+  time.
 
 The options of the call are passed to every method of Cuvée (e.g. `-arch 32`, `-unbounded`, `-witness witness.yml`).
-The methods of Cuvée run until they answer or the limit of the run ends them, sharing the CPU time of the run, which
-SV-COMP limits for all processes together; each method runs in its own process group, which stops z3 and the
+The fuzzer and `-chc` are bounded such that `-fallback` keeps most of the CPU time of the run, which SV-COMP limits
+for all processes together: on the cloud runs of Oct 31, 2026 (0.53.26, 120 s), the fuzzer found 38 of the 39 false
+tasks of Arrays and Loops that `-teq -fallback` does not within 2 s, and `-chc` proved its 48 true tasks of Loops
+that `-teq -fallback` does not within 40 s. `-fallback` runs until it answers or the limit of the run ends it; each method runs in its own process group, which stops z3 and the
 compiled task with it. The output is that of the method that answers, so the tool-info module reads it as Cuvée's
 (`xml/toolinfo/cuvee_portfolio.py`, after `cuvee.py`); a line on stderr names the method. With `-witness`, each
 method of Cuvée writes its own file (`witness.fallback.yml`, `witness.chc.yml`), and the one of the method that

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """portfolio.py [options] <file>: Cuvée's methods in parallel on a task, the answer of the first that is definite,
 after which the others are stopped (doc/benchmarks.md, "The portfolio"); a method may have a timeout of CPU time
-(the fuzzer), the others run until they answer or the limit of the run ends them. The options are passed to
+(the fuzzer, -chc), the others run until they answer or the limit of the run ends them. The options are passed to
 every method of Cuvée (e.g. -arch 32, -unbounded, -witness witness.yml).
 
 The output is that of the method that answers, so the tool-info module reads it as Cuvée's (benchexec cuvee.py): a line
@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -111,9 +112,10 @@ class Cuvee(Method):
     """Cuvée with the options of the method and those of the portfolio, by the native binary if there is one (make
     native), which needs no JVM, otherwise by the jar."""
 
-    def __init__(self, name, languages, options):
+    def __init__(self, name, languages, options, timeout=None):
         super().__init__(name, languages)
         self.options = options
+        self.timeout = timeout
 
     def command(self):
         if os.path.exists(os.path.join(HERE, "cuvee.native")):
@@ -121,7 +123,7 @@ class Cuvee(Method):
         return [os.path.join(HERE, "Cuvee.sh")]
 
     def run(self, options, file):
-        output = run(self.command() + self.options + self.witnessed(options) + [file])
+        output = run(self.command() + self.options + self.witnessed(options) + [file], self.timeout)
         return answer(output), output
 
     def witnessed(self, options):
@@ -155,11 +157,11 @@ class Fuzz(Method):
                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if compiled.returncode != 0:
                 return None, ""
-            # the CPU time of the runs, each limited to 2 s, counted by their number, since getrusage of the children
-            # mixes all methods
-            runs = 0
-            while runs * 2 < self.timeout and not STOPPED.is_set():
-                runs += 1
+            # the time of the runs, each limited to 2 s, by the clock, since getrusage of the children mixes all
+            # methods; a run is one process on one core, so its time is its CPU time (counting each run as 2 s allowed
+            # only 15 runs in 30 s, where most take milliseconds and skippedu needs about 50)
+            start = time.monotonic()
+            while time.monotonic() - start < self.timeout and not STOPPED.is_set():
                 lines = run([binary], 2).splitlines()
                 if lines and lines[0] == "unsat":
                     # TODO: replay the trace (Korn's Confirm, __VERIFIER_counterexample.c), write the violation witness
@@ -167,12 +169,14 @@ class Fuzz(Method):
         return None, ""
 
 
-# the methods, in parallel, sharing the CPU time that SV-COMP gives the run (900 s for all processes together); z3 is
-# limited by that time only, since -timeout defaults to 1 s per query
+# the methods, in parallel, sharing the CPU time that the run is given for all processes together (900 s in SV-COMP);
+# z3 is limited by that time only, since -timeout defaults to 1 s per query; the fuzzer and -chc are bounded such that
+# -fallback keeps the most: the fuzzer found 38 of the 39 false tasks of Arrays and Loops that -teq -fallback does not
+# within 2 s, -chc proved its 48 true tasks of Loops that -teq -fallback does not within 40 s (Oct 31, 2026)
 METHODS = [
-    Fuzz("fuzz", ["c"], timeout=30),
+    Fuzz("fuzz", ["c"], timeout=10),
     Cuvee("fallback", ["c", "svlib"], ["-svcomp", "-rules", "-fallback", "-z3", "-timeout", "900000"]),
-    Cuvee("chc", ["c", "svlib"], ["-chc", "-prove", "-z3", "-timeout", "900000"]),
+    Cuvee("chc", ["c", "svlib"], ["-chc", "-prove", "-z3", "-timeout", "900000"], timeout=60),
     # bounded unrolling (ideas/engine.md, 6.3), once -unroll exists
 ]
 
