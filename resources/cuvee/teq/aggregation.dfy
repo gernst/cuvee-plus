@@ -37,9 +37,13 @@ function {:teq} bitand(a: int, b: int): int
 
 function {:teq} bitor(a: int, b: int): int
 
+function {:teq} bitxor(a: int, b: int): int
+
 function {:teq} band(m: multiset<int>): int
 
 function {:teq} bor(m: multiset<int>): int
+
+function {:teq} bxor(m: multiset<int>): int
 
 // the aggregates of the operations on multisets, always towards the arithmetic of the integers; the difference of the
 // core cuts off at zero (cvc5's bag.difference_subtract), hence only of a submultiset; the maximum and the minimum not
@@ -119,6 +123,15 @@ lemma {:rw} {:teq} bor_single(x: int)
 
 lemma {:rw} {:teq} bor_union(m: multiset<int>, n: multiset<int>)
   ensures bor(m + n) == bitor(bor(m), bor(n))
+
+lemma {:rw} {:teq} bxor_empty()
+  ensures bxor(multiset{}) == 0
+
+lemma {:rw} {:teq} bxor_single(x: int)
+  ensures bxor(multiset{x}) == x
+
+lemma {:rw} {:teq} bxor_union(m: multiset<int>, n: multiset<int>)
+  ensures bxor(m + n) == bitxor(bxor(m), bxor(n))
 
 // a value read at a position of a list is among its values
 lemma {:rw} {:teq} single_earlier_le_elems<a>(j: int, xs: List<a>)
@@ -205,6 +218,25 @@ lemma {:rw} {:teq} earlier_mins(j: int, x: int, values: List<int>)
 lemma {:rw} {:teq} prefix_mins(k: int, x: int, values: List<int>)
   ensures prefix(k, ⌊mins(x, values)⌋)
     == ⌊mins(x, prefix(k, values))⌋
+
+// the prefix maxima and minima of loops that take the new value also at a tie, the same values, since both cases agree
+// there; folds of their own, as a fold is introduced by its body, which are then the folds above
+// (from sanfoundry_02_ground, array-1)
+function {:teq} {:fold} maxs_tie(x: int, values: List<int>): Trace<int>
+{
+  trace(x, for values do m, v :: case m <= v => v case v < m => m)
+}
+
+lemma {:rw} {:teq} maxs_tie_maxs(x: int, values: List<int>)
+  ensures maxs_tie(x, values) == maxs(x, values)
+
+function {:teq} {:fold} mins_tie(x: int, values: List<int>): Trace<int>
+{
+  trace(x, for values do m, v :: case v <= m => v case m < v => m)
+}
+
+lemma {:rw} {:teq} mins_tie_mins(x: int, values: List<int>)
+  ensures mins_tie(x, values) == mins(x, values)
 
 // the number of occurrences of a value, counted from an initial value
 function {:teq} {:fold} counts<a>(x: int, e: a, vs: List<a>): Trace<int>
@@ -376,6 +408,10 @@ lemma {:rw} {:teq} count_true_above(m: int, i: int, n: int)
 lemma {:fw} {:teq} count_nonnegative<a>(e: a, vs: List<a>)
   ensures 0 <= elems(vs)[e]
 
+// (from nest-if3, apache-escape-absolute)
+lemma {:fw} {:teq} count_length<a>(e: a, vs: List<a>)
+  ensures elems(vs)[e] <= length(vs)
+
 // the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m
 // (from half, sumt2; used on SV-COMP by half, sumt2, sumt3, sumt4, sumt5 only)
 lemma {:rw} {:teq} count_remainder(n: int, m: int, r: int)
@@ -485,6 +521,21 @@ lemma {:rw} {:teq} current_bors(x: int, values: List<int>)
 lemma {:rw} {:teq} earlier_bors(j: int, x: int, values: List<int>)
   ensures earlier(j, ⌊bors(x, values)⌋) == bitor(x, bor(elems(prefix(j, values))))
 
+// (from array-crafted xor)
+function {:teq} {:fold} bxors(x: int, values: List<int>): Trace<int>
+{
+  trace(x, for values do r, v :: bitxor(r, v))
+}
+
+lemma {:rw} {:teq} length_bxors(x: int, values: List<int>)
+  ensures length(⌊bxors(x, values)⌋) == length(values)
+
+lemma {:rw} {:teq} current_bxors(x: int, values: List<int>)
+  ensures current(bxors(x, values)) == bitxor(x, bxor(elems(values)))
+
+lemma {:rw} {:teq} earlier_bxors(j: int, x: int, values: List<int>)
+  ensures earlier(j, ⌊bxors(x, values)⌋) == bitxor(x, bxor(elems(prefix(j, values))))
+
 // the seed: a fold that starts from the first element, res = x[0], over the others, is the aggregate of all, such
 // that the aggregates of an array and of a permutation of it, whose first elements differ, are the same term; over the
 // reads of an array, whose first read is a condition, as it is evaluated before the lemma matches, and over the values
@@ -508,6 +559,16 @@ lemma {:rw} {:teq} bor_seed_earlier(xs: List<int>, n: int)
   requires 0 <= n
   ensures bitor(earlier(0, xs), bor(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(k + 1, xs)))))
     == bor(elems(prefix(n + 1, xs)))
+
+lemma {:rw} {:teq} bxor_seed_selects(a: array<int, int>, q: int, n: int, v: int)
+  requires 0 <= n && v == a[q - 1]
+  ensures bitxor(v, bxor(elems(selects(a, ⌊counter(q, 1, n)⌋))))
+    == bxor(elems(selects(a, ⌊counter(q - 1, 1, n + 1)⌋)))
+
+lemma {:rw} {:teq} bxor_seed_earlier(xs: List<int>, n: int)
+  requires 0 <= n
+  ensures bitxor(earlier(0, xs), bxor(elems(maps(for ⌊counter(0, 1, n)⌋ yield k :: earlier(k + 1, xs)))))
+    == bxor(elems(prefix(n + 1, xs)))
 
 // permutations: a swap of two positions among distinct keys preserves the multiset of the values read there; the values
 // are conditions, since the simplifier evaluates the reads of the swap before the lemma matches

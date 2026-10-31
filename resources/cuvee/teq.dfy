@@ -208,6 +208,12 @@ lemma {:rw} {:teq} indexof_counter_up(j: int, i: int, n: int)
   ensures indexof(j, ⌊counter(i, 1, n)⌋)
     == j - i
 
+// (from eureka_05, array_init_both_ends_multiple_sum)
+lemma {:rw} {:teq} indexof_counter_down(j: int, i: int, n: int)
+  requires i - n < j <= i
+  ensures indexof(j, ⌊counter(i, -1, n)⌋)
+    == i - j
+
 lemma {:rw} {:teq} maps_const<a>(x: a, i: int, c: int, n: int)
   ensures maps(for ⌊counter(i, c, n)⌋ yield v :: x)
     == ⌊consts(n, x)⌋

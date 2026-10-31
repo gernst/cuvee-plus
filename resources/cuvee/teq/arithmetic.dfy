@@ -16,6 +16,13 @@ lemma {:rw} {:teq} pow_zero(c: int, n: int)
 lemma {:rw} {:teq} pow_one(c: int)
   ensures pow(c, 1) == c
 
+// the powers of a positive base are positive, e.g. the doubling 2^n of trex01-2
+// (from trex01-2)
+lemma {:rw} {:teq} pow_positive(c: int, n: int)
+  requires 0 < c
+  ensures 0 < pow(c, n)
+    <==> true
+
 // a positive number divides itself
 // (from modn, modnf; used on SV-COMP by array_mul_init, eqn1f, ps2-ll_valuebound1 only)
 // a square equal to its root is 0 or 1, c * (c - 1) == 0, a nonlinear atom as linear ones
