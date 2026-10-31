@@ -29,6 +29,7 @@ __pycache__/
 
 # compiled documents, rebuilt from their sources
 *.pdf
+!doc/paper/rules-frequency.pdf
 
 # temporary files of LaTeX (*.out only under doc/, elsewhere it is the expected output of a test)
 *.aux
