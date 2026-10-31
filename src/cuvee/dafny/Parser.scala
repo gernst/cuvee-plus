@@ -614,14 +614,11 @@ class Parser(var state: State):
         val base_ = state.exprs.app("store", List(base, index_, value_))
         resolve(scope, base_, rest)
 
-      // s[i..j] is the subsequence of length j - i from offset i, the bounds default to 0 and |s|
+      // s[i..j] is the slice between the bounds, which default to 0 and |s|
       case Array(from, Some(Upto(to))) :: rest =>
         val from_ = from.map(resolve(scope, _)).getOrElse(state.exprs.num(0))
         val to_ = to.map(resolve(scope, _)).getOrElse(state.exprs.app(core.Fun.seq.len, List(base)))
-        val len_ = from match
-          case None    => to_
-          case Some(_) => state.exprs.app("-", List(to_, from_))
-        val base_ = state.exprs.app(core.Fun.seq.extract, List(base, from_, len_))
+        val base_ = state.exprs.app(core.Fun.seq.slice, List(base, from_, to_))
         resolve(scope, base_, rest)
 
       case Array(None, _) :: _ =>

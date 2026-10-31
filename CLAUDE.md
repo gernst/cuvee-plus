@@ -193,7 +193,9 @@ or solvers consume.
   to their outputs (doc/architecture.md, "Answers"); filters that need the
   answers to other declarations are sink wrappers.
 - **Implementations** ([doc/implement.md](doc/implement.md)): patterns are a
-  function applied to a permutation of all inputs, nothing more general;
+  function applied to all inputs, each once, possibly under applications of
+  further functions with literals, which specialize it (the largest
+  matching pattern wins);
   methods implement functions (possibly nondeterministically), methods are
   never implemented; the bodies of implementations are not rewritten.
 - **Entry points:** `-teq` emits a goal for the entry point only and `-chc`

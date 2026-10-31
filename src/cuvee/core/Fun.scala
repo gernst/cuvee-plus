@@ -39,12 +39,14 @@ object Fun:
     val contains = Fun("seq.contains", List(a), formals(Sort.seq(a), Sort.seq(a)), bool)
     val prefixof = Fun("seq.prefixof", List(a), formals(Sort.seq(a), Sort.seq(a)), bool)
 
-    // not part of cvc5: the update s[i := v] of a single element, membership x in s, and proper prefixes s < t
+    // not part of cvc5: the update s[i := v] of a single element, the slice s[i..j] between two bounds, i.e.,
+    // seq.extract of length j - i, membership x in s, and proper prefixes s < t
     val store = Fun("seq.store", List(a), formals(Sort.seq(a), Sort.int, a), Sort.seq(a))
+    val slice = Fun("seq.slice", List(a), formals(Sort.seq(a), Sort.int, Sort.int), Sort.seq(a))
     val member = Fun("seq.member", List(a), formals(a, Sort.seq(a)), bool)
     val proper = Fun("seq.proper_prefixof", List(a), formals(Sort.seq(a), Sort.seq(a)), bool)
 
-    val all = List(empty, unit, concat, len, nth, update, extract, contains, prefixof, store, member, proper)
+    val all = List(empty, unit, concat, len, nth, update, extract, contains, prefixof, store, slice, member, proper)
 
   // finite sets as in cvc5, where set.empty needs its type, (as set.empty (Set a)), and member takes the element first
   object set:
@@ -78,12 +80,13 @@ object Fun:
     val card = Fun("bag.card", List(a), formals(Sort.bag(a)), Sort.int)
     val member = Fun("bag.member", List(a), formals(a, Sort.bag(a)), bool)
 
-    // not part of cvc5: the multiplicity s[x] of an element, i.e., bag.count with the arguments swapped,
-    // and proper submultisets s < t
+    // not part of cvc5: the multiplicity s[x] of an element, i.e., bag.count with the arguments swapped, the update
+    // s[x := n] of the multiplicity of an element, and proper submultisets s < t
     val select = Fun("bag.select", List(a), formals(Sort.bag(a), a), Sort.int)
+    val store = Fun("bag.store", List(a), formals(Sort.bag(a), a, Sort.int), Sort.bag(a))
     val proper = Fun("bag.proper_subbag", List(a), formals(Sort.bag(a), Sort.bag(a)), bool)
 
-    val all = List(empty, make, union, inter, minus, count, subbag, card, member, select, proper)
+    val all = List(empty, make, union, inter, minus, count, subbag, card, member, select, store, proper)
 
   // finite maps, named like the sets of cvc5, which however has no such theory, where map.empty needs its type,
   // map.get is unspecified outside of the keys, map.update(m, n) overwrites m by n, and map.minus removes keys

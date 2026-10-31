@@ -7,8 +7,10 @@ import cuvee.pipe.Transform
 import cuvee.core._
 
 // implementations of functions by functions and methods with the attribute :implement, whose value, the pattern, is
-// the implemented function applied to a permutation of the inputs of the implementation, e.g. x in this for a member
-// of a datatype that defines the sort of sets (see doc/implement.md);
+// the implemented function applied to the inputs of the implementation, each once, e.g. x in this for a member of a
+// datatype that defines the sort of sets, or to applications of further functions to inputs and literals, which
+// specialize it, e.g. this + [k] (see doc/implement.md); an application gets the implementation of the largest
+// pattern that matches it, ties are broken by the name of the implementation;
 // - an implementation by a function replaces the applications of the implemented function everywhere: in programs,
 //   contracts, invariants, function bodies, axioms, and lemmas, since the abstract functions have no meaning on the
 //   datatypes that define their sorts, except in the implementations themselves;
@@ -26,18 +28,24 @@ object Implement extends Transform:
   val modules =
     List((cuvee.dafny.Source, "/cuvee/implement.dfy"))
 
-  // an implementation by function `fun`, whose inputs are the arguments of the implemented function at `positions`
-  case class ByFunction(fun: Fun, positions: List[Int])
+  // an implementation of the applications that match `pattern`, whose inputs are its variables
+  sealed trait Impl:
+    def name: Name
+    def pattern: Expr
 
-  // an implementation by procedure `proc`, whose inputs are the arguments of the implemented function at `positions`,
-  // except its context, if any, at position -1, which receives the context of the client (see context), with its body
-  // if it is inlined (-instrument)
-  case class ByMethod(proc: Proc, positions: List[Int], body: Option[Prog])
+  // an implementation by function `fun`
+  case class ByFunction(fun: Fun, pattern: Expr) extends Impl:
+    def name = fun.name
+
+  // an implementation by procedure `proc`, whose `context`, if any, is the input that is not in the pattern, which
+  // receives the context of the client (see context), with its body if it is inlined (-instrument)
+  case class ByMethod(proc: Proc, pattern: Expr, context: List[Var], body: Option[Prog]) extends Impl:
+    def name = proc.name
 
   def apply(config: Config, state: State, prefix: List[Cmd], cmds: List[Cmd], last: Option[Cmd]): (List[Cmd], Option[Cmd]) =
-    val (funs, methods) = implementations(state, config.instrument)
+    val impls = implementations(state, config.instrument)
     // the implementations that are inlined, which nothing calls anymore, whose clauses would be polymorphic in -chc
-    val inlined = methods.values.collect { case ByMethod(proc, _, Some(_)) => proc.name }.toSet
+    val inlined = impls.values.flatten.collect { case ByMethod(proc, _, _, Some(_)) => proc.name }.toSet
 
     val cmds_ =
       cmds.flatMap:
@@ -45,36 +53,36 @@ object Implement extends Transform:
           None
 
         case decl: Decl if decl.attrs.isImplementation =>
-          representations(funs.keySet ++ methods.keySet, decl)
+          representations(impls.keySet, decl)
           Some(decl)
 
-        case cmd if funs.isEmpty && methods.isEmpty =>
+        case cmd if impls.isEmpty =>
           Some(cmd)
 
         case cmd =>
-          cmd.map(expr(state, funs, _), prog(state, funs, _)) match
+          cmd.map(expr(state, impls, _), prog(state, impls, _)) match
             case DefineProc(proc, body, attrs) =>
-              specification(methods, attrs.funs)
+              specification(impls, attrs.funs)
               val scope = state.globals ++ proc.in ++ proc.out
-              Some(DefineProc(proc, implement(state, methods, scope, body), attrs))
+              Some(DefineProc(proc, implement(state, impls, scope, body), attrs))
 
             case cmd_ =>
-              specification(methods, cmd_.funs)
+              specification(impls, cmd_.funs)
               Some(cmd_)
 
     (cmds_, last)
 
-  // the implementations by the functions that they implement, by functions and by methods, at most one each, with
-  // the bodies of the methods if they are `inlined`
-  def implementations(state: State, inlined: Boolean): (Map[Fun, ByFunction], Map[Fun, ByMethod]) =
+  // the implementations by the functions that they implement, by functions and by methods, the largest patterns first,
+  // with the bodies of the methods if they are `inlined`
+  def implementations(state: State, inlined: Boolean): Map[Fun, List[Impl]] =
     val funs =
       for
         (key, attrs) <- state.funattrs.toList
         pattern <- attrs.values[Expr]("implement")
       yield
         val fun = state.funs(key)
-        val (implemented, positions_) = positions(fun.name, pattern, fun.formals, Nil)
-        implemented -> ByFunction(fun, positions_)
+        check(fun.name, pattern, fun.formals, Nil)
+        ByFunction(fun, pattern)
 
     val methods =
       for
@@ -92,26 +100,31 @@ object Implement extends Transform:
             case x: Var if proc.in.contains(x) => x
             case _                             => Error.raise("the context of an implementing method must be an input", name.subscripted)
 
-        val (implemented, positions_) = positions(name, pattern, proc.in, context)
+        check(name, pattern, proc.in, context)
         val body = if inlined then state.procdefs.get(name) else None
-        implemented -> ByMethod(proc, positions_, body)
+        ByMethod(proc, pattern, context, body)
 
-    val implemented = funs.map(_._1) ++ methods.map(_._1)
-    Error.report("functions with several implementations", implemented.diff(implemented.distinct).map(_.name.subscripted)*):
-      require(implemented.distinct.length == implemented.length)
+    val impls: List[Impl] = funs ++ methods
+    val sorted = impls.sortBy(impl => (-size(impl.pattern), impl.name.subscripted))
 
-    (funs.toMap, methods.toMap)
+    sorted.groupBy:
+      case ByFunction(_, App(fun, _, _, _))   => fun
+      case ByMethod(_, App(fun, _, _, _), _, _) => fun
+      case impl                               => Error.raise("a pattern must be an application", impl.name.subscripted)
 
-  // the implemented function of `pattern` of implementation `name` and the positions of the inputs `in` among its
-  // arguments, which must be all inputs, each once, except the `context`, whose position is -1
-  def positions(name: Name, pattern: Expr, in: List[Var], context: List[Var]): (Fun, List[Int]) =
+  // the inputs of `pattern` of implementation `name` from left to right, which must be among `in`
+  def inputs(name: Name, pattern: Expr, in: List[Var]): List[Var] =
     pattern match
-      case App(fun, _, _, args) =>
-        val xs =
-          for arg <- args
-          yield arg match
-            case x: Var if in.contains(x) => x
-            case _                        => Error.raise("the arguments of a pattern must be inputs", name.subscripted)
+      case x: Var if in.contains(x) => List(x)
+      case _: Lit                   => Nil
+      case App(_, _, _, args)       => args.flatMap(inputs(name, _, in))
+      case _                        => Error.raise("the arguments of a pattern must be inputs, literals, or applications", name.subscripted)
+
+  // `pattern` of implementation `name` is an application that contains the inputs `in`, each once, except the `context`
+  def check(name: Name, pattern: Expr, in: List[Var], context: List[Var]): Unit =
+    pattern match
+      case App(_, _, _, _) =>
+        val xs = inputs(name, pattern, in)
 
         Error.report("the inputs in a pattern must be distinct", name.subscripted):
           require(xs.distinct == xs)
@@ -119,10 +132,47 @@ object Implement extends Transform:
         Error.report("a pattern must contain all inputs except the context", name.subscripted):
           require(in.diff(xs) == context)
 
-        (fun, in.map(xs.indexOf))
-
       case _ =>
         Error.raise("a pattern must be an application", name.subscripted)
+
+  // the number of applications and literals of `pattern`, larger patterns are more specific
+  def size(pattern: Expr): Int =
+    pattern match
+      case App(_, _, _, args) => 1 + args.map(size).sum
+      case _: Lit             => 1
+      case _                  => 0
+
+  // the arguments of `expr` at the inputs of `pattern`, if it matches
+  def bind(pattern: Expr, expr: Expr): Option[Map[Var, Expr]] =
+    (pattern, expr) match
+      case (x: Var, _) =>
+        Some(Map(x -> expr))
+
+      case (App(fun, _, _, patterns), App(fun_, _, _, args)) if fun == fun_ && patterns.length == args.length =>
+        patterns.zip(args).foldLeft(Option(Map.empty[Var, Expr])):
+          case (Some(su), (pattern_, arg)) => bind(pattern_, arg).map(su ++ _)
+          case (None, _)                   => None
+
+      case (_: Lit, _) if pattern == expr =>
+        Some(Map())
+
+      case _ =>
+        None
+
+  // the first implementation whose pattern matches `expr`, with the arguments at its inputs
+  def implementation(impls: Map[Fun, List[Impl]], expr: Expr): Option[(Impl, Map[Var, Expr])] =
+    expr match
+      case App(fun, _, _, _) =>
+        impls.getOrElse(fun, Nil).iterator.flatMap(impl => bind(impl.pattern, expr).map((impl, _))).nextOption()
+      case _ =>
+        None
+
+  // `expr` with `f` applied to its arguments at the inputs of `pattern`, which matches it, the rest kept
+  def arguments(pattern: Expr, expr: Expr, f: Expr => Expr): Expr =
+    (pattern, expr) match
+      case (_: Var, _)                                         => f(expr)
+      case (App(_, _, _, patterns), App(fun, inst, typ, args)) => App(fun, inst, typ, patterns.zip(args).map(arguments(_, _, f)))
+      case _                                                   => expr
 
   // the bodies and contracts of implementations are not rewritten, they work on representations, on which an implemented
   // function would stay uninterpreted, which is unsound (e.g. x in s for an implemented set s); the patterns and the
@@ -140,76 +190,84 @@ object Implement extends Transform:
 
   // the program with the applications of functions implemented by functions replaced in all its expressions,
   // including those of the attributes, e.g. invariants
-  def prog(state: State, funs: Map[Fun, ByFunction], prog_ : Prog): Prog =
-    prog_.map(expr(state, funs, _), prog(state, funs, _))
+  def prog(state: State, impls: Map[Fun, List[Impl]], prog_ : Prog): Prog =
+    prog_.map(expr(state, impls, _), prog(state, impls, _))
 
-  // the expression with the applications of functions implemented by functions replaced, bottom-up
-  def expr(state: State, funs: Map[Fun, ByFunction], expr_ : Expr): Expr =
-    expr_.map(expr(state, funs, _)) match
-      case App(fun, _, _, args) if funs.contains(fun) =>
-        val ByFunction(impl, positions) = funs(fun)
-        App(state, impl, positions.map(args))
+  // the expression with the applications implemented by functions replaced, matched before their arguments are
+  // replaced, such that larger patterns see the applications that they specialize; the applications implemented by
+  // methods keep the applications of their patterns for lift
+  def expr(state: State, impls: Map[Fun, List[Impl]], expr_ : Expr): Expr =
+    implementation(impls, expr_) match
+      case Some((ByFunction(fun, _), su)) =>
+        App(state, fun, fun.formals.map(x => expr(state, impls, su(x))))
 
-      case expr__ =>
-        expr__
+      case Some((ByMethod(_, pattern, _, _), _)) =>
+        arguments(pattern, expr_, expr(state, impls, _))
+
+      case None =>
+        expr_.map(expr(state, impls, _))
+
+  // whether `fun` has an implementation by a method
+  def byMethod(impls: Map[Fun, List[Impl]], fun: Fun): Boolean =
+    impls.getOrElse(fun, Nil).exists(_.isInstanceOf[ByMethod])
 
   // the names of the functions among `used` that are implemented by methods
-  def implemented(methods: Map[Fun, ByMethod], used: Iterable[Fun]): List[String] =
-    used.filter(methods.contains).map(_.name.subscripted).toList.distinct
+  def implemented(impls: Map[Fun, List[Impl]], used: Iterable[Fun]): List[String] =
+    used.filter(byMethod(impls, _)).map(_.name.subscripted).toList.distinct
 
   // functions implemented by methods are nondeterministic, hence they must not occur in specifications, whose
   // functions `used` are given
-  def specification(methods: Map[Fun, ByMethod], used: Iterable[Fun]): Unit =
-    val names = implemented(methods, used)
+  def specification(impls: Map[Fun, List[Impl]], used: Iterable[Fun]): Unit =
+    val names = implemented(impls, used)
     Error.report("functions implemented by methods in a specification", names*):
       require(names.isEmpty)
 
   // whether one of the functions `used` is implemented by a method, needed only where applications cannot be lifted
-  def isImplemented(methods: Map[Fun, ByMethod], used: Iterable[Fun]): Boolean =
-    used.exists(methods.contains)
+  def isImplemented(impls: Map[Fun, List[Impl]], used: Iterable[Fun]): Boolean =
+    used.exists(byMethod(impls, _))
 
   // the program with the applications of functions implemented by methods in its executed expressions replaced by
   // calls, and none in its specifications
-  def implement(state: State, methods: Map[Fun, ByMethod], scope: List[Var], prog: Prog): Prog =
+  def implement(state: State, impls: Map[Fun, List[Impl]], scope: List[Var], prog: Prog): Prog =
     prog match
       case Assign(lhs, rhs) =>
-        val (xs, pre, rhs_) = lift(state, methods, scope, rhs)
+        val (xs, pre, rhs_) = lift(state, impls, scope, rhs)
         block(xs, pre, Assign(lhs, rhs_))
 
       case Call(name, args, res, vars) =>
-        val (xs, pre, args_) = lift(state, methods, scope, args)
+        val (xs, pre, args_) = lift(state, impls, scope, args)
         block(xs, pre, Call(name, args_, res, vars))
 
       case If(test, left, right) =>
-        val (xs, pre, test_) = lift(state, methods, scope, test)
-        block(xs, pre, If(test_, implement(state, methods, scope, left), implement(state, methods, scope, right)))
+        val (xs, pre, test_) = lift(state, impls, scope, test)
+        block(xs, pre, If(test_, implement(state, impls, scope, left), implement(state, impls, scope, right)))
 
       // the guard is evaluated anew at the beginning of each iteration, including after continue
       case While(test, body, attrs) =>
-        specification(methods, attrs.funs)
-        val (xs, pre, test_) = lift(state, methods, scope, test)
-        val body_ = implement(state, methods, scope, body)
+        specification(impls, attrs.funs)
+        val (xs, pre, test_) = lift(state, impls, scope, test)
+        val body_ = implement(state, impls, scope, body)
         if pre.isEmpty
         then While(test, body_, attrs)
         else Iter(Block(xs, pre ++ List(If(Not(test_), Break, Skip), body_)), attrs)
 
       case Block(locals, progs, attrs) =>
-        specification(methods, attrs.funs)
-        Block(locals, progs.map(implement(state, methods, scope ++ locals, _)), attrs)
+        specification(impls, attrs.funs)
+        Block(locals, progs.map(implement(state, impls, scope ++ locals, _)), attrs)
 
       case Iter(body, attrs) =>
-        specification(methods, attrs.funs)
-        Iter(implement(state, methods, scope, body), attrs)
+        specification(impls, attrs.funs)
+        Iter(implement(state, impls, scope, body), attrs)
 
       case Choice(progs) =>
-        Choice(progs.map(implement(state, methods, scope, _)))
+        Choice(progs.map(implement(state, impls, scope, _)))
 
       case Par(progs) =>
-        Par(progs.map(implement(state, methods, scope, _)))
+        Par(progs.map(implement(state, impls, scope, _)))
 
       // assertions, assumptions, and the differential equations are specifications
       case _: Spec | _: Ode =>
-        specification(methods, prog.funs)
+        specification(impls, prog.funs)
         prog
 
       case Break | Continue | Return =>
@@ -222,31 +280,31 @@ object Implement extends Transform:
     else Block(xs, pre ++ List(prog))
 
   // the expressions `exprs` evaluated from left to right
-  def lift(state: State, methods: Map[Fun, ByMethod], scope: List[Var], exprs: List[Expr]): (List[Var], List[Prog], List[Expr]) =
-    val lifted = exprs.map(lift(state, methods, scope, _))
+  def lift(state: State, impls: Map[Fun, List[Impl]], scope: List[Var], exprs: List[Expr]): (List[Var], List[Prog], List[Expr]) =
+    val lifted = exprs.map(lift(state, impls, scope, _))
     (lifted.flatMap(_._1), lifted.flatMap(_._2), lifted.map(_._3))
 
   // the fresh locals and the statements that call the implementations of the functions of `expr`, and `expr` over
   // these locals, none if `expr` applies no function implemented by a method
-  def lift(state: State, methods: Map[Fun, ByMethod], scope: List[Var], expr: Expr): (List[Var], List[Prog], Expr) =
+  def lift(state: State, impls: Map[Fun, List[Impl]], scope: List[Var], expr: Expr): (List[Var], List[Prog], Expr) =
     expr match
       case _: Var | _: Lit =>
         (Nil, Nil, expr)
 
       case App(Fun.and, _, _, List(left, right)) =>
-        conditional(state, methods, scope, Fun.and, left, right, true, False)
+        conditional(state, impls, scope, Fun.and, left, right, true, False)
 
       case App(Fun.or, _, _, List(left, right)) =>
-        conditional(state, methods, scope, Fun.or, left, right, false, True)
+        conditional(state, impls, scope, Fun.or, left, right, false, True)
 
       case App(Fun.imp, _, _, List(left, right)) =>
-        conditional(state, methods, scope, Fun.imp, left, right, true, True)
+        conditional(state, impls, scope, Fun.imp, left, right, true, True)
 
       // a conditional only if a branch calls an implementation
       case Ite(test, left, right) =>
-        val (xs0, pre0, test_) = lift(state, methods, scope, test)
-        val (xs1, pre1, left_) = lift(state, methods, scope, left)
-        val (xs2, pre2, right_) = lift(state, methods, scope, right)
+        val (xs0, pre0, test_) = lift(state, impls, scope, test)
+        val (xs1, pre1, left_) = lift(state, impls, scope, left)
+        val (xs2, pre2, right_) = lift(state, impls, scope, right)
 
         if pre1.isEmpty && pre2.isEmpty
         then (xs0, pre0, Ite(test_, left_, right_))
@@ -255,49 +313,52 @@ object Implement extends Transform:
           val ite = If(test_, block(xs1, pre1, Assign(List(res), List(left_))), block(xs2, pre2, Assign(List(res), List(right_))))
           (xs0 ++ List(res), pre0 ++ List(ite), res)
 
-      // the arguments at the positions of the inputs of the method
-      case App(fun, _, typ, args) if methods.contains(fun) =>
-        val ByMethod(proc, positions, body) = methods(fun)
-        val (xs, pre, args_) = lift(state, methods, scope, args)
-        val res = Var(Name("test", None), typ).fresh
-        val inputs = positions.map(i => if i < 0 then context(state, scope) else args_(i))
-
-        body match
-          case None =>
-            val call = Call(proc.name, inputs, List(res), Type.expand(state, state.procattrs(proc.name).modifies))
-            (xs ++ List(res), pre ++ List(call), res)
-
-          case Some(body) =>
-            val block = inlining(state, proc, body, inputs, res)
-            (xs ++ List(res), pre ++ List(block), res)
-
+      // the arguments at the inputs of the pattern of the method, evaluated from left to right
       case App(fun, inst, typ, args) =>
-        val (xs, pre, args_) = lift(state, methods, scope, args)
-        (xs, pre, App(fun, inst, typ, args_))
+        implementation(impls, expr) match
+          case Some((ByMethod(proc, pattern, ctx, body), su)) =>
+            val ys = inputs(proc.name, pattern, proc.in)
+            val (xs, pre, args_) = lift(state, impls, scope, ys.map(su))
+            val res = Var(Name("test", None), typ).fresh
+            val lifted = ys.zip(args_).toMap
+            val inputs_ = proc.in.map(x => if ctx.contains(x) then context(state, scope) else lifted(x))
+
+            body match
+              case None =>
+                val call = Call(proc.name, inputs_, List(res), Type.expand(state, state.procattrs(proc.name).modifies))
+                (xs ++ List(res), pre ++ List(call), res)
+
+              case Some(body) =>
+                val block = inlining(state, proc, body, inputs_, res)
+                (xs ++ List(res), pre ++ List(block), res)
+
+          case _ =>
+            val (xs, pre, args_) = lift(state, impls, scope, args)
+            (xs, pre, App(fun, inst, typ, args_))
 
       case Distinct(exprs) =>
-        val (xs, pre, exprs_) = lift(state, methods, scope, exprs)
+        val (xs, pre, exprs_) = lift(state, impls, scope, exprs)
         (xs, pre, Distinct(exprs_))
 
       case Is(arg, fun) =>
-        val (xs, pre, arg_) = lift(state, methods, scope, arg)
+        val (xs, pre, arg_) = lift(state, impls, scope, arg)
         (xs, pre, Is(arg_, fun))
 
       case As(arg, typ) =>
-        val (xs, pre, arg_) = lift(state, methods, scope, arg)
+        val (xs, pre, arg_) = lift(state, impls, scope, arg)
         (xs, pre, As(arg_, typ))
 
       // the arguments of let and match are evaluated before the binding
-      case Let(bound, args, body) if !isImplemented(methods, body.funs) =>
-        val (xs, pre, args_) = lift(state, methods, scope, args)
+      case Let(bound, args, body) if !isImplemented(impls, body.funs) =>
+        val (xs, pre, args_) = lift(state, impls, scope, args)
         (xs, pre, Let(bound, args_, body))
 
-      case Match(arg, cases) if !isImplemented(methods, cases.funs) =>
-        val (xs, pre, arg_) = lift(state, methods, scope, arg)
+      case Match(arg, cases) if !isImplemented(impls, cases.funs) =>
+        val (xs, pre, arg_) = lift(state, impls, scope, arg)
         (xs, pre, Match(arg_, cases))
 
-      case _ if isImplemented(methods, expr.funs) =>
-        Error.raise("functions implemented by methods under binders or old are not supported", implemented(methods, expr.funs)*)
+      case _ if isImplemented(impls, expr.funs) =>
+        Error.raise("functions implemented by methods under binders or old are not supported", implemented(impls, expr.funs)*)
 
       case _ =>
         (Nil, Nil, expr)
@@ -360,9 +421,9 @@ object Implement extends Transform:
   // the operator `fun` of `left` and `right`, whose right operand is evaluated only if the left one is `needed` (true
   // or false), and whose value is `short` otherwise: as is if the right operand calls no implementation, otherwise a
   // fresh boolean assigned by a conditional on the left operand
-  def conditional(state: State, methods: Map[Fun, ByMethod], scope: List[Var], fun: Fun, left: Expr, right: Expr, needed: Boolean, short: Expr): (List[Var], List[Prog], Expr) =
-    val (xs1, pre1, left_) = lift(state, methods, scope, left)
-    val (xs2, pre2, right_) = lift(state, methods, scope, right)
+  def conditional(state: State, impls: Map[Fun, List[Impl]], scope: List[Var], fun: Fun, left: Expr, right: Expr, needed: Boolean, short: Expr): (List[Var], List[Prog], Expr) =
+    val (xs1, pre1, left_) = lift(state, impls, scope, left)
+    val (xs2, pre2, right_) = lift(state, impls, scope, right)
 
     if pre2.isEmpty
     then (xs1, pre1, App(fun, List(left_, right_)))

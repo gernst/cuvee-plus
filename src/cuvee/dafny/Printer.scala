@@ -627,6 +627,7 @@ object Printer extends cuvee.pipe.Printer:
       case FinMaps.update(_, FinMaps.singleton(_, _)) => None
       case FinMaps.store(_, _, _)                     => None
       case Sets.update(_, _, _)                       => None
+      case Bags.store(_, _, _)                        => None
       case FinMaps.member(key, map)                   => operator("in", List(key, map))
       case Not(FinMaps.member(key, map))              => operator("!in", List(key, map))
       case FinMaps.update(left, right)                => operator("+", List(left, right))
@@ -970,6 +971,17 @@ object Printer extends cuvee.pipe.Printer:
 
       case Seqs.store(seq, index, value) =>
         Group(doc(seq, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(index) ~~ text(":=") ~ line ~ doc(value)) ~ text("]"))
+
+      case Bags.store(bag, elem, count) =>
+        Group(doc(bag, operand) ~ text("[") ~ Nest(2, linebreak ~ doc(elem) ~~ text(":=") ~ line ~ doc(count)) ~ text("]"))
+
+      // the slice between two bounds, the default bounds 0 and |s| are left out
+      case Seqs.slice(seq, from, to) =>
+        val from_ = if from == Ints.zero then empty else doc(from)
+        val to_ = to match
+          case Seqs.len(`seq`) => empty
+          case _               => doc(to)
+        doc(seq, operand) ~ text("[") ~ from_ ~ text("..") ~ to_ ~ text("]")
 
       // the length is the difference of the bounds, s[i..j] is extract(s, i, j - i)
       case Seqs.extract(seq, from, len) =>

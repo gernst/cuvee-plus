@@ -101,9 +101,10 @@ object Overload:
     val proper = overload("<", Fun.bag.proper)
     val member = overload("in", Fun.bag.member)
     val select = overload("select", Fun.bag.select)
+    val store = overload("store", Fun.bag.store)
     val card = overload("|_|", Fun.bag.card)
 
-    val all = List(inter, union, minus, subbag, proper, member, select, card)
+    val all = List(inter, union, minus, subbag, proper, member, select, store, card)
 
   // submaps are not strict, there is no < on maps
   object map:

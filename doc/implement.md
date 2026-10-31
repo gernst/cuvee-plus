@@ -17,15 +17,20 @@ by methods (procedures); methods are not implemented. The code is
 
 ## Implementations
 
-- `{:implement pattern}` on a function or method names the implemented function applied to a permutation of all
-  inputs, `this` included, e.g. `{:implement k in this}` on a member `Contains(k)` of `set`. Nothing
-  more general is matched. The pattern is resolved in the scope of the inputs and checked against the result type, or
-  the type of the single output of a method.
+- `{:implement pattern}` on a function or method names the implemented function applied to all inputs, `this`
+  included, each once, e.g. `{:implement k in this}` on a member `Contains(k)` of `set`. The arguments of a pattern
+  may also be applications of further functions to inputs and literals, which specialize it: `{:implement this + [k]}`
+  on a member `Snoc(k)` of `seq` takes the concatenations with units, `seq.concat(this, seq.unit(k))`, the general
+  `{:implement this + t}` the others. The pattern is resolved in the scope of the inputs and checked against the
+  result type, or the type of the single output of a method.
 - Syntax: Dafny `{:implement x in this}`, Boogie `{:implement f(x)}` on functions and procedures, SMT-LIB and SV-LIB
   `:implement (f x)` on `declare-fun`, `define-fun`, `declare-proc`, and the body of `define-proc`. The SMT-LIB printer
   drops it on functions, whose declarations go to solvers.
-- A function has at most one implementation. Members are lowered with `this` first, `static` members without it;
-  functions without a receiver (`{}`, `{x}`, `map[]`, `map[k := v]`) are implemented at the top level.
+- A function may have several implementations: an application gets the one with the largest pattern that matches
+  it (by the number of applications and literals), ties are broken by the name of the implementation. Members are
+  lowered with `this` first, `static` members without it;
+  functions without a receiver (`{}`, `{x}`, `[x]`, `multiset{x}`, `map[]`, `map[k := v]`) are implemented at the top
+  level.
 - **Context** (Dafny only): `{:context ctx}` on an implementing method names an input that the pattern leaves out,
   which receives the context of the client at each application (`Implement.context`): the variables in scope there
   as a tuple (`true` for none, the variable for one, nested beyond the tuples of the prelude), except those that
@@ -38,7 +43,7 @@ by methods (procedures); methods are not implemented. The code is
 `-implement` is optional: without it, a translation keeps the task as written. Implementations themselves are left as
 they are, their bodies are not rewritten.
 
-- **By a function:** every application is replaced, with the arguments at the positions of the pattern, also in
+- **By a function:** every application that the pattern matches is replaced, with the arguments at its inputs, also in
   contracts, invariants, function bodies, axioms, and lemmas.
 - **By a method:** the method may choose its result nondeterministically, each call anew. Applications in executed
   expressions (right-hand sides, call arguments, tests, loop guards) are lifted into calls before their statement,

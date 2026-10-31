@@ -216,7 +216,10 @@ case class Component(trace, index); case class History(trace, index)  // current
   not part of cvc5 are added, e.g. `seq.member` for `x in s`, `seq.store`
   for `s[i := v]`, `map.store` for `m[k := v]`, `set.update` for `s[x := b]`, and the proper orders
   `seq.proper_prefixof`, `set.proper_subset`, `bag.proper_subbag`; the
-  solvers do not accept these yet (see TODO.md). `Type.check` records the
+  solvers do not accept these yet (see TODO.md). The slice `seq.slice`
+  (`s[i..j]`) and the update `bag.store` (`m[x := n]`) are not part of cvc5
+  either, and the solvers do not receive them as `seq.extract` or by other
+  definitions yet. `Type.check` records the
   applications of overloaded operators as pending constraints (a `Ref`
   threaded through checking), which are decided once the dispatch type is
   known, each exactly once, until no further one is decided; the remaining

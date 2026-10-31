@@ -338,8 +338,9 @@ Each frontend follows the same structure (see `cuvee.dafny` and
    - Dafny's displays are pointwise: `{a, b}` updates the singleton `{a}`
      (`s[b := true]`, `set.update`), `map[k := v, l := w]` stores into the
      singleton `map[k := v]`; `s[x := b]` updates sets (an extension of the
-     dialect). Expressions as written are not changed, e.g. `s + {x}` stays a
-     union.
+     dialect), `m[x := n]` the multiplicities of multisets (`bag.store`), and
+     `s[i..j]` is the slice between the bounds (`seq.slice`). Expressions as
+     written are not changed, e.g. `s + {x}` stays a union.
    - Dafny's annotations are keywords, `{:rw}`, on all declarations, `var`
      included; only `{:implement pattern}` and `{:context x}` have a value,
      resolved in the scope of the inputs (`Parser.annotations`; in SMT-LIB
