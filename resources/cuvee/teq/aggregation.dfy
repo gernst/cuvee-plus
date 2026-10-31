@@ -408,10 +408,6 @@ lemma {:rw} {:teq} count_true_above(m: int, i: int, n: int)
 lemma {:fw} {:teq} count_nonnegative<a>(e: a, vs: List<a>)
   ensures 0 <= elems(vs)[e]
 
-// (from nest-if3, apache-escape-absolute)
-lemma {:fw} {:teq} count_length<a>(e: a, vs: List<a>)
-  ensures elems(vs)[e] <= length(vs)
-
 // the numbers 0, ..., n - 1 with the remainder r modulo m number (n + m - 1 - r) / m
 // (from half, sumt2; used on SV-COMP by half, sumt2, sumt3, sumt4, sumt5 only)
 lemma {:rw} {:teq} count_remainder(n: int, m: int, r: int)

@@ -728,10 +728,6 @@ def Stmt.count_nonnegative : Prop :=
   ∀ {α : Type} [Inhabited α] (e : α) (vs : List α),
     0 ≤ Bag.count (elems vs) e
 
-def Stmt.count_length : Prop :=
-  ∀ {α : Type} [Inhabited α] (e : α) (vs : List α),
-    Bag.count (elems vs) e ≤ length vs
-
 def Stmt.count_remainder : Prop :=
   ∀ (n : Int) (m : Int) (r : Int),
     0 ≤ n ∧ 0 < m ∧ 0 ≤ r ∧ r < m

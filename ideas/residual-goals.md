@@ -18,7 +18,7 @@ The goals are quoted as the log prints them (SMT-LIB), shortened where marked.
 | reads of constant arrays | 3 | done: `select_const`, 3 correct locally | 3 |
 | arithmetic arguments and binders compared modulo the context | 4 | engine (engine.md 1.2, section 8) | 4 |
 | max and min with the tie on the other side | 3 | done in part: `maxs_tie`, `mins_tie`, 1 correct locally | 5 |
-| small lemmas missing from the database | about 20 | done in part: 8 correct locally | 6 |
+| small lemmas missing from the database | about 20 | done in part: 6 correct on the cloud | 6 |
 | counts of residues under unsigned wrap-around | 8 | database | 7 |
 | arithmetic | about 35 | engine (engine.md, section 2) | 8 |
 | known gaps, unchanged | about 50 | open-tasks.md, engine.md | 9 |
@@ -156,7 +156,7 @@ Each from a residual goal. Done (Oct 31, correct locally with `-svcomp -rules`, 
 | **done**, `pow_positive` | trex01-2 (9 s); the sign cases of the halving in divbin, hard not tried | `(<= 1 z$27)` with `(= z$27 (pow 2 n$23))` |
 | closed `pow` evaluated | underapprox_1-2 | `(= y$11 (mod (pow 2 6) 4294967296))`, goal `(< 0 (mod y$11 3))` |
 | `selects` over an empty counter, tried and dropped | array_min_and_copy_shift_sum_add (7 goals) | `(sum (elems (selects a$9 (butlast (counter 0 1 0)))))` |
-| **done**, `count_length` (forward) | apache-escape-absolute (26 s), nest-if3 (32 s) | `(+ (bag.select (elems Tmp?$51) 0) c$59) = n`, goal `-1 <= c` |
+| `count_length` (forward), rejected: every count is its trigger, standard_partition_original_ground 42 s without, 72 s with it; the two tasks stay open (database.md, "Decisions") | apache-escape-absolute, nest-if3 | `(+ (bag.select (elems Tmp?$51) 0) c$59) = n`, goal `-1 <= c` |
 | sums over the same keys add pointwise | bhmr2007 | `a` and `b` sums of `eps(c => 1, !c => 2)` and `eps(c => 2, !c => 1)`, goal `(= (+ a b) (* 3 n))` |
 | a trace that keeps its initial value | const | `s` from 0 with `case s == 0 => 0`: the initial value is a fixed point of the update |
 | **done**, `bxor`, `bxors` and the seeds | xor1-xor4 (18 to 19 s); xor5 has a variable size (section 4) | `bitxor` folded in two orders, as `bands`, `bors` |
@@ -219,8 +219,8 @@ as `current_trace_mod_add_*` does for unconditional ones; then counts of residue
 
 ## Order
 
-1. Done in part (Oct 31): sections 3, 5 and 6, 12 tasks correct locally, to be confirmed on the cloud (with the cost
-   of the forward lemma `count_length`). Left of section 6: `lasts`, the closed `pow`, the saturating counter (an
+1. Done in part (Oct 31): sections 3, 5 and 6, 10 tasks correct on the cloud (0.53.24, 0.53.25; `count_length`
+   rejected, too costly for its two tasks, which stay open). Left of section 6: `lasts`, the closed `pow`, the saturating counter (an
    unused second counter among the dependencies, a gap of the matcher), the sums over the same keys (two
    higher-order summands), the constant trace (a pattern on every trace), the bit mask (C).
 2. Section 1, after the design decision; it is the largest group by far.

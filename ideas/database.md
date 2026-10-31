@@ -183,6 +183,15 @@ is the same merge for `sums` ([iterator-profiles.md](iterator-profiles.md)).
   guard instantiated to true), and rewriting with the disjunctions of their instances does not terminate. The forward
   lemmas `div_mod` and `mod2_succ`: they trigger at every division and remainder; division and parity are in the
   arithmetic of `-prove` since 0.52.15.
+- **Rejected (Oct 31): bounds of a count by the length.** apache-escape-absolute and nest-if3 stay open. Their
+  goals need that a count of the values other than 0 is not negative, which `count_nonnegative` gives, but
+  `count_false_true` rewrites that count into the length minus the count of 0, whose bound then needs
+  `count <= length`. As a forward lemma (`count_length`, a twin of `count_nonnegative`) its trigger is every count:
+  both tasks correct on the cloud (0.53.24), but standard_partition_original_ground lost at 120 s (42 s without the
+  lemma, 72 s with it, locally). Not taken either: `count_false_true` as a forward fact (the two counts add up to the
+  length) instead of a rewrite, which touches the seven other tasks that use it (gj2007, mono-crafted_1, 3, 6, 7, 9,
+  14); a rule on the comparison of a count with the length plus a non-negative rest, whose rest the matcher would
+  have to take from a sum.
 - **Not taken**: the bounds by `max` and `min` through membership (no task needs it); one parity fact for the
   triangles (`triangle_even_scaled` does not cover `triangle_even` with `a = 1`, literal coefficients are not
   matched); converting the general fold `stores_where` into the compaction folds by lemmas (simpler by decision).

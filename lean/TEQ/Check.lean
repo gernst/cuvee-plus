@@ -135,7 +135,6 @@ example : Stmt.count_consts := @count_consts
 example : Stmt.count_true_below := @count_true_below
 example : Stmt.count_true_above := @count_true_above
 example : Stmt.count_nonnegative := @count_nonnegative
-example : Stmt.count_length := @count_length
 example : Stmt.count_remainder := @count_remainder
 example : Stmt.count_remainder_offset := @count_remainder_offset
 example : Stmt.count_remainder_positive := @count_remainder_positive

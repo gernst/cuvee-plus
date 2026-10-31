@@ -851,14 +851,6 @@ theorem count_true_above : Stmt.count_true_above := by
 theorem count_nonnegative : Stmt.count_nonnegative := by
   intro α _ e vs; rw [count_N]; exact N.count_nonnegative e vs
 
-theorem count_length_N {α : Type} [Inhabited α] (e : α) (vs : List α) : N.count e vs ≤ vs.length := by
-  induction vs with
-  | nil => simp [N.count]
-  | cons v ws ih => simp only [N.count, List.length_cons]; split <;> omega
-
-theorem count_length : Stmt.count_length := by
-  intro α _ e vs; rw [count_N]; exact count_length_N e vs
-
 theorem count_remainder : Stmt.count_remainder := by
   intro n m r ⟨hn, h⟩; simp only [count_N] at *
   rw [counter_N, N.count_remainder n.toNat m r h, N.integer_cast, Int.toNat_of_nonneg hn]
