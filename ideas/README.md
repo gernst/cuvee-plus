@@ -12,8 +12,6 @@ analyses behind its items. Files marked as history record what was tried and not
 - [open-tasks.md](open-tasks.md): the open tasks of 0.53.10 with the expected verdict true by family, with what each
   still needs (the families done in 0.53.14 removed).
 
-- [portfolio.md](portfolio.md): a wrapper (portfolio.py) that runs fuzzing, cuvee-fallback, `-chc` and bounded
-  unrolling in parallel on the native binary, with what each method is good at and the steps.
 - [slice.md](slice.md): whether `-slice` proves tasks on its own (three quarters of what `-teq` proves), why it cannot
   answer without a goal, the program as the unit of answer, `incorrect` and the fallback inside `-slice`.
 - [prove-next.md](prove-next.md): the plan (the regressions since 0.51.4, bounded unrolling for counterexamples and
@@ -46,14 +44,14 @@ analyses behind its items. Files marked as history record what was tried and not
 - [ltl.md](ltl.md): linear temporal specifications by weakest preconditions (ISoLA 2026): temporal
   `guarantees` of Dafny methods and loops with hypothesis operators, a forward generator in `-vcgen`, the
   lowering of the goals for solvers, and points of the paper to check.
-- [implement.md](implement.md): the open points of the implementations of
-  [doc/implement.md](../doc/implement.md): shared abstract functions, refinement obligations as goals.
-- [renc-verification.md](renc-verification.md): verifying the encoding of renc with `-vcgen` and cvc5: contracts
-  over the abstract types, coupling invariants, the intended meaning of the predicates along the run with true
-  answers, the global conditions checked separately, and the gaps of the current setup.
-- [nondet.md](nondet.md): determinization of every source of nondeterminism (havoc, uninitialized variables, choice,
-  iteration, calls by contract, ODEs) by an oracle `nondet(ticks)` with a global counter, for witnesses, `-teq`, and
-  nondeterministic implementations as expressions.
+- [datatype-verification.md](datatype-verification.md): the open points of the implementations of
+  [doc/implement.md](../doc/implement.md) (shared abstract functions, refinement obligations as goals) and of Enc_R
+  in renc.dfy (the start of `tick`, loops that count, costs), the decisions against; the determinization of every
+  source of nondeterminism (havoc, uninitialized variables, choice, iteration, calls by contract, ODEs) by an oracle
+  `nondet(ticks)` with a global counter, on which the completeness of Enc_R depends, also for witnesses, `-teq`, and
+  nondeterministic implementations as expressions; and the plan, too complex for what it gains, to verify renc with
+  `-vcgen` and cvc5: contracts over the abstract types, coupling invariants, the intended meaning of the predicates
+  along the run with true answers, the global conditions checked separately, and the gaps of the current setup.
 - [experiments.md](experiments.md): the plan of the experiments for a paper comparing TEQ with other
   techniques, with the reruns done and to do.
 

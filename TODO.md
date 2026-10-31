@@ -96,7 +96,7 @@ without `-fallback`); the open tasks with the verdict true by family, with the c
   `-chc` with constants in procedure bodies (Horn solvers reject free constants).
 - Lambdas of function type printed in SMT-LIB (arrays) are not read back.
 - `-monomorph` leaves polymorphic assertions uninstantiated, which solvers reject.
-- Implementations ([ideas/implement.md](ideas/implement.md)): the start of the counter of `renc` (`tick := 0` by
+- Implementations ([ideas/datatype-verification.md](ideas/datatype-verification.md)): the start of the counter of `renc` (`tick := 0` by
   hand in examples/dafny/renc).
 - The implementations of overloaded operators that cvc5 lacks (`seq.store`, `seq.member`, `seq.proper_prefixof`,
   `set.proper_subset`, `set.update`, `bag.select`, `bag.proper_subbag`, `map.store`) are declared but not defined; define them
@@ -271,6 +271,13 @@ Cleanup, none of it a bug.
 
 - A portfolio in Cuvée: `-teq` for a short slice, then `-chc`, then `-fallback`, in sequence (BenchExec counts the
   CPU time of all cores), parsing shared; disagreement is `unknown`.
+- The portfolio of portfolio.py (doc/benchmarks.md, "The portfolio"): the fuzzer replays a trace before it answers
+  `false` (Korn's `Confirm`, `__VERIFIER_counterexample.c`) and writes no violation witness yet, so its `false`
+  answers are unconfirmed in SV-COMP (first the trivial witness of `yml.Witness`, the target, then the values of
+  its trace as a `violation_sequence`, ideas/witnesses.md); runs with undefined behavior could fake a violation
+  (`-fsanitize=undefined -fno-sanitize-recover`, discarding such runs); boundary values (`INT_MIN`, `INT_MAX`, the
+  literals of the program) in the generator; bounded unrolling as a further method (ideas/engine.md, 6.3); the
+  methods as a file of configurations instead of `METHODS`.
 - Task definitions: the properties and expected verdicts are read but not used; a single input file only.
 
 ## Bitvectors

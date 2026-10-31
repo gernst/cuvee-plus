@@ -102,7 +102,8 @@ An empty witness recovers most of Loops and almost nothing of Arrays, where the 
    the model is SMT-LIB already, its arguments are renamed to the variables in scope at the tag, the values at the
    entry become `(at x tag)`, and `get-witness` prints the `annotate-tag` commands. In C the same with the
    translation of challenge 6. The derivation of `unsat` gives the nondeterministic values of a violation, as
-   assumption waypoints (with the oracle of [nondet.md](nondet.md), directly the model of `nondet`).
+   assumption waypoints (with the oracle of [datatype-verification.md](datatype-verification.md), directly the
+   model of `nondet`).
 3. **Invariants of TEQ for scalar loops.** The construction above for counters, polynomial closed forms
    (nla-digbench) and bounds, checked by Cuvée itself: printed as ACSL loop invariants (the C printer prints
    `\forall`) and run with `-vcgen -z3`, as for [benchmarks/acsl](../benchmarks/acsl); only invariants that
